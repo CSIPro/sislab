@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as AdminAccountsRouteImport } from './routes/admin/accounts'
 import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -37,6 +39,16 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAccountsRoute = AdminAccountsRouteImport.update({
+  id: '/admin/accounts',
+  path: '/admin/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCatalogsRoute = AdminCatalogsRouteImport.update({
   id: '/admin/catalogs',
   path: '/admin/catalogs',
@@ -58,6 +70,8 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -67,6 +81,8 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -77,6 +93,8 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -88,6 +106,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
@@ -97,6 +117,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
@@ -116,6 +140,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
   SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
+  AdminAccountsRoute: typeof AdminAccountsRoute
   AdminCatalogsRoute: typeof AdminCatalogsRoute
   AdminPeriodsRoute: typeof AdminPeriodsRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -151,6 +177,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/accounts': {
+      id: '/admin/accounts'
+      path: '/admin/accounts'
+      fullPath: '/admin/accounts'
+      preLoaderRoute: typeof AdminAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/catalogs': {
       id: '/admin/catalogs'
       path: '/admin/catalogs'
@@ -180,6 +220,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
   SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
+  AdminAccountsRoute: AdminAccountsRoute,
   AdminCatalogsRoute: AdminCatalogsRoute,
   AdminPeriodsRoute: AdminPeriodsRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,

@@ -178,7 +178,7 @@ export async function requireRole(
 	return user
 }
 
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
 	const normalized = email.trim().toLowerCase()
 	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
 		throw new Error('Enter a valid email address.')
@@ -186,7 +186,7 @@ function normalizeEmail(email: string): string {
 	return normalized
 }
 
-function validatePassword(password: string): void {
+export function validatePassword(password: string): void {
 	if (password.length < 12) throw new Error('Password must be at least 12 characters.')
 }
 
