@@ -102,9 +102,12 @@ test('guest landing, access request, and protected-route redirect work in Spanis
 
 test('professor signs in, sees only permitted destinations, opens the mobile menu, and registers a group', async ({ page }) => {
 	await signIn(page, professor.email)
-	await expect(page.getByRole('heading', { name: `Hola, ${professor.name}` })).toBeVisible()
+	await expect(page.getByRole('heading', { name: `Buen día, ${professor.name}` })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Mis grupos' })).toBeVisible()
+	await expect(page.getByText('Solicitudes próximas', { exact: true })).toHaveCount(0)
+	await expect(page.getByTestId('dashboard-stat-groups')).toContainText('0')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Registrar grupo' })).toBeVisible()
-	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Inicio' })).toHaveAttribute('aria-current', 'page')
+	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Tablero' })).toHaveAttribute('aria-current', 'page')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Catálogos' })).toHaveCount(0)
 	for (const [legacy, canonical] of [
 		['/dashboard', '/app/dashboard'],
@@ -125,7 +128,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 
 	await page.goto('/app/dashboard')
 	await page.setViewportSize({ width: 390, height: 844 })
-	const menu = page.getByRole('button', { name: /Menú/ })
+	const menu = page.locator('.app-menu-button')
 	await menu.click()
 	await expect(menu).toHaveAttribute('aria-expanded', 'true')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Mis grupos' })).toBeVisible()
@@ -145,12 +148,18 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await page.getByLabel('Hora de término').fill('11:00')
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
 	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el periodo ${periodCode}`))).toBeVisible()
+	await page.goto('/app/dashboard')
+	await expect(page.getByTestId('dashboard-stat-groups')).toContainText('1')
+	await expect(page.getByTestId('dashboard-stat-students')).toContainText('20')
+	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
 })
 
 test('staff and mixed-role navigation follows the account roles', async ({ page }) => {
 	await signIn(page, staff.email)
+	await expect(page.getByRole('heading', { name: 'Preparaciones para laboratorio' })).toBeVisible()
+	await expect(page.locator('[data-testid="dashboard-stat-groups"]')).toHaveCount(0)
 	const nav = page.getByRole('navigation', { name: 'Navegación principal' })
-	await expect(nav.getByRole('link', { name: 'Inicio' })).toBeVisible()
+	await expect(nav.getByRole('link', { name: 'Tablero' })).toBeVisible()
 	await expect(nav.getByRole('link', { name: 'Registrar grupo' })).toHaveCount(0)
 	await expect(nav.getByRole('link', { name: 'Usuarios' })).toHaveCount(0)
 
@@ -174,7 +183,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 		await page.goto(legacy)
 		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
 	}
-	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Solicitudes de acceso' }).click()
+	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Accesos pendientes' }).click()
 	await page.waitForLoadState('networkidle')
 	const request = page.locator('li').filter({ hasText: pendingEmail })
 	await expect(request).toBeVisible()
@@ -183,7 +192,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await page.getByRole('button', { name: 'Cerrar sesión' }).click()
 	await page.waitForURL('**/')
 	await signIn(page, pendingEmail, pendingPassword)
-	await expect(page.getByRole('heading', { name: 'Hola, Browser' })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Buen día, Browser' })).toBeVisible()
 })
 
 test('admin edits a professor group and manages periods and catalogs', async ({ page }) => {

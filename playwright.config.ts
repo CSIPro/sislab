@@ -1,4 +1,5 @@
 import { config as loadEnv } from 'dotenv'
+import { resolve } from 'node:path'
 import { defineConfig } from '@playwright/test'
 
 loadEnv({ path: ['.env.local', '.env'], quiet: true })
@@ -9,6 +10,7 @@ if (!testDatabaseUrl) {
 }
 
 const port = 4173
+const viteEntry = resolve('node_modules/vite/bin/vite.js')
 
 export default defineConfig({
 	testDir: './test/browser',
@@ -22,7 +24,7 @@ export default defineConfig({
 		trace: 'retain-on-failure',
 	},
 	webServer: {
-		command: `pnpm exec vite dev --host 127.0.0.1 --port ${port} --strictPort`,
+		command: `"${process.execPath}" "${viteEntry}" dev --host 127.0.0.1 --port ${port} --strictPort`,
 		url: `http://127.0.0.1:${port}`,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000,
