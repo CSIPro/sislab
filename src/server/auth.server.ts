@@ -173,9 +173,15 @@ export async function requireRole(
 	role: 'professor' | 'staff' | 'admin',
 ): Promise<AuthUser> {
 	const user = await requireUser()
-	const permitted = user.roles.includes(role) || (role === 'staff' && user.roles.includes('admin'))
-	if (!permitted) throw new Error(`The ${role} role is required.`)
+	if (!hasRole(user.roles, role)) throw new Error(`The ${role} role is required.`)
 	return user
+}
+
+export function hasRole(
+	roles: readonly ('professor' | 'staff' | 'admin')[],
+	requiredRole: 'professor' | 'staff' | 'admin',
+): boolean {
+	return roles.includes(requiredRole) || (requiredRole === 'staff' && roles.includes('admin'))
 }
 
 export function normalizeEmail(email: string): string {
