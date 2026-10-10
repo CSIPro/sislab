@@ -20,6 +20,13 @@ function DashboardPage() {
 					Welcome, {user.name}
 				</h1>
 				<p className="text-[var(--sea-ink-soft)]">{user.email}</p>
+				{user.roles.includes("professor") && (
+					<p className="mt-4">
+						<Link className="font-semibold underline" to="/groups/new">
+							Register a group
+						</Link>
+					</p>
+				)}
 				{user.roles.includes("admin") && (
 					<div className="mt-4 flex flex-wrap gap-4">
 						<Link className="font-semibold underline" to="/admin/users">
