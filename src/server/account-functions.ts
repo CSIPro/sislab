@@ -1,16 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
-import {
-	activatePendingAccount,
-	listPendingAccounts,
-	type SignUpInput,
-	signUp,
-} from "./accounts.ts";
-import { requireRole } from "./auth.server.ts";
+import { listPendingAccounts } from "./accounts.ts";
+import { requireRole, requireUser } from "./auth.server.ts";
+import { createFirstUsableOperations } from "./first-usable-operations.ts";
+
+const firstUsableOperations = createFirstUsableOperations(db, requireUser);
 
 export const signUpFn = createServerFn({ method: "POST" })
 	.validator(parseSignUpInput)
-	.handler(async ({ data }) => signUp(db, data));
+	.handler(async ({ data }) => firstUsableOperations.signUp(data));
 
 export const listPendingAccountsFn = createServerFn({ method: "GET" }).handler(
 	async () => listPendingAccounts(db, await requireRole("admin")),
@@ -19,10 +17,10 @@ export const listPendingAccountsFn = createServerFn({ method: "GET" }).handler(
 export const activatePendingAccountFn = createServerFn({ method: "POST" })
 	.validator(parseUserId)
 	.handler(async ({ data }) =>
-		activatePendingAccount(db, data.userId, await requireRole("admin")),
+		firstUsableOperations.activateAccount(data.userId),
 	);
 
-function parseSignUpInput(input: unknown): SignUpInput {
+function parseSignUpInput(input: unknown) {
 	const data = record(input);
 	if (
 		typeof data.email !== "string" ||

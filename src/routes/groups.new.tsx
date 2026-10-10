@@ -84,9 +84,9 @@ function NewGroupPage() {
 					Register a group
 				</h1>
 				<p className="text-[var(--sea-ink-soft)]">
-					Choose an available period and reserve the lab for your group’s weekly
-					session. Leave the group number blank to assign the next unused
-					number.
+					Choose an available period and record the lab schedule assigned to your
+					group. Sislab does not allocate or reserve lab time. Leave the group
+					number blank to assign the next unused number.
 				</p>
 				{options.periods.length === 0 && (
 					<output className="mt-5 rounded-lg border border-[var(--line)] p-3">

@@ -5,9 +5,11 @@ import {
 	getSession,
 	readSessionCookie,
 	SESSION_COOKIE,
-	signIn,
 	signOut,
 } from './auth.server.ts'
+import { createFirstUsableOperations } from './first-usable-operations.ts'
+
+const firstUsableOperations = createFirstUsableOperations(db, async () => null)
 
 type SignInFormData = { email: string; password: string }
 
@@ -23,7 +25,7 @@ function validateSignInInput(data: unknown): SignInFormData {
 export const signInFn = createServerFn({ method: 'POST' })
 	.validator(validateSignInInput)
 	.handler(async ({ data }) => {
-		const session = await signIn(db, data)
+		const session = await firstUsableOperations.signIn(data)
 		if (!session) return { ok: false as const, message: 'Email or password is incorrect.' }
 
 		const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000)
