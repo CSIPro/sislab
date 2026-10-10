@@ -1,33 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
-import { listAcademicPeriods } from "./academic-periods.ts";
-import { requireRole } from "./auth.server.ts";
-import { listActiveCatalogEntries } from "./catalogs.ts";
-import { type RegisterGroupInput, registerProfessorGroup } from "./groups.ts";
+import { requireUser } from "./auth.server.ts";
+import type { RegisterGroupInput } from "./groups.ts";
+import { createFirstUsableOperations } from "./first-usable-operations.ts";
+
+const firstUsableOperations = createFirstUsableOperations(db, requireUser);
 
 export const getProfessorGroupOptionsFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
-	await requireRole("professor");
-	const [periodOptions, labOptions, careerOptions, subjectOptions] =
-		await Promise.all([
-			listAcademicPeriods(db),
-			listActiveCatalogEntries(db, "labs"),
-			listActiveCatalogEntries(db, "careers"),
-			listActiveCatalogEntries(db, "subjects"),
-		]);
-	return {
-		...periodOptions,
-		labs: labOptions,
-		careers: careerOptions,
-		subjects: subjectOptions,
-	};
+	return firstUsableOperations.getGroupOptions();
 });
 
 export const registerProfessorGroupFn = createServerFn({ method: "POST" })
 	.validator(parseRegisterGroupInput)
 	.handler(async ({ data }) =>
-		registerProfessorGroup(db, await requireRole("professor"), data),
+		firstUsableOperations.registerGroup(data),
 	);
 
 function parseRegisterGroupInput(input: unknown): RegisterGroupInput {
