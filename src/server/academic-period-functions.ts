@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { db } from '../db/index.ts'
 import { ensureRegularAcademicPeriods, listAcademicPeriods, saveAcademicPeriod } from './academic-periods.ts'
-import { requireUser } from './auth-functions.ts'
+import { requireRole, requireUser } from './auth.server.ts'
 
 export const listAcademicPeriodsFn = createServerFn({ method: 'GET' }).handler(
 	async () => {
@@ -25,9 +25,7 @@ export const ensureRegularAcademicPeriodsFn = createServerFn({ method: 'POST' })
 	})
 
 async function requireAdmin() {
-	const user = await requireUser()
-	if (!user.roles.includes('admin')) throw new Error('Admin access is required.')
-	return user
+	return requireRole('admin')
 }
 
 function parsePeriodInput(input: unknown): {

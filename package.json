@@ -18,7 +18,8 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
-    "test:integration": "tsx --test src/server/*.integration.test.ts test/*.integration.test.ts"
+    "test:integration": "tsx --test src/server/*.integration.test.ts test/*.integration.test.ts",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",

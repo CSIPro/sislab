@@ -10,7 +10,7 @@ import {
 	type CatalogValues,
 	type CatalogKind,
 } from './catalogs.ts'
-import { requireUser } from './auth-functions.ts'
+import { requireRole, requireUser } from './auth.server.ts'
 
 export const listActiveCatalogEntriesFn = createServerFn({ method: 'GET' })
 	.inputValidator(parseKind)
@@ -49,9 +49,7 @@ export const retireCatalogEntryFn = createServerFn({ method: 'POST' })
 	)
 
 async function requireAdmin() {
-	const user = await requireUser()
-	if (!user.roles.includes('admin')) throw new Error('Admin access is required.')
-	return user
+	return requireRole('admin')
 }
 
 function parseKind(input: unknown): { kind: CatalogKind } {
