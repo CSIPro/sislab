@@ -16,6 +16,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AdminAccountsRouteImport } from './routes/admin/accounts'
 import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
+import { Route as AdminGroupsRouteImport } from './routes/admin/groups'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -57,6 +58,11 @@ const AdminCatalogsRoute = AdminCatalogsRouteImport.update({
   path: '/admin/catalogs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/admin/groups',
+  path: '/admin/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPeriodsRoute = AdminPeriodsRouteImport.update({
   id: '/admin/periods',
   path: '/admin/periods',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/admin/accounts': typeof AdminAccountsRoute
   '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin/accounts'
     | '/admin/catalogs'
+    | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin/accounts'
     | '/admin/catalogs'
+    | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/admin/accounts'
     | '/admin/catalogs'
+    | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   AdminAccountsRoute: typeof AdminAccountsRoute
   AdminCatalogsRoute: typeof AdminCatalogsRoute
+  AdminGroupsRoute: typeof AdminGroupsRoute
   AdminPeriodsRoute: typeof AdminPeriodsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -237,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/admin/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/periods': {
       id: '/admin/periods'
       path: '/admin/periods'
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   AdminAccountsRoute: AdminAccountsRoute,
   AdminCatalogsRoute: AdminCatalogsRoute,
+  AdminGroupsRoute: AdminGroupsRoute,
   AdminPeriodsRoute: AdminPeriodsRoute,
   AdminUsersRoute: AdminUsersRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
