@@ -11,18 +11,21 @@ pnpm dev
 
 ## First admin and sign-in
 
-Apply database migrations before starting the app:
+Apply the database schema before starting the app:
 
 ```bash
-pnpm db:migrate
+pnpm db:push
 ```
 
-In a trusted deployment shell, provide `DATABASE_URL`, a configured
-`SISLAB_BOOTSTRAP_SECRET`, and the matching operator-supplied
-`BOOTSTRAP_ADMIN_SECRET`. Also supply `BOOTSTRAP_ADMIN_EMAIL`,
-`BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_SURNAME`, and
-`BOOTSTRAP_ADMIN_PASSWORD` through the deployment's secret mechanism. Then
-run:
+For local development, put these values in `.env.local`:
+
+- `SISLAB_BOOTSTRAP_SECRET`: a random secret configured for the app.
+- `BOOTSTRAP_ADMIN_SECRET`: the same secret, supplied when running the one-time bootstrap command.
+- `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, and `BOOTSTRAP_ADMIN_SURNAME`: the first administrator's sign-in email and display name.
+- `BOOTSTRAP_ADMIN_PASSWORD`: the first administrator's password (at least 12 characters).
+
+The bootstrap command loads `.env.local` automatically. In deployment, provide
+the same values through the deployment's secret mechanism instead. Then run:
 
 ```bash
 pnpm admin:bootstrap

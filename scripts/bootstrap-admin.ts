@@ -1,6 +1,12 @@
 import { timingSafeEqual } from 'node:crypto'
-import { db } from '../src/db/index.ts'
-import { bootstrapAdmin } from '../src/server/auth.server.ts'
+import { config as loadEnv } from 'dotenv'
+
+loadEnv({ path: ['.env.local', '.env'] })
+
+const [{ db }, { bootstrapAdmin }] = await Promise.all([
+	import('../src/db/index.ts'),
+	import('../src/server/auth.server.ts'),
+])
 
 const suppliedSecret = process.env.BOOTSTRAP_ADMIN_SECRET
 const configuredSecret = process.env.SISLAB_BOOTSTRAP_SECRET
