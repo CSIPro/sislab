@@ -11,7 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as AdminAccountsRouteImport } from './routes/admin/accounts'
+import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
+import { Route as AdminGroupsRouteImport } from './routes/admin/groups'
+import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as GroupsManageRouteImport } from './routes/groups.manage'
+import { Route as GroupsNewRouteImport } from './routes/groups.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,40 +33,170 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAccountsRoute = AdminAccountsRouteImport.update({
+  id: '/admin/accounts',
+  path: '/admin/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCatalogsRoute = AdminCatalogsRouteImport.update({
+  id: '/admin/catalogs',
+  path: '/admin/catalogs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/admin/groups',
+  path: '/admin/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPeriodsRoute = AdminPeriodsRouteImport.update({
+  id: '/admin/periods',
+  path: '/admin/periods',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsManageRoute = GroupsManageRouteImport.update({
+  id: '/groups/manage',
+  path: '/groups/manage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsNewRoute = GroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/dashboard': typeof DashboardRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/dashboard': typeof DashboardRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/dashboard': typeof DashboardRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/admin/accounts': typeof AdminAccountsRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/demo/tanstack-query'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
+    | '/admin/catalogs'
+    | '/admin/groups'
+    | '/admin/periods'
+    | '/admin/users'
+    | '/demo/tanstack-query'
+    | '/groups/manage'
+    | '/groups/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/about' | '/demo/tanstack-query'
+  to:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
+    | '/admin/catalogs'
+    | '/admin/groups'
+    | '/admin/periods'
+    | '/admin/users'
+    | '/demo/tanstack-query'
+    | '/groups/manage'
+    | '/groups/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/sign-in'
+    | '/sign-up'
+    | '/admin/accounts'
+    | '/admin/catalogs'
+    | '/admin/groups'
+    | '/admin/periods'
+    | '/admin/users'
+    | '/demo/tanstack-query'
+    | '/groups/manage'
+    | '/groups/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  DashboardRoute: typeof DashboardRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
+  AdminAccountsRoute: typeof AdminAccountsRoute
+  AdminCatalogsRoute: typeof AdminCatalogsRoute
+  AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminPeriodsRoute: typeof AdminPeriodsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  GroupsManageRoute: typeof GroupsManageRoute
+  GroupsNewRoute: typeof GroupsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,11 +215,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/accounts': {
+      id: '/admin/accounts'
+      path: '/admin/accounts'
+      fullPath: '/admin/accounts'
+      preLoaderRoute: typeof AdminAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/catalogs': {
+      id: '/admin/catalogs'
+      path: '/admin/catalogs'
+      fullPath: '/admin/catalogs'
+      preLoaderRoute: typeof AdminCatalogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/admin/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/periods': {
+      id: '/admin/periods'
+      path: '/admin/periods'
+      fullPath: '/admin/periods'
+      preLoaderRoute: typeof AdminPeriodsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
       fullPath: '/demo/tanstack-query'
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/manage': {
+      id: '/groups/manage'
+      path: '/groups/manage'
+      fullPath: '/groups/manage'
+      preLoaderRoute: typeof GroupsManageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/new': {
+      id: '/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof GroupsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,8 +298,27 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  DashboardRoute: DashboardRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
+  AdminAccountsRoute: AdminAccountsRoute,
+  AdminCatalogsRoute: AdminCatalogsRoute,
+  AdminGroupsRoute: AdminGroupsRoute,
+  AdminPeriodsRoute: AdminPeriodsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  GroupsManageRoute: GroupsManageRoute,
+  GroupsNewRoute: GroupsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
