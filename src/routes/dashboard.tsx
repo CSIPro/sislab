@@ -21,11 +21,14 @@ function DashboardPage() {
 				</h1>
 				<p className="text-[var(--sea-ink-soft)]">{user.email}</p>
 				{user.roles.includes("admin") && (
-					<p className="mt-4">
+					<div className="mt-4 flex flex-wrap gap-4">
+						<Link className="font-semibold underline" to="/admin/users">
+							Manage user access
+						</Link>
 						<Link className="font-semibold underline" to="/admin/accounts">
 							Review pending professor accounts
 						</Link>
-					</p>
+					</div>
 				)}
 				<form
 					action="/"
