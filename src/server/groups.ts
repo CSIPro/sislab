@@ -135,6 +135,200 @@ export async function registerProfessorGroup(
 	}
 }
 
+export async function listProfessorGroups(
+	database: GroupDatabase,
+	actor: GroupActor,
+	includeInactive = false,
+): Promise<Array<typeof groups.$inferSelect>> {
+	requireProfessor(actor);
+	return database
+		.select()
+		.from(groups)
+		.where(
+			includeInactive
+				? eq(groups.professorId, actor.id)
+				: and(eq(groups.professorId, actor.id), eq(groups.active, true)),
+		)
+		.orderBy(groups.periodCode, groups.number);
+}
+
+export async function getProfessorGroup(
+	database: GroupDatabase,
+	actor: GroupActor,
+	groupId: string,
+): Promise<typeof groups.$inferSelect> {
+	requireProfessor(actor);
+	const [group] = await database
+		.select()
+		.from(groups)
+		.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
+		.limit(1);
+	if (!group) throw new Error("That group was not found.");
+	return group;
+}
+
+export async function updateProfessorGroup(
+	database: GroupDatabase,
+	actor: GroupActor,
+	groupId: string,
+	input: RegisterGroupInput,
+): Promise<typeof groups.$inferSelect> {
+	requireProfessor(actor);
+	const normalized = validateInput(input);
+	try {
+		return await database.transaction(async (transaction) => {
+			const [current] = await transaction
+				.select()
+				.from(groups)
+				.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
+				.for("update")
+				.limit(1);
+			if (!current) throw new Error("That group was not found.");
+
+			for (const periodCode of [
+				...new Set([current.periodCode, normalized.periodCode]),
+			].sort()) {
+				await transaction.execute(sql`
+					SELECT pg_advisory_xact_lock(hashtext(${actor.id}), hashtext(${periodCode}))
+				`);
+			}
+
+			const [period] = await transaction
+				.select({ code: periods.code })
+				.from(periods)
+				.where(eq(periods.code, normalized.periodCode))
+				.limit(1);
+			if (!period) throw new Error("Choose an available academic period.");
+
+			const number = normalized.number ?? current.number;
+			const [lab] = await transaction
+				.select({ id: labs.id, name: labs.name, active: labs.active })
+				.from(labs)
+				.where(eq(labs.id, normalized.labId))
+				.limit(1);
+			if (!lab || (!lab.active && lab.id !== current.labId))
+				throw new Error("Choose an active lab.");
+
+			const [career] = await transaction
+				.select({ id: careers.id, name: careers.name, active: careers.active })
+				.from(careers)
+				.where(eq(careers.id, normalized.careerId))
+				.limit(1);
+			if (!career || (!career.active && career.id !== current.careerId))
+				throw new Error("Choose an active career.");
+
+			const [subject] = await transaction
+				.select({
+					id: subjects.id,
+					name: subjects.name,
+					active: subjects.active,
+				})
+				.from(subjects)
+				.where(eq(subjects.id, normalized.subjectId))
+				.limit(1);
+			if (!subject || (!subject.active && subject.id !== current.subjectId))
+				throw new Error("Choose an active subject.");
+
+			const [updated] = await transaction
+				.update(groups)
+				.set({
+					periodCode: normalized.periodCode,
+					number,
+					labId: lab.id,
+					labName: lab.id === current.labId ? current.labName : lab.name,
+					careerId: career.id,
+					careerName:
+						career.id === current.careerId ? current.careerName : career.name,
+					subjectId: subject.id,
+					subjectName:
+						subject.id === current.subjectId
+							? current.subjectName
+							: subject.name,
+					students: normalized.students,
+					teams: normalized.teams,
+					weekday: normalized.weekday,
+					startTime: normalized.startTime,
+					endTime: normalized.endTime,
+				})
+				.where(eq(groups.id, current.id))
+				.returning();
+			if (!updated) throw new Error("Could not save this group.");
+			return updated;
+		});
+	} catch (error) {
+		throw translateGroupConstraint(error);
+	}
+}
+
+export async function deactivateProfessorGroup(
+	database: GroupDatabase,
+	actor: GroupActor,
+	groupId: string,
+): Promise<typeof groups.$inferSelect> {
+	requireProfessor(actor);
+	const [deactivated] = await database
+		.update(groups)
+		.set({ active: false })
+		.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
+		.returning();
+	if (!deactivated) throw new Error("That group was not found.");
+	return deactivated;
+}
+
+export async function reactivateProfessorGroup(
+	database: GroupDatabase,
+	actor: GroupActor,
+	groupId: string,
+): Promise<typeof groups.$inferSelect> {
+	requireProfessor(actor);
+	try {
+		return await database.transaction(async (transaction) => {
+			const [current] = await transaction
+				.select()
+				.from(groups)
+				.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
+				.for("update")
+				.limit(1);
+			if (!current) throw new Error("That group was not found.");
+			if (!current.active) {
+				await transaction.execute(sql`
+					SELECT pg_advisory_xact_lock(hashtext(${actor.id}), hashtext(${current.periodCode}))
+				`);
+			}
+			const [lab] = await transaction
+				.select({ active: labs.active })
+				.from(labs)
+				.where(eq(labs.id, current.labId))
+				.limit(1);
+			if (!lab?.active)
+				throw new Error("Choose an active lab before reactivating this group.");
+			const [reactivated] = await transaction
+				.update(groups)
+				.set({ active: true })
+				.where(eq(groups.id, current.id))
+				.returning();
+			if (!reactivated) throw new Error("Could not reactivate this group.");
+			return reactivated;
+		});
+	} catch (error) {
+		throw translateGroupConstraint(error);
+	}
+}
+
+function translateGroupConstraint(error: unknown): unknown {
+	if (isDatabaseError(error, "23P01", "groups_active_lab_slot_no_overlap")) {
+		return new Error(
+			"This lab already has a group during that period and time. Choose another time, day, or lab.",
+		);
+	}
+	if (
+		isDatabaseError(error, "23505", "groups_professor_period_number_unique")
+	) {
+		return new Error("That group number has already been used in this period.");
+	}
+	return error;
+}
+
 function requireProfessor(actor: GroupActor): void {
 	if (!actor.roles.includes("professor"))
 		throw new Error("Professor access is required to register a group.");

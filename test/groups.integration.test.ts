@@ -6,7 +6,14 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from '../src/db/schema.ts'
 import { careers, groups, labs, periods, subjects, userRoles, users } from '../src/db/schema.ts'
-import { registerProfessorGroup } from '../src/server/groups.ts'
+import {
+	deactivateProfessorGroup,
+	getProfessorGroup,
+	listProfessorGroups,
+	reactivateProfessorGroup,
+	registerProfessorGroup,
+	updateProfessorGroup,
+} from '../src/server/groups.ts'
 
 const connectionString = process.env.DATABASE_URL_TEST
 if (!connectionString) {
@@ -170,6 +177,103 @@ test('only an active professor may register and retired catalog choices are reje
 		await assert.rejects(registerProfessorGroup(database, { ...f.actor, roles: ['staff'] }, groupInput(f)), /professor/i)
 		await database.update(labs).set({ active: false }).where(eq(labs.id, f.lab.id))
 		await assert.rejects(registerProfessorGroup(database, f.actor, groupInput(f)), /active lab/i)
+	} finally {
+		await f.clean()
+	}
+})
+
+test('professors can inspect, update, deactivate, and reactivate only their own groups', async () => {
+	const f = await fixture()
+	const other = await fixture()
+	try {
+		const group = await registerProfessorGroup(database, f.actor, groupInput(f))
+		const otherGroup = await registerProfessorGroup(database, other.actor, groupInput(other))
+
+		assert.deepEqual((await listProfessorGroups(database, f.actor)).map(({ id }) => id), [group.id])
+		assert.equal((await getProfessorGroup(database, f.actor, group.id)).id, group.id)
+		await assert.rejects(getProfessorGroup(database, f.actor, otherGroup.id), /not found/i)
+		await assert.rejects(
+			updateProfessorGroup(database, f.actor, otherGroup.id, groupInput(f, { students: 20 })),
+			/not found/i,
+		)
+		await assert.rejects(deactivateProfessorGroup(database, f.actor, otherGroup.id), /not found/i)
+
+		const updated = await updateProfessorGroup(
+			database,
+			f.actor,
+			group.id,
+			groupInput(f, { labId: f.otherLab.id, students: 20, teams: 5 }),
+		)
+		assert.equal(updated.number, group.number)
+		assert.equal(updated.labName, f.otherLab.name)
+		assert.equal(updated.students, 20)
+		assert.equal(updated.active, true)
+
+		const inactive = await deactivateProfessorGroup(database, f.actor, group.id)
+		assert.equal(inactive.active, false)
+		assert.equal(inactive.number, group.number)
+		assert.equal((await listProfessorGroups(database, f.actor, false)).length, 0)
+		assert.equal((await listProfessorGroups(database, f.actor, true))[0]?.id, group.id)
+
+		const occupyingSlot = await registerProfessorGroup(
+			database,
+			other.actor,
+			groupInput(f, { labId: f.otherLab.id }),
+		)
+		assert.ok(occupyingSlot)
+		await assert.rejects(reactivateProfessorGroup(database, f.actor, group.id), /lab.*time|time.*lab|overlap/i)
+		await deactivateProfessorGroup(database, other.actor, occupyingSlot.id)
+		const reactivated = await reactivateProfessorGroup(database, f.actor, group.id)
+		assert.equal(reactivated.active, true)
+		assert.equal(reactivated.number, group.number)
+		const secondOccupyingSlot = await registerProfessorGroup(
+			database,
+			other.actor,
+			groupInput(f, {
+				labId: f.otherLab.id,
+				startTime: '11:00',
+				endTime: '12:00',
+			}),
+		)
+		assert.ok(secondOccupyingSlot)
+		await assert.rejects(
+			updateProfessorGroup(
+				database,
+				f.actor,
+				group.id,
+				groupInput(f, {
+					labId: f.otherLab.id,
+					startTime: '11:30',
+					endTime: '12:30',
+				}),
+			),
+			/lab.*time|time.*lab|overlap/i,
+		)
+	} finally {
+		await other.clean()
+		await f.clean()
+	}
+})
+
+test('group updates keep numbers reserved and validate edits without replacing saved labels for retired catalog entries', async () => {
+	const f = await fixture()
+	try {
+		const group = await registerProfessorGroup(database, f.actor, groupInput(f))
+		await database.update(labs).set({ active: false, name: `${f.lab.name} retired` }).where(eq(labs.id, f.lab.id))
+		const corrected = await updateProfessorGroup(database, f.actor, group.id, groupInput(f, { students: 16, teams: 4 }))
+		assert.equal(corrected.labName, f.lab.name)
+		assert.equal(corrected.students, 16)
+		await assert.rejects(
+			updateProfessorGroup(database, f.actor, group.id, groupInput(f, { students: 61 })),
+			/students/i,
+		)
+		await deactivateProfessorGroup(database, f.actor, group.id)
+		const next = await registerProfessorGroup(database, f.actor, groupInput(f, { labId: f.otherLab.id }))
+		assert.equal(next.number, 2)
+		await assert.rejects(
+			updateProfessorGroup(database, f.actor, next.id, groupInput(f, { labId: f.otherLab.id, number: 1, weekday: 2 })),
+			/already used/i,
+		)
 	} finally {
 		await f.clean()
 	}

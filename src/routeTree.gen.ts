@@ -19,6 +19,7 @@ import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as GroupsManageRouteImport } from './routes/groups.manage'
 import { Route as GroupsNewRouteImport } from './routes/groups.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +72,11 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsManageRoute = GroupsManageRouteImport.update({
+  id: '/groups/manage',
+  path: '/groups/manage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GroupsNewRoute = GroupsNewRouteImport.update({
   id: '/groups/new',
   path: '/groups/new',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
+    | '/groups/manage'
     | '/groups/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
+    | '/groups/manage'
     | '/groups/new'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/admin/periods'
     | '/admin/users'
     | '/demo/tanstack-query'
+    | '/groups/manage'
     | '/groups/new'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   AdminPeriodsRoute: typeof AdminPeriodsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  GroupsManageRoute: typeof GroupsManageRoute
   GroupsNewRoute: typeof GroupsNewRoute
 }
 
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups/manage': {
+      id: '/groups/manage'
+      path: '/groups/manage'
+      fullPath: '/groups/manage'
+      preLoaderRoute: typeof GroupsManageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/groups/new': {
       id: '/groups/new'
       path: '/groups/new'
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPeriodsRoute: AdminPeriodsRoute,
   AdminUsersRoute: AdminUsersRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  GroupsManageRoute: GroupsManageRoute,
   GroupsNewRoute: GroupsNewRoute,
 }
 export const routeTree = rootRouteImport
