@@ -18,6 +18,7 @@ import { Route as AdminAccountsRouteImport } from './routes/admin/accounts'
 import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as GroupsNewRouteImport } from './routes/groups.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,11 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsNewRoute = GroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/groups/new': typeof GroupsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
+    | '/groups/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
+    | '/groups/new'
   id:
     | '__root__'
     | '/'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/admin/catalogs'
     | '/admin/periods'
     | '/demo/tanstack-query'
+    | '/groups/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   AdminCatalogsRoute: typeof AdminCatalogsRoute
   AdminPeriodsRoute: typeof AdminPeriodsRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  GroupsNewRoute: typeof GroupsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups/new': {
+      id: '/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof GroupsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCatalogsRoute: AdminCatalogsRoute,
   AdminPeriodsRoute: AdminPeriodsRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  GroupsNewRoute: GroupsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
