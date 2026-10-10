@@ -32,7 +32,10 @@ function SignUpPage() {
   return (
     <main className="auth-page">
       <section className="access-card mx-auto max-w-lg" aria-labelledby="signup-title">
-        <a href="/" aria-label="SISLAB, inicio"><img className="mx-auto mb-7 h-14 w-auto" src="/images/logo.svg" alt="SISLAB · Sistema de Laboratorios" /></a>
+        <a className="auth-brand" href="/" aria-label="SISLAB, Sistema de Laboratorios, inicio">
+          <img src="/images/logo.svg" alt="" />
+          <span className="auth-brand-copy"><strong>SISLAB</strong><span>Sistema de Laboratorios</span></span>
+        </a>
         <p className="island-kicker">Acceso a SISLAB</p>
         <h1 id="signup-title" className="mt-2 text-3xl font-bold">{user ? 'Ya tienes una sesión activa' : 'Solicitar acceso'}</h1>
         {user ? <><p className="mt-3">Iniciaste sesión como {user.name} ({user.email}).</p><a className="button-primary mt-5 w-full" href="/app/dashboard">Ir a mi espacio</a></> : <>

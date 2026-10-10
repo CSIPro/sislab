@@ -30,7 +30,10 @@ function SignInPage() {
   return (
     <main className="auth-page">
       <section className="access-card mx-auto max-w-lg" aria-labelledby="signin-title">
-        <a href="/" aria-label="SISLAB, inicio"><img className="mx-auto mb-7 h-14 w-auto" src="/images/logo.svg" alt="SISLAB · Sistema de Laboratorios" /></a>
+        <a className="auth-brand" href="/" aria-label="SISLAB, Sistema de Laboratorios, inicio">
+          <img src="/images/logo.svg" alt="" />
+          <span className="auth-brand-copy"><strong>SISLAB</strong><span>Sistema de Laboratorios</span></span>
+        </a>
         <p className="island-kicker">Tu espacio de trabajo</p>
         <h1 id="signin-title" className="mt-2 text-3xl font-bold">Ingresar a SISLAB</h1>
         <form className="mt-6 grid gap-4" method="post" onSubmit={submit}>

@@ -82,13 +82,19 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .content-card p { margin: 0; color: var(--muted-foreground); }
 .field-label { display: grid; gap: .35rem; font-size: .95rem; font-weight: 700; }
 .field-control { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; padding: .55rem .75rem; background: var(--background); color: var(--foreground); }
-.button-primary, .button-secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: .5rem; border: 1px solid transparent; border-radius: 12px; padding: .65rem 1.2rem; text-align: center; text-decoration: none; cursor: pointer; transition: background-color 150ms, transform 150ms; }
+.button-primary, .button-secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: .5rem; border: 1px solid transparent; border-radius: 12px; padding: .65rem 1.2rem; text-align: center; text-decoration: none; cursor: pointer; font-size: 1.2rem; font-weight: 500; transition: background-color 150ms, transform 150ms; }
 .button-sm { font-size: .875rem; font-weight: 500; }
 .button-primary { background: var(--primary); color: var(--primary-foreground); }
 .button-primary:hover { background: var(--sislab-green-strong); color: var(--primary-foreground); }
 .button-secondary { border-color: var(--border); background: var(--card); color: var(--foreground); }
 .button-secondary:hover { background: var(--muted); color: var(--foreground); }
-.auth-page { min-height: calc(100vh - 8rem); display: grid; align-items: center; padding: 3rem 1rem; background: linear-gradient(135deg, #e6f8f1, var(--background)); }
+.auth-page { min-height: calc(100vh - 8rem); display: grid; align-items: center; padding: 3rem 1rem; background: linear-gradient(rgb(247 250 248 / 78%), rgb(247 250 248 / 78%)), url('/images/background.jpg') center / cover; }
+.dark .auth-page { background-image: linear-gradient(rgb(16 28 25 / 78%), rgb(16 28 25 / 78%)), url('/images/background.jpg'); }
+.auth-brand { display: flex; align-items: center; justify-content: center; gap: .65rem; margin-bottom: 1.75rem; color: var(--primary-text); text-decoration: none; }
+.auth-brand img { width: 3.5rem; height: 3.5rem; }
+.auth-brand-copy { display: grid; line-height: 1.15; }
+.auth-brand-copy strong { font-size: 1.5rem; letter-spacing: .02em; }
+.auth-brand-copy span { margin-top: .2rem; font-size: .8rem; }
 .app-frame { min-height: 100vh; }
 .app-sidebar { position: fixed; z-index: 30; inset: 0 auto 0 0; display: flex; width: 272px; flex-direction: column; padding: 1.25rem; background: #153d32; color: white; }
 .app-brand { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.75rem; color: white; font-size: 1.35rem; font-weight: 700; text-decoration: none; }
