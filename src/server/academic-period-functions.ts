@@ -11,14 +11,14 @@ export const listAcademicPeriodsFn = createServerFn({ method: 'GET' }).handler(
 )
 
 export const saveAcademicPeriodFn = createServerFn({ method: 'POST' })
-	.inputValidator(parsePeriodInput)
+	.validator(parsePeriodInput)
 	.handler(async ({ data }) => {
 		await requireAdmin()
 		return saveAcademicPeriod(db, data)
 	})
 
 export const ensureRegularAcademicPeriodsFn = createServerFn({ method: 'POST' })
-	.inputValidator(parseYearsInput)
+	.validator(parseYearsInput)
 	.handler(async ({ data }) => {
 		await requireAdmin()
 		return ensureRegularAcademicPeriods(db, data.years)

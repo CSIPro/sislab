@@ -1,6 +1,6 @@
 import { asc, inArray } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import * as schema from '../db/schema.ts'
+import type * as schema from '../db/schema.ts'
 import { periods } from '../db/schema.ts'
 import {
 	currentAcademicPeriodCode,

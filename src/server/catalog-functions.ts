@@ -13,37 +13,37 @@ import {
 import { requireRole, requireUser } from './auth.server.ts'
 
 export const listActiveCatalogEntriesFn = createServerFn({ method: 'GET' })
-	.inputValidator(parseKind)
+	.validator(parseKind)
 	.handler(async ({ data }) => {
 		await requireUser()
 		return listActiveCatalogEntries(db, data.kind)
 	})
 
 export const listCatalogEntriesFn = createServerFn({ method: 'GET' })
-	.inputValidator(parseKind)
+	.validator(parseKind)
 	.handler(async ({ data }) => {
 		const actor = await requireAdmin()
 		return listCatalogEntries(db, data.kind, actor)
 	})
 
 export const importCatalogValuesFn = createServerFn({ method: 'POST' })
-	.inputValidator(parseValues)
+	.validator(parseValues)
 	.handler(async ({ data }) => importCatalogValues(db, await requireAdmin(), data))
 
 export const addCatalogEntryFn = createServerFn({ method: 'POST' })
-	.inputValidator(parseEntry)
+	.validator(parseEntry)
 	.handler(async ({ data }) =>
 		addCatalogEntry(db, data.kind, data.name, await requireAdmin()),
 	)
 
 export const renameCatalogEntryFn = createServerFn({ method: 'POST' })
-	.inputValidator(parseEntryId)
+	.validator(parseEntryId)
 	.handler(async ({ data }) =>
 		renameCatalogEntry(db, data.kind, data.id, data.name, await requireAdmin()),
 	)
 
 export const retireCatalogEntryFn = createServerFn({ method: 'POST' })
-	.inputValidator(parseKindId)
+	.validator(parseKindId)
 	.handler(async ({ data }) =>
 		retireCatalogEntry(db, data.kind, data.id, await requireAdmin()),
 	)
