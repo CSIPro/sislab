@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;--> statement-breakpoint
 CREATE TYPE "public"."request_status" AS ENUM('open', 'reviewed', 'fulfilled', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('professor', 'staff', 'admin');--> statement-breakpoint
 CREATE TABLE "careers" (
