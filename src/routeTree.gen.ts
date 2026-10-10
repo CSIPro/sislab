@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
+import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +37,16 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCatalogsRoute = AdminCatalogsRouteImport.update({
+  id: '/admin/catalogs',
+  path: '/admin/catalogs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPeriodsRoute = AdminPeriodsRouteImport.update({
+  id: '/admin/periods',
+  path: '/admin/periods',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -46,6 +58,8 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +67,8 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 export interface FileRoutesById {
@@ -61,19 +77,37 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
+  '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/dashboard' | '/sign-in' | '/demo/tanstack-query'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/sign-in'
+    | '/admin/catalogs'
+    | '/admin/periods'
+    | '/demo/tanstack-query'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/dashboard' | '/sign-in' | '/demo/tanstack-query'
+  to:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/sign-in'
+    | '/admin/catalogs'
+    | '/admin/periods'
+    | '/demo/tanstack-query'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/dashboard'
     | '/sign-in'
+    | '/admin/catalogs'
+    | '/admin/periods'
     | '/demo/tanstack-query'
   fileRoutesById: FileRoutesById
 }
@@ -82,6 +116,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
   SignInRoute: typeof SignInRoute
+  AdminCatalogsRoute: typeof AdminCatalogsRoute
+  AdminPeriodsRoute: typeof AdminPeriodsRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
 }
 
@@ -115,6 +151,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/catalogs': {
+      id: '/admin/catalogs'
+      path: '/admin/catalogs'
+      fullPath: '/admin/catalogs'
+      preLoaderRoute: typeof AdminCatalogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/periods': {
+      id: '/admin/periods'
+      path: '/admin/periods'
+      fullPath: '/admin/periods'
+      preLoaderRoute: typeof AdminPeriodsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -130,6 +180,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
   SignInRoute: SignInRoute,
+  AdminCatalogsRoute: AdminCatalogsRoute,
+  AdminPeriodsRoute: AdminPeriodsRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
 }
 export const routeTree = rootRouteImport
