@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
@@ -19,9 +20,18 @@ import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
 import { Route as AdminGroupsRouteImport } from './routes/admin/groups'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as GroupsManageRouteImport } from './routes/groups.manage'
 import { Route as GroupsNewRouteImport } from './routes/groups.new'
+import { Route as AppAdminAccountsRouteImport } from './routes/app.admin.accounts'
+import { Route as AppAdminCatalogsRouteImport } from './routes/app.admin.catalogs'
+import { Route as AppAdminGroupsRouteImport } from './routes/app.admin.groups'
+import { Route as AppAdminPeriodsRouteImport } from './routes/app.admin.periods'
+import { Route as AppAdminUsersRouteImport } from './routes/app.admin.users'
+import { Route as AppGroupsManageRouteImport } from './routes/app.groups.manage'
+import { Route as AppGroupsNewRouteImport } from './routes/app.groups.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -73,6 +88,16 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -88,10 +113,46 @@ const GroupsNewRoute = GroupsNewRouteImport.update({
   path: '/groups/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppAdminAccountsRoute = AppAdminAccountsRouteImport.update({
+  id: '/admin/accounts',
+  path: '/admin/accounts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminCatalogsRoute = AppAdminCatalogsRouteImport.update({
+  id: '/admin/catalogs',
+  path: '/admin/catalogs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminGroupsRoute = AppAdminGroupsRouteImport.update({
+  id: '/admin/groups',
+  path: '/admin/groups',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminPeriodsRoute = AppAdminPeriodsRouteImport.update({
+  id: '/admin/periods',
+  path: '/admin/periods',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGroupsManageRoute = AppGroupsManageRouteImport.update({
+  id: '/groups/manage',
+  path: '/groups/manage',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGroupsNewRoute = AppGroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/app': typeof AppRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -100,9 +161,18 @@ export interface FileRoutesByFullPath {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/app/dashboard': typeof AppDashboardRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
+  '/app/': typeof AppIndexRoute
+  '/app/admin/accounts': typeof AppAdminAccountsRoute
+  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
+  '/app/admin/groups': typeof AppAdminGroupsRoute
+  '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/users': typeof AppAdminUsersRoute
+  '/app/groups/manage': typeof AppGroupsManageRoute
+  '/app/groups/new': typeof AppGroupsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,14 +185,24 @@ export interface FileRoutesByTo {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/app/dashboard': typeof AppDashboardRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
+  '/app': typeof AppIndexRoute
+  '/app/admin/accounts': typeof AppAdminAccountsRoute
+  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
+  '/app/admin/groups': typeof AppAdminGroupsRoute
+  '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/users': typeof AppAdminUsersRoute
+  '/app/groups/manage': typeof AppGroupsManageRoute
+  '/app/groups/new': typeof AppGroupsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/app': typeof AppRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -131,15 +211,25 @@ export interface FileRoutesById {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/app/dashboard': typeof AppDashboardRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/groups/manage': typeof GroupsManageRoute
   '/groups/new': typeof GroupsNewRoute
+  '/app/': typeof AppIndexRoute
+  '/app/admin/accounts': typeof AppAdminAccountsRoute
+  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
+  '/app/admin/groups': typeof AppAdminGroupsRoute
+  '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/users': typeof AppAdminUsersRoute
+  '/app/groups/manage': typeof AppGroupsManageRoute
+  '/app/groups/new': typeof AppGroupsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/app'
     | '/dashboard'
     | '/sign-in'
     | '/sign-up'
@@ -148,9 +238,18 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
+    | '/app/dashboard'
     | '/demo/tanstack-query'
     | '/groups/manage'
     | '/groups/new'
+    | '/app/'
+    | '/app/admin/accounts'
+    | '/app/admin/catalogs'
+    | '/app/admin/groups'
+    | '/app/admin/periods'
+    | '/app/admin/users'
+    | '/app/groups/manage'
+    | '/app/groups/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -163,13 +262,23 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
+    | '/app/dashboard'
     | '/demo/tanstack-query'
     | '/groups/manage'
     | '/groups/new'
+    | '/app'
+    | '/app/admin/accounts'
+    | '/app/admin/catalogs'
+    | '/app/admin/groups'
+    | '/app/admin/periods'
+    | '/app/admin/users'
+    | '/app/groups/manage'
+    | '/app/groups/new'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/app'
     | '/dashboard'
     | '/sign-in'
     | '/sign-up'
@@ -178,14 +287,24 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/periods'
     | '/admin/users'
+    | '/app/dashboard'
     | '/demo/tanstack-query'
     | '/groups/manage'
     | '/groups/new'
+    | '/app/'
+    | '/app/admin/accounts'
+    | '/app/admin/catalogs'
+    | '/app/admin/groups'
+    | '/app/admin/periods'
+    | '/app/admin/users'
+    | '/app/groups/manage'
+    | '/app/groups/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AppRoute: typeof AppRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -213,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -271,6 +397,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/dashboard': {
+      id: '/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -292,12 +432,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/admin/accounts': {
+      id: '/app/admin/accounts'
+      path: '/admin/accounts'
+      fullPath: '/app/admin/accounts'
+      preLoaderRoute: typeof AppAdminAccountsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/catalogs': {
+      id: '/app/admin/catalogs'
+      path: '/admin/catalogs'
+      fullPath: '/app/admin/catalogs'
+      preLoaderRoute: typeof AppAdminCatalogsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/groups': {
+      id: '/app/admin/groups'
+      path: '/admin/groups'
+      fullPath: '/app/admin/groups'
+      preLoaderRoute: typeof AppAdminGroupsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/periods': {
+      id: '/app/admin/periods'
+      path: '/admin/periods'
+      fullPath: '/app/admin/periods'
+      preLoaderRoute: typeof AppAdminPeriodsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/users': {
+      id: '/app/admin/users'
+      path: '/admin/users'
+      fullPath: '/app/admin/users'
+      preLoaderRoute: typeof AppAdminUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/groups/manage': {
+      id: '/app/groups/manage'
+      path: '/groups/manage'
+      fullPath: '/app/groups/manage'
+      preLoaderRoute: typeof AppGroupsManageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/groups/new': {
+      id: '/app/groups/new'
+      path: '/groups/new'
+      fullPath: '/app/groups/new'
+      preLoaderRoute: typeof AppGroupsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
+
+interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppAdminAccountsRoute: typeof AppAdminAccountsRoute
+  AppAdminCatalogsRoute: typeof AppAdminCatalogsRoute
+  AppAdminGroupsRoute: typeof AppAdminGroupsRoute
+  AppAdminPeriodsRoute: typeof AppAdminPeriodsRoute
+  AppAdminUsersRoute: typeof AppAdminUsersRoute
+  AppGroupsManageRoute: typeof AppGroupsManageRoute
+  AppGroupsNewRoute: typeof AppGroupsNewRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppAdminAccountsRoute: AppAdminAccountsRoute,
+  AppAdminCatalogsRoute: AppAdminCatalogsRoute,
+  AppAdminGroupsRoute: AppAdminGroupsRoute,
+  AppAdminPeriodsRoute: AppAdminPeriodsRoute,
+  AppAdminUsersRoute: AppAdminUsersRoute,
+  AppGroupsManageRoute: AppGroupsManageRoute,
+  AppGroupsNewRoute: AppGroupsNewRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AppRoute: AppRouteWithChildren,
   DashboardRoute: DashboardRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,

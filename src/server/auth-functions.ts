@@ -26,7 +26,7 @@ export const signInFn = createServerFn({ method: 'POST' })
 	.validator(validateSignInInput)
 	.handler(async ({ data }) => {
 		const session = await firstUsableOperations.signIn(data)
-		if (!session) return { ok: false as const, message: 'Email or password is incorrect.' }
+		if (!session) return { ok: false as const, message: 'El correo o la contraseña no son correctos.' }
 
 		const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000)
 		setResponseHeader('Set-Cookie', sessionCookie(session.token, maxAge))

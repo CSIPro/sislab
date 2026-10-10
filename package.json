@@ -19,6 +19,7 @@
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "test:integration": "tsx --test src/server/*.integration.test.ts test/*.integration.test.ts",
+    "test:browser": "playwright test",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",
