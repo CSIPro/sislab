@@ -38,6 +38,9 @@ function DashboardPage() {
 						<Link className="font-semibold underline" to="/admin/accounts">
 							Review pending professor accounts
 						</Link>
+						<Link className="font-semibold underline" to="/admin/groups">
+							Manage professor groups
+						</Link>
 					</div>
 				)}
 				<form
