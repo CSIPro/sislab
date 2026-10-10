@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { weekdays } from "../lib/weekdays.ts";
 import {
 	deactivateAnyGroupFn,
 	getAdminGroupOptionsFn,
@@ -23,16 +24,6 @@ export const Route = createFileRoute("/app/admin/groups")({
 	},
 	component: AdminGroupsPage,
 });
-
-const weekdays = [
-	"Domingo",
-	"Lunes",
-	"Martes",
-	"Miércoles",
-	"Jueves",
-	"Viernes",
-	"Sábado",
-];
 
 function AdminGroupsPage() {
 	const { groups: initialGroups, options } = Route.useLoaderData();

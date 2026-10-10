@@ -22,7 +22,7 @@ export default defineConfig({
 		trace: 'retain-on-failure',
 	},
 	webServer: {
-		command: `.\\node_modules\\.bin\\vite.cmd dev --host 127.0.0.1 --port ${port} --strictPort`,
+		command: `pnpm exec vite dev --host 127.0.0.1 --port ${port} --strictPort`,
 		url: `http://127.0.0.1:${port}`,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000,

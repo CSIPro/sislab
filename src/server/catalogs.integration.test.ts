@@ -35,9 +35,9 @@ test('admin catalog operations are repeatable and preserve historical labels', {
 	await pool.query(`CREATE SCHEMA "${schemaName}"`)
 	schemaCreated = true
 	await pool.query(`SET search_path TO "${schemaName}"`)
-	await pool.query('CREATE TABLE labs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
-	await pool.query('CREATE TABLE careers (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
-	await pool.query('CREATE TABLE subjects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
+	await pool.query('CREATE TABLE labs (id uuid PRIMARY KEY DEFAULT public.gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
+	await pool.query('CREATE TABLE careers (id uuid PRIMARY KEY DEFAULT public.gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
+	await pool.query('CREATE TABLE subjects (id uuid PRIMARY KEY DEFAULT public.gen_random_uuid(), name text NOT NULL UNIQUE, active boolean NOT NULL DEFAULT true)')
 	await pool.query('CREATE TABLE historical_group_labels (lab_name text NOT NULL)')
 
 	const admin = { roles: ['admin'] }

@@ -110,7 +110,7 @@ test('manual numbers must be positive, remain reserved when inactive, and alloca
 		assert.deepEqual(allocated.map(({ number }) => number).sort((a, b) => a - b), [5, 6])
 		await assert.rejects(
 			registerProfessorGroup(database, f.actor, groupInput(f, { number: 4, weekday: 3 })),
-			/already used/i,
+			/already been used/i,
 		)
 	} finally {
 		await f.clean()
@@ -127,7 +127,7 @@ test('registration validates counts, weekday, and ordered times', async () => {
 			{ weekday: 7 },
 			{ startTime: '10:00', endTime: '10:00' },
 		]) {
-			await assert.rejects(registerProfessorGroup(database, f.actor, groupInput(f, input)), /students|teams|weekday|end time/i)
+			await assert.rejects(registerProfessorGroup(database, f.actor, groupInput(f, input)), /student|team|weekday|end time/i)
 		}
 	} finally {
 		await f.clean()
@@ -265,14 +265,14 @@ test('group updates keep numbers reserved and validate edits without replacing s
 		assert.equal(corrected.students, 16)
 		await assert.rejects(
 			updateProfessorGroup(database, f.actor, group.id, groupInput(f, { students: 61 })),
-			/students/i,
+			/student/i,
 		)
 		await deactivateProfessorGroup(database, f.actor, group.id)
 		const next = await registerProfessorGroup(database, f.actor, groupInput(f, { labId: f.otherLab.id }))
 		assert.equal(next.number, 2)
 		await assert.rejects(
 			updateProfessorGroup(database, f.actor, next.id, groupInput(f, { labId: f.otherLab.id, number: 1, weekday: 2 })),
-			/already used/i,
+			/already been used/i,
 		)
 	} finally {
 		await f.clean()

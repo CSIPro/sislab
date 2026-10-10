@@ -54,7 +54,7 @@ test('professor signup remains pending until an admin activates the account', as
 			surname: 'Professor',
 			password: 'another supplied long secret',
 		}),
-		/already registered/i,
+		/already uses this email/i,
 	)
 
 	const activated = await activatePendingAccount(database, pending.id, { roles: ['admin'] })

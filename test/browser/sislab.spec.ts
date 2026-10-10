@@ -104,7 +104,17 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await signIn(page, professor.email)
 	await expect(page.getByRole('heading', { name: `Hola, ${professor.name}` })).toBeVisible()
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Registrar grupo' })).toBeVisible()
+	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Inicio' })).toHaveAttribute('aria-current', 'page')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Catálogos' })).toHaveCount(0)
+	for (const [legacy, canonical] of [
+		['/dashboard', '/app/dashboard'],
+		['/groups/new', '/app/groups/new'],
+		['/groups/manage', '/app/groups/manage'],
+		['/about', '/'],
+	] as const) {
+		await page.goto(legacy)
+		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
+	}
 
 	await page.goto('/')
 	await expect(page.getByText('Sesión activa')).toBeVisible()
@@ -154,6 +164,16 @@ test('staff and mixed-role navigation follows the account roles', async ({ page 
 
 test('admin activates a requested account and can sign in as that account', async ({ page }) => {
 	await signIn(page, admin.email)
+	for (const [legacy, canonical] of [
+		['/admin/users', '/app/admin/users'],
+		['/admin/accounts', '/app/admin/accounts'],
+		['/admin/groups', '/app/admin/groups'],
+		['/admin/periods', '/app/admin/periods'],
+		['/admin/catalogs', '/app/admin/catalogs'],
+	] as const) {
+		await page.goto(legacy)
+		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
+	}
 	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Solicitudes de acceso' }).click()
 	await page.waitForLoadState('networkidle')
 	const request = page.locator('li').filter({ hasText: pendingEmail })

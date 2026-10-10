@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { weekdays } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	getProfessorGroupOptionsFn,
@@ -16,16 +17,6 @@ export const Route = createFileRoute("/app/groups/new")({
 	},
 	component: NewGroupPage,
 });
-
-const weekdays = [
-	"Domingo",
-	"Lunes",
-	"Martes",
-	"Miércoles",
-	"Jueves",
-	"Viernes",
-	"Sábado",
-];
 
 function NewGroupPage() {
 	const options = Route.useLoaderData();

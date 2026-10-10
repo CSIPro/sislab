@@ -8,7 +8,7 @@
 :root {
   --sislab-green: #00c795;
   --sislab-green-strong: #00a97e;
-  --sislab-ink: #173a35;
+  --sislab-ink: #363537;
   --background: #f7faf8;
   --foreground: #18342e;
   --card: #fff;
@@ -67,6 +67,7 @@ body { margin: 0; color: var(--foreground); background: var(--background); font-
 a { color: var(--primary-text); text-underline-offset: 3px; }
 a:hover { color: var(--sislab-green-strong); }
 button, input, select, textarea { font: inherit; }
+button { font-size: 1.2rem; font-weight: 500; }
 :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 button:disabled { cursor: not-allowed; opacity: .6; }
 .page-wrap { width: min(1120px, calc(100% - 2rem)); margin-inline: auto; }
@@ -81,7 +82,8 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .content-card p { margin: 0; color: var(--muted-foreground); }
 .field-label { display: grid; gap: .35rem; font-size: .95rem; font-weight: 700; }
 .field-control { width: 100%; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; padding: .55rem .75rem; background: var(--background); color: var(--foreground); }
-.button-primary, .button-secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: .5rem; border: 1px solid transparent; border-radius: 12px; padding: .65rem 1.2rem; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; transition: background-color 150ms, transform 150ms; }
+.button-primary, .button-secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: .5rem; border: 1px solid transparent; border-radius: 12px; padding: .65rem 1.2rem; text-align: center; text-decoration: none; cursor: pointer; transition: background-color 150ms, transform 150ms; }
+.button-sm { font-size: .875rem; font-weight: 500; }
 .button-primary { background: var(--primary); color: var(--primary-foreground); }
 .button-primary:hover { background: var(--sislab-green-strong); color: var(--primary-foreground); }
 .button-secondary { border-color: var(--border); background: var(--card); color: var(--foreground); }
@@ -95,9 +97,10 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .sidebar-nav { display: grid; align-content: start; gap: .25rem; }
 .sidebar-nav a, .sidebar-bottom a, .sidebar-signout { display: block; border: 0; border-radius: 12px; padding: .65rem .75rem; background: transparent; color: white; text-align: left; text-decoration: none; }
 .sidebar-nav a:hover, .sidebar-nav a:focus-visible, .sidebar-bottom a:hover, .sidebar-signout:hover { background: rgb(255 255 255 / 12%); color: white; }
+.sidebar-nav a[aria-current='page'] { background: var(--primary); color: var(--primary-foreground); }
 .sidebar-bottom { display: grid; gap: .35rem; margin-top: auto; border-top: 1px solid rgb(255 255 255 / 20%); padding-top: 1rem; }
 .sidebar-user { padding: .5rem .75rem; font-weight: 700; }
-.sidebar-signout { cursor: pointer; font: inherit; }
+.sidebar-signout { cursor: pointer; font: inherit; font-size: 1.2rem; font-weight: 500; }
 .app-content { min-height: 100vh; margin-left: 272px; padding: 2rem; }
 .app-menu-button { display: none; }
 .sidebar-backdrop { display: none; }
@@ -107,7 +110,7 @@ table { font-variant-numeric: tabular-nums; }
 tbody td, thead th { font-family: var(--font-mono); }
 
 @media (max-width: 760px) {
-  .app-menu-button { position: fixed; z-index: 45; top: .75rem; left: .75rem; display: inline-flex; min-height: 44px; align-items: center; gap: .5rem; border: 1px solid var(--border); border-radius: 12px; padding: .5rem .8rem; background: var(--card); color: var(--foreground); font-weight: 700; }
+  .app-menu-button { position: fixed; z-index: 45; top: .75rem; left: .75rem; display: inline-flex; min-height: 44px; align-items: center; gap: .5rem; border: 1px solid var(--border); border-radius: 12px; padding: .5rem .8rem; background: var(--card); color: var(--foreground); font-weight: 500; }
   .app-sidebar { z-index: 50; visibility: hidden; transform: translateX(-105%); transition: transform 180ms ease; }
   .app-sidebar.is-open { visibility: visible; transform: translateX(0); }
   .sidebar-backdrop { position: fixed; z-index: 40; inset: 0; display: block; border: 0; background: rgb(0 0 0 / 45%); }

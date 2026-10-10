@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { getCurrentSessionFn, signOutFn } from '../server/auth-functions.ts'
 
@@ -13,6 +13,7 @@ export const Route = createFileRoute('/app')({
 
 function AppLayout() {
   const { user } = Route.useRouteContext()
+  const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
@@ -70,18 +71,18 @@ function AppLayout() {
         <a className="app-brand" href="/app/dashboard"><img src="/images/logowhite.svg" alt="" /> SISLAB</a>
         <p className="sidebar-caption">Espacio de trabajo</p>
         <nav aria-label="Navegación principal" className="sidebar-nav">
-          <a href="/app/dashboard" onClick={closeMenu}>Inicio</a>
+          <a aria-current={pathname === '/app/dashboard' ? 'page' : undefined} href="/app/dashboard" onClick={closeMenu}>Inicio</a>
           {user.roles.includes('professor') && <>
-            <a href="/app/groups/new" onClick={closeMenu}>Registrar grupo</a>
-            <a href="/app/groups/manage" onClick={closeMenu}>Mis grupos</a>
+            <a aria-current={pathname === '/app/groups/new' ? 'page' : undefined} href="/app/groups/new" onClick={closeMenu}>Registrar grupo</a>
+            <a aria-current={pathname === '/app/groups/manage' ? 'page' : undefined} href="/app/groups/manage" onClick={closeMenu}>Mis grupos</a>
           </>}
           {user.roles.includes('admin') && <>
             <p className="sidebar-caption">Administración</p>
-            <a href="/app/admin/users" onClick={closeMenu}>Usuarios</a>
-            <a href="/app/admin/accounts" onClick={closeMenu}>Solicitudes de acceso</a>
-            <a href="/app/admin/groups" onClick={closeMenu}>Grupos</a>
-            <a href="/app/admin/periods" onClick={closeMenu}>Periodos académicos</a>
-            <a href="/app/admin/catalogs" onClick={closeMenu}>Catálogos</a>
+            <a aria-current={pathname === '/app/admin/users' ? 'page' : undefined} href="/app/admin/users" onClick={closeMenu}>Usuarios</a>
+            <a aria-current={pathname === '/app/admin/accounts' ? 'page' : undefined} href="/app/admin/accounts" onClick={closeMenu}>Solicitudes de acceso</a>
+            <a aria-current={pathname === '/app/admin/groups' ? 'page' : undefined} href="/app/admin/groups" onClick={closeMenu}>Grupos</a>
+            <a aria-current={pathname === '/app/admin/periods' ? 'page' : undefined} href="/app/admin/periods" onClick={closeMenu}>Periodos académicos</a>
+            <a aria-current={pathname === '/app/admin/catalogs' ? 'page' : undefined} href="/app/admin/catalogs" onClick={closeMenu}>Catálogos</a>
           </>}
         </nav>
         <div className="sidebar-bottom">

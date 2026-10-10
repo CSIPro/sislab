@@ -13,7 +13,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
           <a className="text-sm font-semibold text-primary-text" href="#que-es-sislab">Conoce SISLAB</a>
-          <Link className="button-primary !min-h-10 !px-4 !py-2 !text-sm" to="/sign-in">Ingresar</Link>
+          <Link className="button-primary button-sm !min-h-10 !px-4 !py-2" to="/sign-in">Ingresar</Link>
         </div>
       </nav>
     </header>

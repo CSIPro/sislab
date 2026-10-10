@@ -37,7 +37,7 @@ function SignInPage() {
           <label className="field-label">Correo electrónico<input className="field-control" name="email" type="email" autoComplete="username" required /></label>
           <label className="field-label">Contraseña<input className="field-control" name="password" type="password" autoComplete="current-password" required /></label>
           {message && <p className="m-0 text-sm text-destructive" role="alert">{message}</p>}
-          <button className="button-primary w-full" type="submit" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
+          <button className="button-primary button-sm w-full" type="submit" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
         </form>
         <p className="mt-5 text-sm text-[var(--muted-foreground)]">¿No tienes acceso? <a className="font-bold text-primary-text underline" href="/sign-up">Solicitar acceso</a></p>
       </section>
