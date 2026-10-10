@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminCatalogsRouteImport } from './routes/admin/catalogs'
 import { Route as AdminPeriodsRouteImport } from './routes/admin/periods'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCatalogsRoute = AdminCatalogsRouteImport.update({
+  id: '/admin/catalogs',
+  path: '/admin/catalogs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPeriodsRoute = AdminPeriodsRouteImport.update({
@@ -38,12 +44,14 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
@@ -51,20 +59,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin/catalogs': typeof AdminCatalogsRoute
   '/admin/periods': typeof AdminPeriodsRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/admin/periods' | '/demo/tanstack-query'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/admin/catalogs'
+    | '/admin/periods'
+    | '/demo/tanstack-query'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/admin/periods' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/about' | '/admin/periods' | '/demo/tanstack-query'
+  to:
+    | '/'
+    | '/about'
+    | '/admin/catalogs'
+    | '/admin/periods'
+    | '/demo/tanstack-query'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/admin/catalogs'
+    | '/admin/periods'
+    | '/demo/tanstack-query'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminCatalogsRoute: typeof AdminCatalogsRoute
   AdminPeriodsRoute: typeof AdminPeriodsRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
 }
@@ -83,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/catalogs': {
+      id: '/admin/catalogs'
+      path: '/admin/catalogs'
+      fullPath: '/admin/catalogs'
+      preLoaderRoute: typeof AdminCatalogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/periods': {
@@ -105,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminCatalogsRoute: AdminCatalogsRoute,
   AdminPeriodsRoute: AdminPeriodsRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
 }
