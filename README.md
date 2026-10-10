@@ -9,6 +9,35 @@ pnpm install
 pnpm dev
 ```
 
+## First admin and sign-in
+
+Apply database migrations before starting the app:
+
+```bash
+pnpm db:migrate
+```
+
+In a trusted deployment shell, provide `DATABASE_URL`, a configured
+`SISLAB_BOOTSTRAP_SECRET`, and the matching operator-supplied
+`BOOTSTRAP_ADMIN_SECRET`. Also supply `BOOTSTRAP_ADMIN_EMAIL`,
+`BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_SURNAME`, and
+`BOOTSTRAP_ADMIN_PASSWORD` through the deployment's secret mechanism. Then
+run:
+
+```bash
+pnpm admin:bootstrap
+```
+
+The command has no HTTP endpoint, requires a password of at least 12
+characters, and refuses to run once an admin role exists. No password or
+bootstrap secret is stored in the repository. Use `/sign-in` to authenticate;
+sessions are stored as token hashes and expire after 12 hours.
+
+To verify authentication against PostgreSQL, create a dedicated empty test
+database, apply migrations to it, set `DATABASE_URL_TEST` to its connection
+string, and run `pnpm test:integration`. The integration test provisions and
+removes its own admin account; do not point it at production data.
+
 # Building For Production
 
 To build this application for production:
