@@ -1,7 +1,14 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
-import { careers, groups, labs, periods, preparationRequests, subjects } from "../db/schema.ts";
+import {
+	careers,
+	groups,
+	labs,
+	periods,
+	preparationRequests,
+	subjects,
+} from "../db/schema.ts";
 
 export type GroupDatabase = NodePgDatabase<typeof schema>;
 export type GroupActor = { id: string; roles: readonly string[] };
@@ -184,13 +191,19 @@ export async function updateProfessorGroup(
 				.for("update")
 				.limit(1);
 			if (!current) throw new Error("That group was not found.");
-			const changesPreparation = current.labId !== normalized.labId ||
+			const changesPreparation =
+				current.labId !== normalized.labId ||
 				current.weekday !== normalized.weekday ||
 				current.startTime !== normalized.startTime ||
 				current.endTime !== normalized.endTime ||
 				current.teams !== normalized.teams;
-			if (changesPreparation && await hasFutureRequest(transaction, current.id)) {
-				throw new Error("This group has a future preparation request. Its lab, schedule, and team count are locked until the request is voided or its session date passes.");
+			if (
+				changesPreparation &&
+				(await hasFutureRequest(transaction, current.id))
+			) {
+				throw new Error(
+					"This group has a future preparation request. Its lab, schedule, and team count are locked until the request is voided or its session date passes.",
+				);
 			}
 
 			for (const periodCode of [
@@ -275,15 +288,23 @@ export async function deactivateProfessorGroup(
 ): Promise<typeof groups.$inferSelect> {
 	requireProfessor(actor);
 	return database.transaction(async (transaction) => {
-		const [current] = await transaction.select().from(groups)
+		const [current] = await transaction
+			.select()
+			.from(groups)
 			.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
-			.for("update").limit(1);
+			.for("update")
+			.limit(1);
 		if (!current) throw new Error("That group was not found.");
 		if (await hasFutureRequest(transaction, current.id)) {
-			throw new Error("This group has a future preparation request. It cannot be deactivated until the request is voided or its session date passes.");
+			throw new Error(
+				"This group has a future preparation request. It cannot be deactivated until the request is voided or its session date passes.",
+			);
 		}
-		const [deactivated] = await transaction.update(groups).set({ active: false })
-			.where(eq(groups.id, current.id)).returning();
+		const [deactivated] = await transaction
+			.update(groups)
+			.set({ active: false })
+			.where(eq(groups.id, current.id))
+			.returning();
 		if (!deactivated) throw new Error("That group was not found.");
 		return deactivated;
 	});
@@ -347,14 +368,26 @@ async function hasFutureRequest(
 	database: Pick<GroupDatabase, "select">,
 	groupId: string,
 ): Promise<boolean> {
-	const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Hermosillo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-	const [request] = await database.select({ id: preparationRequests.id })
+	const parts = new Intl.DateTimeFormat("en-US", {
+		timeZone: "America/Hermosillo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(new Date());
+	const dateParts = Object.fromEntries(
+		parts.map((part) => [part.type, part.value]),
+	);
+	const today = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+	const [request] = await database
+		.select({ id: preparationRequests.id })
 		.from(preparationRequests)
-		.where(and(
-			eq(preparationRequests.groupId, groupId),
-			gte(preparationRequests.sessionDate, today),
-			sql`${preparationRequests.status} <> 'voided'`,
-		))
+		.where(
+			and(
+				eq(preparationRequests.groupId, groupId),
+				gte(preparationRequests.sessionDate, today),
+				sql`${preparationRequests.status} <> 'voided'`,
+			),
+		)
 		.limit(1);
 	return !!request;
 }
