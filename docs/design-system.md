@@ -48,7 +48,7 @@ Every primitive is a shadcn/ui component from `src/components/ui`. Do not write 
 - **Input and Textarea**. `variant="outline"` is the 44px outlined field. `variant="filled"` is the 48px grey field used on the access card and for textareas.
 - **Field** (`ui/field.tsx`). Wrap each control in `Field` with a `FieldLabel` and, when needed, a `FieldDescription`. Group related checkboxes in `FieldSet` with a `FieldLegend`.
 - **Checkbox, RadioGroup, ToggleGroup, Tabs**. A two-way switch such as Día/Semana is a `ToggleGroup` with `type="single"` and `variant="outline"`.
-- **Dates** use `DatePicker` (`ui/date-picker.tsx`), a Popover with the shadcn Calendar in Spanish. It reads and writes `YYYY-MM-DD` text. Pass `isDateDisabled` to block dates, `clearable` for optional dates, and `trigger` to open it from your own Button.
+- **Dates** use `DatePicker` (`ui/date-picker.tsx`), a Popover with the shadcn Calendar in Spanish. It reads and writes `YYYY-MM-DD` text. Pass `isDateDisabled` to block dates, `clearable` for optional dates, and `trigger` to open it from your own Button. `markedDates` puts a dot under the dates you list, `markedLabel` says what the dot means to screen readers, and `onMonthChange` tells you which month to load marks for.
 - **Times** use `TimePicker` (`ui/time-picker.tsx`). shadcn has no clock component, so this is the shadcn Input in time mode.
 - **Lists that come from data** (prácticas, periods, labs, careers, subjects) use `Combobox` (`ui/combobox.tsx`), so the person can type to filter. The search ignores accents and case.
 - **Fixed lists** (status, role, weekday, quantity basis) use `OptionSelect` (`components/option-select.tsx`), which wraps the shadcn Select.

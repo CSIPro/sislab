@@ -60,6 +60,7 @@ import {
 	decideLateExceptionFn,
 	getDailyTicketRequestsFn,
 	listAllPreparationRequestsFn,
+	listRequestDatesFn,
 	voidPreparationRequestFn,
 } from "../server/preparation-request-functions.ts";
 import type { RequestListRow } from "../server/preparation-requests.ts";
@@ -108,6 +109,8 @@ function AllPreparationRequestsPage() {
 	const [date, setDate] = useState(initial.today);
 	const latestDate = useRef(date);
 	const latestLoad = useRef(0);
+	const [requestDates, setRequestDates] = useState<string[]>([]);
+	const latestDatesLoad = useRef(0);
 	const [range, setRange] = useState<Range>("week");
 	const [labFilter, setLabFilter] = useState("all");
 	const [statusFilter, setStatusFilter] = useState("all");
@@ -167,6 +170,19 @@ function AllPreparationRequestsPage() {
 			setMessage(
 				userFacingError(error, "No se pudieron cargar las solicitudes."),
 			);
+		}
+	}
+
+	async function loadRequestDates(month: string) {
+		const loadId = ++latestDatesLoad.current;
+		try {
+			// The calendar also shows up to six days of the months on either side.
+			const dates = await listRequestDatesFn({
+				data: { fromDate: addDays(month, -6), throughDate: addDays(month, 36) },
+			});
+			if (loadId === latestDatesLoad.current) setRequestDates(dates);
+		} catch {
+			// The marks are a hint. The calendar still picks dates without them.
 		}
 	}
 
@@ -285,6 +301,9 @@ function AllPreparationRequestsPage() {
 					<DatePicker
 						aria-label="Fecha"
 						className="w-auto min-w-36"
+						markedDates={requestDates}
+						markedLabel="con solicitudes"
+						onMonthChange={loadRequestDates}
 						onValueChange={(value) => show(value, range)}
 						value={date}
 					/>

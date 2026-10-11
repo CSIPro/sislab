@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 import { Pool } from 'pg'
+import { sislabToday } from '../../src/lib/session-dates.ts'
 import { hashPassword } from '../../src/server/auth.server.ts'
 
 const suffix = randomUUID()
@@ -185,6 +186,45 @@ test('staff picks a day from the week strip and it becomes the selected date', a
 	await page.getByRole('radio', { name: 'Día' }).click()
 	await expect(page.getByText(new RegExp(`^${otherDayName} de \\d{4}`, 'i'))).toBeVisible()
 	await expect(week.getByRole('button')).toHaveCount(7)
+})
+
+test('staff sees the days with requests marked in the date picker', async ({ page }) => {
+	const group = await pool.query(
+		'SELECT g.id, g.professor_id, g.lab_id, g.lab_name FROM groups g JOIN users u ON u.id = g.professor_id WHERE u.email = $1',
+		[professor.email],
+	)
+	const { id: groupId, professor_id: professorId, lab_id: labId, lab_name: groupLabName } = group.rows[0]
+	const materials = { reagents: [], equipment: [], waste: [] }
+	const exercise = await pool.query(
+		'INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id',
+		['1', `Browser Exercise ${suffix}`, materials],
+	)
+	const exerciseId = exercise.rows[0].id as string
+	await pool.query(
+		`INSERT INTO preparation_requests
+			(group_id, professor_id, exercise_id, exercise_number, exercise_name, session_date, lab_id, lab_name, start_time, end_time, materials)
+		VALUES ($1, $2, $3, '1', $4, $5, $6, $7, '08:00', '10:00', $8)`,
+		[
+			groupId,
+			professorId,
+			exerciseId,
+			`Browser Exercise ${suffix}`,
+			sislabToday(),
+			labId,
+			groupLabName,
+			{ ...materials, omittedReagents: [], addedReagents: [], addedEquipment: [], addedWaste: [] },
+		],
+	)
+	try {
+		await signIn(page, staff.email)
+		await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Todas las solicitudes' }).click()
+		await page.getByRole('button', { name: /^Fecha:/ }).click()
+		const calendar = page.getByRole('dialog')
+		await expect(calendar.getByRole('button', { name: /seleccionado/ })).toHaveAccessibleName(/, con solicitudes$/)
+	} finally {
+		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
 })
 
 test('staff and mixed-role navigation follows the account roles', async ({ page }) => {

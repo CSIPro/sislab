@@ -1,5 +1,6 @@
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
+import { labelDayButton } from "react-day-picker";
 import { es } from "react-day-picker/locale";
 import { Button } from "#/components/ui/button.tsx";
 import { Calendar } from "#/components/ui/calendar.tsx";
@@ -24,6 +25,10 @@ function toValue(date: Date) {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+const spanishDayLabel = es.labels?.labelDayButton;
+const dayLabel =
+	typeof spanishDayLabel === "function" ? spanishDayLabel : labelDayButton;
+
 const labelFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" });
 
 function DatePicker({
@@ -36,6 +41,9 @@ function DatePicker({
 	min,
 	max,
 	clearable = false,
+	markedDates,
+	markedLabel,
+	onMonthChange,
 	footer,
 	trigger,
 	fieldVariant,
@@ -58,6 +66,12 @@ function DatePicker({
 	max?: string;
 	/** Lets the person remove the date. Use it for optional dates. */
 	clearable?: boolean;
+	/** Dates to mark with a dot, as YYYY-MM-DD. */
+	markedDates?: string[];
+	/** What a marked date means, for screen readers. It follows the date. */
+	markedLabel?: string;
+	/** Receives the first day of the month on show, on open and on each change. */
+	onMonthChange?: (month: string) => void;
 	footer?: React.ReactNode;
 	/** A Button to open the calendar with, in place of the field-like trigger. */
 	trigger?: React.ReactElement;
@@ -67,6 +81,15 @@ function DatePicker({
 	const [ownValue, setOwnValue] = React.useState(defaultValue);
 	const value = controlledValue ?? ownValue;
 	const selected = value ? toDate(value) : undefined;
+	const openingMonth = selected ?? (min ? toDate(min) : undefined);
+
+	function changeOpen(next: boolean) {
+		setOpen(next);
+		if (next) {
+			const shown = openingMonth ?? new Date();
+			onMonthChange?.(toValue(new Date(shown.getFullYear(), shown.getMonth())));
+		}
+	}
 
 	function choose(next: string) {
 		setOwnValue(next);
@@ -75,7 +98,7 @@ function DatePicker({
 	}
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover open={open} onOpenChange={changeOpen}>
 			<PopoverTrigger asChild>
 				{trigger ?? (
 					<PickerTrigger
@@ -101,7 +124,7 @@ function DatePicker({
 			<PopoverContent align="start" className="w-auto rounded-lg p-0">
 				<Calendar
 					className="[--cell-size:--spacing(10)]"
-					defaultMonth={selected ?? (min ? toDate(min) : undefined)}
+					defaultMonth={openingMonth}
 					disabled={(date) => {
 						const day = toValue(date);
 						return (
@@ -111,8 +134,22 @@ function DatePicker({
 						);
 					}}
 					endMonth={max ? toDate(max) : undefined}
+					labels={{
+						labelDayButton: (date, modifiers, ...rest) => {
+							const label = dayLabel(date, modifiers, ...rest);
+							return modifiers.marked && markedLabel
+								? `${label}, ${markedLabel}`
+								: label;
+						},
+					}}
 					locale={es}
 					mode="single"
+					modifiers={{ marked: markedDates?.map(toDate) ?? [] }}
+					modifiersClassNames={{
+						marked:
+							"after:pointer-events-none after:absolute after:bottom-1 after:left-1/2 after:z-20 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-primary-text data-[selected=true]:after:bg-primary-foreground [&_button]:font-bold",
+					}}
+					onMonthChange={(month) => onMonthChange?.(toValue(month))}
 					onSelect={(date) => {
 						if (date) choose(toValue(date));
 					}}

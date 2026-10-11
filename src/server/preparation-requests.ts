@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, ne, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../db/schema.ts";
@@ -154,6 +154,34 @@ export async function listAllPreparationRequests(
 			asc(preparationRequests.sessionDate),
 			asc(preparationRequests.startTime),
 		);
+}
+
+/**
+ * The dates in the range with at least one request that still counts, in order.
+ * Voided requests and declined late exceptions do not count, as in the week strip.
+ */
+export async function listRequestDates(
+	database: Database,
+	actor: RequestActor,
+	fromDate: string,
+	throughDate: string,
+): Promise<string[]> {
+	requireStaff(actor);
+	if (!isDate(fromDate) || !isDate(throughDate) || fromDate > throughDate)
+		throw new Error("Choose a valid date range.");
+	const rows = await database
+		.selectDistinct({ date: preparationRequests.sessionDate })
+		.from(preparationRequests)
+		.where(
+			and(
+				gte(preparationRequests.sessionDate, fromDate),
+				lte(preparationRequests.sessionDate, throughDate),
+				ne(preparationRequests.status, "voided"),
+				isNull(preparationRequests.lateDeclinedAt),
+			),
+		)
+		.orderBy(asc(preparationRequests.sessionDate));
+	return rows.map((row) => row.date);
 }
 
 export async function submitPreparationRequest(

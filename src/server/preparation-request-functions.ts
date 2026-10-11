@@ -8,6 +8,7 @@ import {
 	getPreparationRequestOptions,
 	listAllPreparationRequests,
 	listMyPreparationRequests,
+	listRequestDates,
 	type RequestCustomization,
 	submitPreparationRequest,
 	updateMinimumNoticeDays,
@@ -55,6 +56,23 @@ export const listAllPreparationRequestsFn = createServerFn({ method: "GET" })
 	})
 	.handler(async ({ data }) =>
 		listAllPreparationRequests(
+			db,
+			await requireRole("staff"),
+			data.fromDate,
+			data.throughDate,
+		),
+	);
+
+export const listRequestDatesFn = createServerFn({ method: "GET" })
+	.validator((input: unknown) => {
+		const data = record(input);
+		return {
+			fromDate: dateValue(data.fromDate),
+			throughDate: dateValue(data.throughDate),
+		};
+	})
+	.handler(async ({ data }) =>
+		listRequestDates(
 			db,
 			await requireRole("staff"),
 			data.fromDate,
