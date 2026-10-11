@@ -29,6 +29,7 @@ import { Route as AppAdminAccountsRouteImport } from './routes/app.admin.account
 import { Route as AppAdminCatalogsRouteImport } from './routes/app.admin.catalogs'
 import { Route as AppAdminGroupsRouteImport } from './routes/app.admin.groups'
 import { Route as AppAdminPeriodsRouteImport } from './routes/app.admin.periods'
+import { Route as AppAdminSettingsRouteImport } from './routes/app.admin.settings'
 import { Route as AppAdminUsersRouteImport } from './routes/app.admin.users'
 import { Route as AppGroupsManageRouteImport } from './routes/app.groups.manage'
 import { Route as AppGroupsNewRouteImport } from './routes/app.groups.new'
@@ -133,6 +134,11 @@ const AppAdminPeriodsRoute = AppAdminPeriodsRouteImport.update({
   path: '/admin/periods',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminSettingsRoute = AppAdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminUsersRoute = AppAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/settings': typeof AppAdminSettingsRoute
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/settings': typeof AppAdminSettingsRoute
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
+  '/app/admin/settings': typeof AppAdminSettingsRoute
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/app/admin/catalogs'
     | '/app/admin/groups'
     | '/app/admin/periods'
+    | '/app/admin/settings'
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/app/admin/catalogs'
     | '/app/admin/groups'
     | '/app/admin/periods'
+    | '/app/admin/settings'
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/app/admin/catalogs'
     | '/app/admin/groups'
     | '/app/admin/periods'
+    | '/app/admin/settings'
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
@@ -460,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminPeriodsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/settings': {
+      id: '/app/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/app/admin/settings'
+      preLoaderRoute: typeof AppAdminSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin/users': {
       id: '/app/admin/users'
       path: '/admin/users'
@@ -491,6 +510,7 @@ interface AppRouteChildren {
   AppAdminCatalogsRoute: typeof AppAdminCatalogsRoute
   AppAdminGroupsRoute: typeof AppAdminGroupsRoute
   AppAdminPeriodsRoute: typeof AppAdminPeriodsRoute
+  AppAdminSettingsRoute: typeof AppAdminSettingsRoute
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppGroupsManageRoute: typeof AppGroupsManageRoute
   AppGroupsNewRoute: typeof AppGroupsNewRoute
@@ -503,6 +523,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminCatalogsRoute: AppAdminCatalogsRoute,
   AppAdminGroupsRoute: AppAdminGroupsRoute,
   AppAdminPeriodsRoute: AppAdminPeriodsRoute,
+  AppAdminSettingsRoute: AppAdminSettingsRoute,
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppGroupsManageRoute: AppGroupsManageRoute,
   AppGroupsNewRoute: AppGroupsNewRoute,

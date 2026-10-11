@@ -122,6 +122,9 @@ function AppLayout() {
 								<Link aria-current={pathname === "/app/admin/catalogs" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/catalogs" onClick={closeMenu}>
 									<Settings2 aria-hidden="true" size={17} />Catálogos
 								</Link>
+								<Link aria-current={pathname === "/app/admin/settings" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/settings" onClick={closeMenu}>
+									<Settings2 aria-hidden="true" size={17} />Configuración
+								</Link>
 							</div>
 						</>
 					)}
@@ -177,4 +180,5 @@ const routeTitles: Record<string, string> = {
 	"/app/admin/groups": "Grupos",
 	"/app/admin/periods": "Periodos académicos",
 	"/app/admin/catalogs": "Catálogos",
+	"/app/admin/settings": "Configuración",
 };
