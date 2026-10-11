@@ -13,6 +13,7 @@ import {
 import {
 	MaterialName,
 	MaterialRow,
+	QuantityAmount,
 	QuantityDetails,
 	type QuantityDraft,
 	QuantityEditor,
@@ -464,7 +465,9 @@ function NewPreparationRequestPage() {
 							<div className="flex flex-col gap-2 border-t pt-4">
 								<h3 className="text-[15px] font-bold">Cantidades calculadas</h3>
 								<p className="text-[13.5px] text-muted-foreground">
-									{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo.
+									{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo. Pasa
+									el cursor sobre una cantidad por equipo para ver el total del
+									grupo.
 								</p>
 								<ul className="grid gap-1.5 font-mono text-[13px] tabular-nums">
 									{totals.map(({ item, omitted }) => (
@@ -478,8 +481,7 @@ function NewPreparationRequestPage() {
 										>
 											<span>{item.name}</span>
 											<strong>
-												{item.amount * (item.basis === "team" ? teams : 1)}{" "}
-												{item.unit}
+												<QuantityAmount item={item} teams={teams} />
 											</strong>
 										</li>
 									))}

@@ -4,6 +4,11 @@ import { OptionSelect } from "#/components/option-select.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import { Input } from "#/components/ui/input.tsx";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "#/components/ui/tooltip.tsx";
 import type { QuantityItem, WasteItem } from "#/db/schema.ts";
 import { cn } from "#/lib/utils.ts";
 
@@ -42,6 +47,34 @@ const basisOptions = [
 	["team", "Por equipo"],
 	["group", "Por grupo"],
 ] as const;
+
+/**
+ * A material's standalone amount. When it is per team, hovering shows the total
+ * for the whole group (the amount times the number of teams).
+ */
+export function QuantityAmount({
+	item,
+	teams,
+}: {
+	item: { amount: number; unit: string; basis: QuantityItem["basis"] };
+	teams: number;
+}) {
+	const amount = `${item.amount} ${item.unit}`;
+	if (item.basis !== "team") return <>{amount}</>;
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="cursor-help underline decoration-dotted underline-offset-4">
+					{amount}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>
+				Total para todo el grupo: {item.amount} × {teams}{" "}
+				{teams === 1 ? "equipo" : "equipos"} = {item.amount * teams} {item.unit}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
 
 const struck = "text-muted-foreground line-through decoration-[1.5px]";
 

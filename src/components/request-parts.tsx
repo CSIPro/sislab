@@ -1,8 +1,10 @@
 import { CircleCheck, CircleX, Clock } from "lucide-react";
+import type { ReactNode } from "react";
 import {
 	DescriptionItem,
 	DescriptionList,
 } from "#/components/description-list.tsx";
+import { QuantityAmount } from "#/components/materials.tsx";
 import { Notice } from "#/components/notice.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
@@ -85,15 +87,25 @@ function MaterialList({
 }) {
 	const quantity = (item: {
 		name: string;
+		amount: number;
 		totalAmount: number;
 		unit: string;
-	}) => `${item.name}: ${item.totalAmount} ${item.unit}`;
+		basis: "team" | "group";
+	}) => (
+		<>
+			{item.name}:{" "}
+			<QuantityAmount
+				item={item}
+				teams={item.amount ? Math.round(item.totalAmount / item.amount) : 1}
+			/>
+		</>
+	);
 	const waste = (item: {
 		name: string;
 		container: string;
 		treatment: string;
 	}) => `${item.name} · ${item.container} · ${item.treatment}`;
-	const sections: Array<[string, string[]]> = [
+	const sections: Array<[string, ReactNode[]]> = [
 		["Reactivos", materials.reagents.map(quantity)],
 		["Equipo", materials.equipment.map(quantity)],
 		["Reactivos omitidos", materials.omittedReagents],
@@ -113,7 +125,7 @@ function MaterialList({
 					{entries.length ? (
 						<ul className="font-mono text-[13px] font-normal tabular-nums">
 							{entries.map((entry) => (
-								<li key={entry}>{entry}</li>
+								<li key={String(entries.indexOf(entry))}>{entry}</li>
 							))}
 						</ul>
 					) : (
