@@ -99,6 +99,10 @@ const dateFormats = {
 	/** "lunes 12" */
 	weekdayDay: { weekday: "long", day: "numeric" },
 	weekdayShort: { weekday: "short" },
+	/** "lunes" */
+	weekday: { weekday: "long" },
+	/** "12 oct" */
+	dayMonthShort: { day: "numeric", month: "short" },
 } satisfies Record<string, Intl.DateTimeFormatOptions>;
 
 export function formatSessionDate(

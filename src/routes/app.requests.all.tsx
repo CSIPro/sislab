@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { Notice } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { Footnote, Page, PageHeader } from "../components/page.tsx";
@@ -11,6 +11,7 @@ import {
 	voidedByName,
 } from "../components/request-parts.tsx";
 import { Button } from "../components/ui/button.tsx";
+import { Card, CardHeader, CardTitle } from "../components/ui/card.tsx";
 import { Combobox } from "../components/ui/combobox.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
 import { Field, FieldLabel } from "../components/ui/field.tsx";
@@ -44,6 +45,8 @@ import {
 	weekRange,
 } from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { cn } from "../lib/utils.ts";
+import { type WeekDaySummary, weekDaySummaries } from "../lib/week-summary.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	decideLateExceptionFn,
@@ -62,7 +65,7 @@ export const Route = createFileRoute("/app/requests/all")({
 		if (!user.roles.includes("staff") && !user.roles.includes("admin"))
 			throw redirect({ to: "/app/dashboard" });
 		const today = sislabToday();
-		const { from, through } = dateRange(today, "week");
+		const { from, through } = weekRange(today);
 		return {
 			today,
 			requests: await listAllPreparationRequestsFn({
@@ -90,7 +93,10 @@ function AllPreparationRequestsPage() {
 	const initial = Route.useLoaderData();
 	const { periodCode } = Route.useRouteContext();
 	const [requests, setRequests] = useState(initial.requests);
+	const [loadedWeek, setLoadedWeek] = useState(weekRange(initial.today).from);
 	const [date, setDate] = useState(initial.today);
+	const latestDate = useRef(date);
+	const latestLoad = useRef(0);
 	const [range, setRange] = useState<Range>("week");
 	const [labFilter, setLabFilter] = useState("all");
 	const [statusFilter, setStatusFilter] = useState("all");
@@ -99,29 +105,50 @@ function AllPreparationRequestsPage() {
 	const labs = [
 		...new Set(requests.map(({ request }) => request.labName)),
 	].sort((a, b) => a.localeCompare(b, "es-MX"));
-	const filtered = requests.filter(
+	const week = weekRange(date);
+	// The week is always loaded, so the strip has every day's count in day view too.
+	const visible =
+		range === "day"
+			? requests.filter(({ request }) => request.sessionDate === date)
+			: requests;
+	const filtered = visible.filter(
 		({ request }) =>
 			(labFilter === "all" || request.labName === labFilter) &&
 			(statusFilter === "all" || requestStatusKey(request) === statusFilter),
 	);
-	const pending = requests.filter(({ request }) =>
+	const pending = visible.filter(({ request }) =>
 		canDecideLateException(request),
 	).length;
-	const selected = dateRange(date, range);
+	const days = weekDaySummaries(
+		date,
+		requests.map(({ request }) => request),
+	);
+	const weekTotal = days.reduce((total, day) => total + day.count, 0);
 	const rangeLabel = range === "day" ? "Día" : "Semana";
 
-	async function show(nextDate: string, nextRange: Range) {
+	const loading = loadedWeek !== week.from;
+
+	function show(nextDate: string, nextRange: Range) {
+		latestDate.current = nextDate;
 		setDate(nextDate);
 		setRange(nextRange);
 		setMessage("");
-		const next = dateRange(nextDate, nextRange);
+		if (weekRange(nextDate).from !== loadedWeek) void load(nextDate);
+	}
+
+	async function load(nextDate: string) {
+		const next = weekRange(nextDate);
+		const loadId = ++latestLoad.current;
 		try {
-			setRequests(
-				await listAllPreparationRequestsFn({
-					data: { fromDate: next.from, throughDate: next.through },
-				}),
-			);
+			const rows = await listAllPreparationRequestsFn({
+				data: { fromDate: next.from, throughDate: next.through },
+			});
+			// A later load has started, so this answer is for a week no longer shown.
+			if (loadId !== latestLoad.current) return;
+			setRequests(rows);
+			setLoadedWeek(next.from);
 		} catch (error) {
+			if (loadId !== latestLoad.current) return;
 			setMessage(
 				userFacingError(error, "No se pudieron cargar las solicitudes."),
 			);
@@ -137,7 +164,7 @@ function AllPreparationRequestsPage() {
 		setMessage("");
 		try {
 			await action();
-			await show(date, range);
+			await load(latestDate.current);
 		} catch (error) {
 			setMessage(
 				userFacingError(
@@ -190,7 +217,7 @@ function AllPreparationRequestsPage() {
 				description={`${
 					range === "day"
 						? formatSessionDate(date, "full")
-						: `Semana del ${formatDateSpan(selected.from, selected.through)}`
+						: `Semana del ${formatDateSpan(week.from, week.through)}`
 				}${periodCode ? ` · Período ${periodCode}` : ""}`}
 				title="Todas las solicitudes"
 			>
@@ -221,7 +248,7 @@ function AllPreparationRequestsPage() {
 					<ToggleGroup
 						aria-label="Vista"
 						onValueChange={(value) => {
-							if (value) void show(date, value as Range);
+							if (value) show(date, value as Range);
 						}}
 						type="single"
 						value={range}
@@ -233,7 +260,7 @@ function AllPreparationRequestsPage() {
 					<Button
 						aria-label={`${rangeLabel} anterior`}
 						onClick={() =>
-							void show(addDays(date, range === "day" ? -1 : -7), range)
+							show(addDays(date, range === "day" ? -1 : -7), range)
 						}
 						size="icon"
 						variant="outline"
@@ -242,9 +269,7 @@ function AllPreparationRequestsPage() {
 					</Button>
 					<Button
 						aria-label={`${rangeLabel} siguiente`}
-						onClick={() =>
-							void show(addDays(date, range === "day" ? 1 : 7), range)
-						}
+						onClick={() => show(addDays(date, range === "day" ? 1 : 7), range)}
 						size="icon"
 						variant="outline"
 					>
@@ -253,7 +278,7 @@ function AllPreparationRequestsPage() {
 					<DatePicker
 						aria-label="Fecha"
 						className="w-auto min-w-36"
-						onValueChange={(value) => void show(value, range)}
+						onValueChange={(value) => show(value, range)}
 						value={date}
 					/>
 				</div>
@@ -286,7 +311,36 @@ function AllPreparationRequestsPage() {
 
 			{message && <Notice tone="error">{message}</Notice>}
 
-			<Table className="min-w-[1080px]">
+			<Card aria-labelledby="all-requests-week-title">
+				<CardHeader className="items-baseline">
+					<CardTitle id="all-requests-week-title">
+						Solicitudes de la semana
+					</CardTitle>
+					<span className="text-sm text-muted-foreground">
+						{weekTotal} {weekTotal === 1 ? "solicitud" : "solicitudes"} en la
+						semana
+					</span>
+				</CardHeader>
+				<div
+					aria-busy={loading}
+					className="grid grid-cols-[repeat(auto-fit,minmax(min(130px,100%),1fr))] gap-3 aria-busy:opacity-60"
+				>
+					{days.map((day) => (
+						<WeekDayButton
+							day={day}
+							key={day.date}
+							onSelect={() => show(day.date, range)}
+							selected={day.date === date}
+							isToday={day.date === initial.today}
+						/>
+					))}
+				</div>
+			</Card>
+
+			<Table
+				aria-busy={loading}
+				className="min-w-[1080px] aria-busy:opacity-60"
+			>
 				<TableHeader>
 					<TableRow>
 						<TableHead>Fecha y hora</TableHead>
@@ -467,8 +521,51 @@ function StaffRequestRow({
 	);
 }
 
-function dateRange(value: string, range: Range) {
-	return range === "day" ? { from: value, through: value } : weekRange(value);
+function WeekDayButton({
+	day,
+	selected,
+	isToday,
+	onSelect,
+}: {
+	day: WeekDaySummary;
+	selected: boolean;
+	isToday: boolean;
+	onSelect: () => void;
+}) {
+	const countLabel = day.count === 1 ? "solicitud" : "solicitudes";
+	const extra =
+		day.pending > 0
+			? `${day.pending} por decidir`
+			: day.dropped > 0
+				? `${day.dropped} sin efecto`
+				: "";
+	return (
+		<Button
+			aria-label={`${formatSessionDate(day.date, "long")}${isToday ? ", hoy" : ""}: ${day.count} ${countLabel}${extra && `, ${extra}`}`}
+			aria-pressed={selected}
+			className={cn(
+				"min-h-32 w-full justify-start gap-0.5 rounded-md p-3 text-left text-[13px] font-normal hover:border-primary aria-pressed:font-normal",
+				day.count > 0
+					? "border-transparent bg-accent aria-pressed:bg-accent-border/60"
+					: "border-dashed bg-transparent hover:border-solid aria-pressed:border-solid aria-pressed:bg-accent/50",
+			)}
+			onClick={onSelect}
+			variant="choice"
+		>
+			<span className="font-bold text-muted-foreground">
+				{formatSessionDate(day.date, "weekday")}
+				{isToday && " · hoy"}
+			</span>
+			<span className="text-muted-foreground">
+				{formatSessionDate(day.date, "dayMonthShort")}
+			</span>
+			<span className="mt-1.5 text-[28px] leading-[1.1] font-bold">
+				{day.count}
+			</span>
+			<span className="text-muted-foreground">{countLabel}</span>
+			{extra && <span className="mt-0.5 text-xs font-bold">{extra}</span>}
+		</Button>
+	);
 }
 
 function buildTicketHtml(rows: RequestListRow[], date: string) {

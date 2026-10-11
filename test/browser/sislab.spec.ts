@@ -171,6 +171,22 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByRole('group', { name: 'Fechas disponibles' }).getByRole('button')).toHaveCount(4)
 })
 
+test('staff picks a day from the week strip and it becomes the selected date', async ({ page }) => {
+	await signIn(page, staff.email)
+	const nav = page.getByRole('navigation', { name: 'Navegación principal' })
+	await nav.getByRole('link', { name: 'Todas las solicitudes' }).click()
+	const week = page.getByRole('region', { name: 'Solicitudes de la semana' })
+	await expect(week.getByRole('button')).toHaveCount(7)
+	await expect(week.getByRole('button', { pressed: true })).toHaveAccessibleName(/, hoy:/)
+	const otherDay = week.getByRole('button', { pressed: false }).first()
+	const otherDayName = (await otherDay.getAttribute('aria-label'))?.split(':')[0] ?? ''
+	await otherDay.click()
+	await expect(week.getByRole('button', { pressed: true })).toHaveAccessibleName(new RegExp(`^${otherDayName}:`))
+	await page.getByRole('radio', { name: 'Día' }).click()
+	await expect(page.getByText(new RegExp(`^${otherDayName} de \\d{4}`, 'i'))).toBeVisible()
+	await expect(week.getByRole('button')).toHaveCount(7)
+})
+
 test('staff and mixed-role navigation follows the account roles', async ({ page }) => {
 	await signIn(page, staff.email)
 	await expect(page.getByRole('heading', { name: 'Solicitudes próximas de todos los profesores' })).toBeVisible()
