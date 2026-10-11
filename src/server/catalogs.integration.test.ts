@@ -9,6 +9,7 @@ import {
 	importCatalogValues,
 	listActiveCatalogEntries,
 	listCatalogEntries,
+	reactivateCatalogEntry,
 	renameCatalogEntry,
 	retireCatalogEntry,
 } from './catalogs.ts'
@@ -57,6 +58,12 @@ test('admin catalog operations are repeatable and preserve historical labels', {
 	assert.equal((await listCatalogEntries(database, 'labs', admin))[0]?.active, false)
 	const historical = await pool.query('SELECT lab_name FROM historical_group_labels')
 	assert.equal(historical.rows[0]?.lab_name, 'Lab Alpha')
+	await reactivateCatalogEntry(database, 'labs', lab.id, admin)
+	assert.deepEqual(
+		(await listActiveCatalogEntries(database, 'labs')).map(({ name }) => name),
+		['Lab Renamed'],
+	)
+	await retireCatalogEntry(database, 'labs', lab.id, admin)
 
 	await addCatalogEntry(database, 'labs', ' Lab Beta ', admin)
 	await addCatalogEntry(database, 'labs', 'Lab Beta', admin)

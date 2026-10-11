@@ -1,11 +1,13 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { Fragment, useState } from "react";
+import { OptionSelect } from "../components/option-select.tsx";
 import {
 	RequestDetails,
 	StatusChip,
 	statusFilterOptions,
 } from "../components/request-parts.tsx";
+import { TableShell } from "../components/table-shell.tsx";
 import { requestStatusKey } from "../lib/preparation-request-status.ts";
 import {
 	formatSessionDate,
@@ -60,7 +62,7 @@ function MyPreparationRequestsPage() {
 					<div className="page-head-copy">
 						<h1 className="page-title">Mis solicitudes</h1>
 						<p className="page-sub">
-							{periodCode && `Periodo ${periodCode} · `}
+							{periodCode && `Período ${periodCode} · `}
 							{visible.length}{" "}
 							{visible.length === 1 ? "solicitud" : "solicitudes"}
 						</p>
@@ -74,27 +76,21 @@ function MyPreparationRequestsPage() {
 				<div className="toolbar">
 					<div className="toolbar-group">
 						<label htmlFor="my-requests-status">Estado</label>
-						<select
-							className="field-outline"
+						<OptionSelect
 							id="my-requests-status"
-							onChange={(event) => setState(event.target.value)}
+							onValueChange={setState}
+							options={statusFilterOptions}
 							value={state}
-						>
-							{statusFilterOptions.map(([value, label]) => (
-								<option key={value} value={value}>
-									{label}
-								</option>
-							))}
-						</select>
+						/>
 					</div>
 				</div>
 
-				<div className="table-shell">
+				<TableShell>
 					<table className="data-table" style={{ minWidth: 820 }}>
 						<thead>
 							<tr>
 								<th scope="col">Fecha y hora</th>
-								<th scope="col">Ejercicio</th>
+								<th scope="col">Práctica</th>
 								<th scope="col">Grupo</th>
 								<th scope="col">Lab.</th>
 								<th scope="col">Estado</th>
@@ -156,7 +152,7 @@ function MyPreparationRequestsPage() {
 					{visible.length === 0 && (
 						<p className="table-empty">No hay solicitudes para este estado.</p>
 					)}
-				</div>
+				</TableShell>
 
 				<p className="footnote">
 					Las solicitudes enviadas son de solo lectura. Si una solicitud fue

@@ -9,21 +9,24 @@ import {
 import {
 	CalendarDays,
 	CirclePlus,
+	CircleUserRound,
 	ClipboardList,
 	FileText,
 	FlaskConical,
 	House,
+	Layers,
 	LayoutDashboard,
 	LogOut,
 	type LucideIcon,
 	Menu,
 	Settings2,
-	Tags,
 	UserCheck,
 	UsersRound,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ScrollArea } from "../components/ui/scroll-area.tsx";
+import { initials } from "../lib/user-roles.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn, signOutFn } from "../server/auth-functions.ts";
 
@@ -47,8 +50,6 @@ function AppLayout() {
 	const [isMobile, setIsMobile] = useState(false);
 	const menuButtonRef = useRef<HTMLButtonElement>(null);
 	const sidebarRef = useRef<HTMLElement>(null);
-	const initials =
-		`${user.name.trim().charAt(0)}${user.surname.trim().charAt(0)}`.toLocaleUpperCase();
 
 	useEffect(() => {
 		const media = window.matchMedia("(max-width: 760px)");
@@ -153,39 +154,45 @@ function AppLayout() {
 					</span>
 				</Link>
 
-				<nav aria-label="Navegación principal" className="sidebar-nav">
-					<Link
-						aria-current={pathname === "/app/dashboard" ? "page" : undefined}
-						className="sidebar-link"
-						to="/app/dashboard"
-						onClick={closeMenu}
-					>
-						<LayoutDashboard aria-hidden="true" size={20} strokeWidth={1.75} />
-						Tablero
-					</Link>
-					{groups.map((group) => (
-						<div key={group.caption} className="sidebar-nav">
-							<p className="sidebar-caption">{group.caption}</p>
-							{group.items.map(({ to, label, icon: Icon }) => (
-								<Link
-									aria-current={pathname === to ? "page" : undefined}
-									className="sidebar-link"
-									key={to}
-									to={to}
-									onClick={closeMenu}
-								>
-									<Icon aria-hidden="true" size={20} strokeWidth={1.75} />
-									{label}
-								</Link>
-							))}
-						</div>
-					))}
-				</nav>
+				<ScrollArea className="sidebar-body">
+					<nav aria-label="Navegación principal" className="sidebar-nav">
+						<Link
+							aria-current={pathname === "/app/dashboard" ? "page" : undefined}
+							className="sidebar-link"
+							to="/app/dashboard"
+							onClick={closeMenu}
+						>
+							<LayoutDashboard
+								aria-hidden="true"
+								size={20}
+								strokeWidth={1.75}
+							/>
+							Tablero
+						</Link>
+						{groups.map((group) => (
+							<div key={group.caption} className="sidebar-nav">
+								<p className="sidebar-caption">{group.caption}</p>
+								{group.items.map(({ to, label, icon: Icon }) => (
+									<Link
+										aria-current={pathname === to ? "page" : undefined}
+										className="sidebar-link"
+										key={to}
+										to={to}
+										onClick={closeMenu}
+									>
+										<Icon aria-hidden="true" size={20} strokeWidth={1.75} />
+										{label}
+									</Link>
+								))}
+							</div>
+						))}
+					</nav>
+				</ScrollArea>
 
 				<div className="sidebar-bottom">
 					<div className="sidebar-profile">
 						<span aria-hidden="true" className="sidebar-avatar">
-							{initials}
+							{initials(user)}
 						</span>
 						<span className="sidebar-profile-copy">
 							<strong>
@@ -245,10 +252,9 @@ function AppLayout() {
 
 const adminItems: NavItem[] = [
 	{ to: "/app/admin/accounts", label: "Cuentas", icon: UserCheck },
-	{ to: "/app/admin/users", label: "Usuarios", icon: UsersRound },
-	{ to: "/app/admin/groups", label: "Grupos", icon: UsersRound },
-	{ to: "/app/admin/exercises", label: "Ejercicios", icon: FlaskConical },
-	{ to: "/app/admin/periods", label: "Periodos", icon: CalendarDays },
-	{ to: "/app/admin/catalogs", label: "Catálogos", icon: Tags },
+	{ to: "/app/admin/users", label: "Usuarios", icon: CircleUserRound },
+	{ to: "/app/admin/exercises", label: "Prácticas", icon: FlaskConical },
+	{ to: "/app/admin/periods", label: "Períodos", icon: CalendarDays },
+	{ to: "/app/admin/catalogs", label: "Catálogos", icon: Layers },
 	{ to: "/app/admin/settings", label: "Configuración", icon: Settings2 },
 ];

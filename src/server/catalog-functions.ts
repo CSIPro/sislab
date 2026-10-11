@@ -5,6 +5,7 @@ import {
 	importCatalogValues,
 	listActiveCatalogEntries,
 	listCatalogEntries,
+	reactivateCatalogEntry,
 	renameCatalogEntry,
 	retireCatalogEntry,
 	type CatalogValues,
@@ -46,6 +47,12 @@ export const retireCatalogEntryFn = createServerFn({ method: 'POST' })
 	.validator(parseKindId)
 	.handler(async ({ data }) =>
 		retireCatalogEntry(db, data.kind, data.id, await requireAdmin()),
+	)
+
+export const reactivateCatalogEntryFn = createServerFn({ method: 'POST' })
+	.validator(parseKindId)
+	.handler(async ({ data }) =>
+		reactivateCatalogEntry(db, data.kind, data.id, await requireAdmin()),
 	)
 
 async function requireAdmin() {

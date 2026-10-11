@@ -32,7 +32,7 @@ Professors create groups for academic periods, assigning each a laboratory, cour
 - Group numbers are stable and unique per professor and academic period, including for inactive groups.
 - Active laboratory time slots cannot overlap within the same academic period and weekday.
 - The planned preparation-request workflow preserves submitted material, quantity, laboratory, and time details as a snapshot. Later group or exercise edits do not silently rewrite submitted requests.
-- The interface is in Spanish. Use the domain vocabulary in `CONTEXT.md`; in particular, call a reusable description a “lab exercise” and a staff preparation workflow a “preparation request.”
+- The interface is in Spanish. Use the domain vocabulary in `CONTEXT.md`; in particular, call a reusable description a “lab exercise” and a staff preparation workflow a “preparation request.” On screen a lab exercise is a “práctica”, never an “ejercicio”.
 - Academic dates and times use the `America/Hermosillo` time zone.
 
 ## Brand Commitments

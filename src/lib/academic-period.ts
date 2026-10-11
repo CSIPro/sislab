@@ -35,3 +35,14 @@ export function validateRegularPeriodCode(code: string): AcademicPeriodCode {
 	}
 	return code as AcademicPeriodCode
 }
+
+export type AcademicPeriodStatus = 'current' | 'upcoming' | 'concluded'
+
+/** Codes sort by year and then term, so comparing them as text orders the periods. */
+export function academicPeriodStatus(
+	code: string,
+	currentCode: string,
+): AcademicPeriodStatus {
+	if (code === currentCode) return 'current'
+	return code > currentCode ? 'upcoming' : 'concluded'
+}

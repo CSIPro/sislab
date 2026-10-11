@@ -4,12 +4,17 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
-import { CircleCheck, Clock, Plus } from "lucide-react";
+import { CalendarDays, CircleCheck, Clock, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { OptionSelect } from "../components/option-select.tsx";
+import { Combobox } from "../components/ui/combobox.tsx";
+import { DatePicker } from "../components/ui/date-picker.tsx";
 import type { QuantityItem, WasteItem } from "../db/schema.ts";
 import {
+	addDays,
 	formatSessionDate,
 	groupLabel,
+	sessionDateOption,
 	sislabNowTime,
 	sislabToday,
 	timeRange,
@@ -24,7 +29,9 @@ import {
 } from "../server/preparation-request-functions.ts";
 import type { RequestCustomization } from "../server/preparation-requests.ts";
 
-const OFFERED_DATES = 4;
+const OFFERED_DATES = 3;
+/** How far ahead the calendar lets a professor pick another date. */
+const CALENDAR_REACH_DAYS = 365;
 
 export const Route = createFileRoute("/app/requests/new")({
 	validateSearch: (search: Record<string, unknown>): { group?: string } =>
@@ -98,21 +105,39 @@ function NewPreparationRequestPage() {
 				count: OFFERED_DATES,
 			})
 		: [];
-	const needsLateReason =
-		dateOptions.find((option) => option.date === sessionDate)?.late ?? false;
+	const pickableDate = (date: string) =>
+		selectedGroup
+			? sessionDateOption({
+					date,
+					weekday: selectedGroup.weekday,
+					today,
+					nowTime,
+					startTime: selectedGroup.startTime,
+					minimumNoticeDays,
+				})
+			: null;
+	const customPicked =
+		sessionDate !== "" &&
+		!dateOptions.some((option) => option.date === sessionDate);
+	const needsLateReason = sessionDate
+		? (pickableDate(sessionDate)?.late ?? false)
+		: false;
 	const materials = selectedExercise?.materials;
 	const teams = selectedGroup?.teams ?? 0;
 	const totals = [
-		...(materials?.reagents.filter(
-			(item) => !omittedReagents.includes(item.name),
-		) ?? []),
-		...addedReagents.filter((item) => item.name.trim()),
+		...(materials?.reagents.map((item) => ({
+			item,
+			omitted: omittedReagents.includes(item.name),
+		})) ?? []),
+		...addedReagents
+			.filter((item) => item.name.trim())
+			.map((item) => ({ item, omitted: false })),
 	];
 
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (!selectedGroup || !selectedExercise || !sessionDate) {
-			setMessage("Elige un grupo, una fecha y un ejercicio para continuar.");
+			setMessage("Elige un grupo, una fecha y una práctica para continuar.");
 			return;
 		}
 		setBusy(true);
@@ -149,7 +174,7 @@ function NewPreparationRequestPage() {
 					<h1 className="page-title">Nueva solicitud</h1>
 					<p className="page-sub">
 						Pide al personal de laboratorio que prepare reactivos, equipo y
-						manejo de residuos para un ejercicio de uno de tus grupos.
+						manejo de residuos para una práctica de uno de tus grupos.
 					</p>
 				</header>
 
@@ -222,9 +247,35 @@ function NewPreparationRequestPage() {
 												type="button"
 											>
 												{formatSessionDate(date, "short")}
-												<small>{late ? "Último momento" : "Con aviso"}</small>
+												<small>{noticeLabel(late)}</small>
 											</button>
 										))}
+										<DatePicker
+											aria-pressed={customPicked}
+											className="date-option is-custom"
+											footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
+											isDateDisabled={(date) => !pickableDate(date)}
+											max={addDays(today, CALENDAR_REACH_DAYS)}
+											min={today}
+											onValueChange={setSessionDate}
+											value={customPicked ? sessionDate : ""}
+										>
+											<CalendarDays
+												aria-hidden="true"
+												size={18}
+												strokeWidth={1.75}
+											/>
+											<span>
+												{customPicked
+													? formatSessionDate(sessionDate, "short")
+													: "Elegir otra fecha"}
+												<small>
+													{customPicked
+														? noticeLabel(needsLateReason)
+														: `Solo ${weekdayPlural(selectedGroup.weekday)}`}
+												</small>
+											</span>
+										</DatePicker>
 									</div>
 								</>
 							) : (
@@ -234,14 +285,18 @@ function NewPreparationRequestPage() {
 							)}
 							{needsLateReason && (
 								<label className="field-label">
-									Motivo de la solicitud de último momento
+									Motivo del aviso corto
 									<textarea
 										className="field"
 										maxLength={1000}
 										onChange={(event) => setLateReason(event.target.value)}
+										placeholder="Explica por qué solicitas la preparación con poco tiempo."
 										required
 										value={lateReason}
 									/>
+									<span className="field-hint">
+										El personal de laboratorio decidirá si acepta la solicitud.
+									</span>
 								</label>
 							)}
 						</div>
@@ -251,27 +306,29 @@ function NewPreparationRequestPage() {
 								<span aria-hidden="true" className="step-badge">
 									3
 								</span>
-								Elige el ejercicio
+								Elige la práctica
 							</h2>
-							<label className="field-label">
-								Ejercicio de laboratorio
-								<select
+							<div className="field-label">
+								<label htmlFor="request-exercise">
+									Práctica de laboratorio
+								</label>
+								<Combobox
 									className="field"
-									onChange={(event) => {
-										setExerciseId(event.target.value);
+									emptyText="Ninguna práctica coincide."
+									id="request-exercise"
+									onValueChange={(value) => {
+										setExerciseId(value);
 										setOmittedReagents([]);
 									}}
-									required
+									options={exercises.map((exercise) => ({
+										value: exercise.id,
+										label: `${exercise.number} · ${exercise.name}`,
+									}))}
+									placeholder="Elige una práctica"
+									searchPlaceholder="Buscar por número o nombre"
 									value={exerciseId}
-								>
-									<option value="">Elige un ejercicio</option>
-									{exercises.map((exercise) => (
-										<option key={exercise.id} value={exercise.id}>
-											{exercise.number} · {exercise.name}
-										</option>
-									))}
-								</select>
-							</label>
+								/>
+							</div>
 						</div>
 
 						<div className="request-step">
@@ -282,32 +339,40 @@ function NewPreparationRequestPage() {
 								Revisa el material
 							</h2>
 							<p className="request-step-help">
-								Desmarca los reactivos que no necesites. Puedes agregar equipo y
-								residuos.
+								Desmarca los reactivos que no necesites y quedarán tachados como
+								omitidos. Puedes agregar equipo y residuos.
 							</p>
 
 							<div>
 								<h3 className="material-title">Reactivos</h3>
-								{materials?.reagents.map((item) => (
-									<label
-										className="material-row"
-										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-									>
-										<input
-											checked={!omittedReagents.includes(item.name)}
-											onChange={() =>
-												setOmittedReagents((current) =>
-													current.includes(item.name)
-														? current.filter((name) => name !== item.name)
-														: [...current, item.name],
-												)
-											}
-											type="checkbox"
-										/>
-										<span className="material-name">{item.name}</span>
-										<Quantity item={item} />
-									</label>
-								))}
+								{materials?.reagents.map((item) => {
+									const omitted = omittedReagents.includes(item.name);
+									return (
+										<label
+											className="material-row"
+											key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
+										>
+											<input
+												checked={!omitted}
+												onChange={() =>
+													setOmittedReagents((current) =>
+														omitted
+															? current.filter((name) => name !== item.name)
+															: [...current, item.name],
+													)
+												}
+												type="checkbox"
+											/>
+											<span
+												className={`material-name${omitted ? " is-omitted" : ""}`}
+											>
+												{item.name}
+											</span>
+											{omitted && <span className="basis-tag">Omitido</span>}
+											<Quantity item={item} omitted={omitted} />
+										</label>
+									);
+								})}
 								<QuantityEditor
 									addLabel="Agregar reactivo"
 									items={addedReagents}
@@ -405,11 +470,11 @@ function NewPreparationRequestPage() {
 									<dd>{selectedGroup?.labName ?? "—"}</dd>
 								</div>
 								<div>
-									<dt>Ejercicio</dt>
+									<dt>Práctica</dt>
 									<dd>
 										{selectedExercise
 											? `${selectedExercise.number} · ${selectedExercise.name}`
-											: "Elige un ejercicio"}
+											: "Elige una práctica"}
 									</dd>
 								</div>
 							</dl>
@@ -420,8 +485,11 @@ function NewPreparationRequestPage() {
 										{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo.
 									</p>
 									<ul className="mono">
-										{totals.map((item) => (
-											<li key={`${item.name}-${item.unit}-${item.basis}`}>
+										{totals.map(({ item, omitted }) => (
+											<li
+												className={omitted ? "is-omitted" : undefined}
+												key={`${item.name}-${item.unit}-${item.basis}`}
+											>
 												<span>{item.name}</span>
 												<strong>
 													{item.amount * (item.basis === "team" ? teams : 1)}{" "}
@@ -440,10 +508,10 @@ function NewPreparationRequestPage() {
 									<Clock aria-hidden="true" size={20} strokeWidth={2} />
 									<p>
 										<strong>
-											Faltan menos de {noticeDays(minimumNoticeDays)} de aviso.
+											Menos de {noticeDays(minimumNoticeDays)} de aviso.
 										</strong>{" "}
-										Explica el motivo y el personal decidirá si acepta la
-										solicitud.
+										Explica el motivo. El personal de laboratorio decidirá si
+										acepta la solicitud.
 									</p>
 								</section>
 							) : (
@@ -461,7 +529,7 @@ function NewPreparationRequestPage() {
 
 						<p className="footnote">
 							Al enviar se guarda una copia de estos datos. Si después cambias
-							el ejercicio o el grupo, esta solicitud no se modifica.
+							la práctica o el grupo, esta solicitud no se modifica.
 						</p>
 					</aside>
 				</div>
@@ -475,22 +543,38 @@ function weekdayPlural(weekday: number) {
 	return name.endsWith("s") ? name : `${name}s`;
 }
 
+function noticeLabel(late: boolean) {
+	return late ? "Último momento" : "A tiempo";
+}
+
 function noticeDays(days: number) {
 	return `${days} ${days === 1 ? "día" : "días"}`;
 }
 
-function Quantity({ item }: { item: QuantityItem }) {
+function Quantity({
+	item,
+	omitted = false,
+}: {
+	item: QuantityItem;
+	omitted?: boolean;
+}) {
+	const strike = omitted ? " is-omitted" : "";
 	return (
 		<>
-			<span className="mono">
+			<span className={`mono${strike}`}>
 				{item.amount} {item.unit}
 			</span>
-			<span className="basis-tag">
+			<span className={`basis-tag${strike}`}>
 				{item.basis === "team" ? "por equipo" : "por grupo"}
 			</span>
 		</>
 	);
 }
+
+const basisOptions = [
+	["team", "Por equipo"],
+	["group", "Por grupo"],
+] as const;
 
 function QuantityEditor({
 	addLabel,
@@ -541,19 +625,14 @@ function QuantityEditor({
 						required
 						value={item.unit}
 					/>
-					<select
+					<OptionSelect
 						aria-label={`Base del ${kind}`}
-						className="field-outline"
-						onChange={(event) =>
-							change(index, {
-								basis: event.target.value as QuantityItem["basis"],
-							})
+						onValueChange={(value) =>
+							change(index, { basis: value as QuantityItem["basis"] })
 						}
+						options={basisOptions}
 						value={item.basis}
-					>
-						<option value="team">Por equipo</option>
-						<option value="group">Por grupo</option>
-					</select>
+					/>
 					<button
 						className="button-secondary button-sm"
 						onClick={() =>

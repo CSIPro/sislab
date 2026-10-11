@@ -104,6 +104,22 @@ export async function retireCatalogEntry(
 	return entry as CatalogEntry
 }
 
+export async function reactivateCatalogEntry(
+	database: CatalogDatabase,
+	kind: CatalogKind,
+	id: string,
+	actor: CatalogActor,
+): Promise<CatalogEntry> {
+	requireAdmin(actor)
+	const result = await database.execute(sql`
+		UPDATE ${sql.identifier(kind)} SET active = true WHERE id = ${id}::uuid
+		RETURNING id, name, active
+	`)
+	const entry = result.rows[0]
+	if (!entry) throw new Error('Catalog entry not found.')
+	return entry as CatalogEntry
+}
+
 function selectEntries(
 	database: CatalogDatabase,
 	kind: CatalogKind,

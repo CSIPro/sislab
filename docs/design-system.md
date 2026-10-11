@@ -6,6 +6,8 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - Use sentence case for titles and buttons: "Nueva solicitud", "Mis grupos". Buttons are never uppercase (legacy set `textTransform: none` on every button).
 - Labels are short nouns ("Solicitudes creadas", "Usuarios") and actions are infinitive verbs ("Crear", "Eliminar", "Ingresar").
 - Brand names: **SISLAB** in caps, **CSI PRO** with a space. "Sistema de Laboratorios" is the tagline.
+- A lab exercise is a **práctica** on screen ("Prácticas", "Nueva práctica", "Elige la práctica"). Do not write "ejercicio". Code and English docs keep "lab exercise".
+- Write **período** with the accent: "Períodos", "Período 2026-2".
 - No emoji. Status always comes as a word, never colour alone: "Aprobada", "Pendiente", "Rechazada".
 
 ## Color
@@ -25,7 +27,7 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - **Nunito** (Google Fonts, 300/400/500/700) for all UI. Load it with `https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;700&display=swap`.
 - Headings: `h1` for page titles, `h2` for sections, `h3` for card titles (often bold in `primary-text`), `h5` for dialog titles, `h6` for the app bar.
 - Copy: `body` (16/1.5), with `body-sm` for checkbox labels and helper text. Buttons use `button` (19.2px, medium); the compact login button uses `button-sm`.
-- **Fira Mono** for every table cell (`table-cell`), with `font-variant-numeric: tabular-nums` on the table.
+- **Fira Mono** for table cells that hold data (`table-cell`), with `font-variant-numeric: tabular-nums` on the table. A table of people, such as Usuarios, adds `is-plain` and keeps Nunito, because names and emails read badly in a monospace face.
 - **Inconsolata** only for the printed 80mm ticket (`ticket-title`, `ticket-body`).
 - Roboto appears only on the old teacher dashboard (MaestroDashBoard.scss). Do not carry it over.
 
@@ -35,6 +37,18 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - Forms sit in a column at most 600px wide (legacy `theme.maxWidth`).
 - Accordions are outlined (1px `border`, 12px radius) with no shadow. Elevation is light, and borders do most of the separating.
 - Focus: a 2px solid `ring` outline, offset 2px.
+
+## Form controls
+
+Controls come from shadcn/ui, in `src/components/ui`. Do not use a native `<select>`, `<input type="date">` or a bare `<input type="time">`.
+
+- **Dates** use `DatePicker` (`ui/date-picker.tsx`), a Popover with the shadcn Calendar in Spanish. It reads and writes `YYYY-MM-DD` text. Pass `isDateDisabled` to block dates and `clearable` for optional dates.
+- **Times** use `TimePicker` (`ui/time-picker.tsx`). shadcn has no clock component, so this is the shadcn Input in time mode.
+- **Lists that come from data** (prácticas, periods, labs, careers, subjects) use `Combobox` (`ui/combobox.tsx`), so the person can type to filter. The search ignores accents and case.
+- **Fixed lists** (status, role, weekday, quantity basis) use `OptionSelect` (`components/option-select.tsx`), which wraps the shadcn Select.
+- Give a picker the `field` class for the filled 48px style or `field-outline` for the outlined 44px style. Add `name` when a form reads it through `FormData`.
+- **Scrolling containers** use the shadcn `ScrollArea`. The sidebar wraps its links in one, so the brand and the profile block stay fixed. Tables sit in `TableShell` (`components/table-shell.tsx`), which scrolls sideways.
+- `src/styles.css` holds the app's own classes outside any cascade layer, so they override Tailwind utilities that set the same property. To vary a class, add a modifier class (`.split.is-top`, `.button-tall`) instead of a conflicting utility.
 
 ## Iconography
 
@@ -58,4 +72,4 @@ Read from a local checkout of CSIPro/legacy-sislab at `main@a046f7a`.
 - **Skipped one-off colours:** #39c9b5 (loader), #03a9f4 and #ececec (teacher dashboard), #888888/#666666 (old login form).
 - **Fonts:** Nunito, Fira Mono and Inconsolata come from Google Fonts, so there are no font files. The PDF also registers Open Sans 600 and an Inconsolata bold from third-party URLs, which were not carried over.
 - **Assets not copied:** `microsoft-logo.png` (third-party), `public/logo192.png`/`logo512.png` (Create React App defaults) and `logoLogin.svg` (the same mark as `sislab-mark.svg`).
-- **Components:** none built. The legacy library is MUI and will be replaced by shadcn/ui.
+- **Components:** the shadcn/ui parts listed under "Form controls" are in `src/components/ui`. Buttons, panels, chips and tables are still classes in `src/styles.css`.

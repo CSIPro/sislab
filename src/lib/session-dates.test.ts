@@ -4,6 +4,7 @@ import {
 	addDays,
 	daysBetween,
 	formatDateSpan,
+	sessionDateOption,
 	upcomingSessionDates,
 	weekRange,
 } from "./session-dates.ts";
@@ -66,5 +67,35 @@ test("a date span names the month once when both ends share it", () => {
 	assert.equal(
 		formatDateSpan("2026-10-26", "2026-11-01"),
 		"26 de octubre al 1 de noviembre",
+	);
+});
+
+test("a hand-picked date must fall on the group's weekday and still be open", () => {
+	// 2026-10-11 is a Sunday; weekday 3 is Wednesday.
+	const options = {
+		weekday: 3,
+		today: "2026-10-11",
+		nowTime: "10:00",
+		startTime: "17:00:00",
+		minimumNoticeDays: 7,
+	};
+	assert.deepEqual(sessionDateOption({ ...options, date: "2026-11-25" }), {
+		date: "2026-11-25",
+		late: false,
+	});
+	assert.deepEqual(sessionDateOption({ ...options, date: "2026-10-14" }), {
+		date: "2026-10-14",
+		late: true,
+	});
+	assert.equal(sessionDateOption({ ...options, date: "2026-11-26" }), null);
+	assert.equal(sessionDateOption({ ...options, date: "2026-10-07" }), null);
+	assert.equal(
+		sessionDateOption({
+			...options,
+			today: "2026-10-14",
+			nowTime: "17:00",
+			date: "2026-10-14",
+		}),
+		null,
 	);
 });

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
 
 const points = [
 	"Consulta el día, la hora y el laboratorio de cada uno de tus grupos.",
-	"Pide reactivos, equipo y manejo de residuos para cada ejercicio.",
+	"Pide reactivos, equipo y manejo de residuos para cada práctica.",
 	"El personal prepara todo desde un ticket diario.",
 ];
 
@@ -23,7 +23,7 @@ const steps = [
 	{
 		icon: FlaskConical,
 		title: "Solicita la preparación",
-		text: "Elige el ejercicio y la fecha, ajusta reactivos y equipo, e indica los residuos que se generarán.",
+		text: "Elige la práctica y la fecha, ajusta reactivos y equipo, e indica los residuos que se generarán.",
 	},
 	{
 		icon: FileCheck,
@@ -36,7 +36,7 @@ const roles = [
 	{
 		title: "Profesores",
 		items: [
-			"Tus próximas solicitudes, con el nombre de cada ejercicio.",
+			"Tus próximas solicitudes, con el nombre de cada práctica.",
 			"Tus grupos con día, horario y laboratorio.",
 			"El detalle de cada solicitud en un clic.",
 		],
@@ -54,7 +54,7 @@ const roles = [
 		items: [
 			"Todo lo del personal de laboratorio.",
 			"Activación de cuentas y gestión de usuarios.",
-			"Periodos, catálogos y ejercicios.",
+			"Períodos, catálogos y prácticas.",
 		],
 	},
 ];

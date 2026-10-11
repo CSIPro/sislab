@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
 import { listAcademicPeriods } from "./academic-periods.ts";
 import {
+	type AccountRole,
 	activatePendingAccount,
 	type SignUpInput,
 	signUp,
@@ -24,9 +25,9 @@ export function createFirstUsableOperations(
 		signUp: (input: SignUpInput) => signUp(database, input),
 		signIn: (input: { email: string; password: string }) =>
 			createSession(database, input),
-		activateAccount: async (userId: string) => {
+		activateAccount: async (userId: string, roles?: AccountRole[]) => {
 			const actor = await requireRole(getCurrentUser, "admin");
-			return activatePendingAccount(database, userId, actor);
+			return activatePendingAccount(database, userId, actor, roles);
 		},
 		getGroupOptions: async () => {
 			await requireRole(getCurrentUser, "professor");

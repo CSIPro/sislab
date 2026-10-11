@@ -1,9 +1,12 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { groupLabel, timeRange } from "../lib/session-dates.ts";
+import { OptionSelect } from "../components/option-select.tsx";
+import { Combobox } from "../components/ui/combobox.tsx";
+import { TimePicker } from "../components/ui/time-picker.tsx";
 import { userFacingError } from "../lib/user-facing-error.ts";
-import { weekdays } from "../lib/weekdays.ts";
+import { weekdayOptions, weekdays } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import { getProfessorGroupOptionsFn } from "../server/group-functions.ts";
 import {
@@ -120,7 +123,7 @@ function ManageGroupsPage() {
 					</div>
 					<div className="page-actions">
 						{periodCode && (
-							<span className="period-chip">Periodo {periodCode}</span>
+							<span className="period-chip">Período {periodCode}</span>
 						)}
 						<Link className="button-primary" to="/app/groups/new">
 							<Plus aria-hidden="true" size={18} strokeWidth={2} />
@@ -216,7 +219,7 @@ function ManageGroupsPage() {
 										<p>
 											{group.careerName}
 											{group.periodCode !== periodCode &&
-												` · Periodo ${group.periodCode}`}
+												` · Período ${group.periodCode}`}
 										</p>
 									</div>
 									<div className="group-card-tags">
@@ -303,24 +306,23 @@ function GroupForm({
 }) {
 	return (
 		<form className="group-form" onSubmit={onSubmit}>
-			<label className="field-label">
-				Periodo académico
-				<select
+			<div className="field-label">
+				<label htmlFor={`group-${group.id}-0`}>Período académico</label>
+				<Combobox
+					id={`group-${group.id}-0`}
 					className="field-outline"
 					defaultValue={group.periodCode}
+					emptyText="Ningún período coincide."
 					name="periodCode"
-					required
-				>
-					{!options.periods.some(({ code }) => code === group.periodCode) && (
-						<option value={group.periodCode}>{group.periodCode}</option>
-					)}
-					{options.periods.map(({ code }) => (
-						<option key={code} value={code}>
-							{code}
-						</option>
-					))}
-				</select>
-			</label>
+					options={[
+						...(options.periods.some(({ code }) => code === group.periodCode)
+							? []
+							: [{ value: group.periodCode, label: group.periodCode }]),
+						...options.periods.map(({ code }) => ({ value: code, label: code })),
+					]}
+					searchPlaceholder="Buscar período"
+				/>
+			</div>
 			<Field
 				label="Número de grupo"
 				min="1"
@@ -361,20 +363,16 @@ function GroupForm({
 				type="number"
 				value={group.teams}
 			/>
-			<label className="field-label">
-				Día de la semana
-				<select
-					className="field-outline"
-					defaultValue={group.weekday}
+			<div className="field-label">
+				<label htmlFor={`group-${group.id}-1`}>Día de la semana</label>
+				<OptionSelect
+					id={`group-${group.id}-1`}
+					className="w-full"
+					defaultValue={String(group.weekday)}
 					name="weekday"
-				>
-					{weekdays.map((day, index) => (
-						<option key={day} value={index}>
-							{day}
-						</option>
-					))}
-				</select>
-			</label>
+					options={weekdayOptions}
+				/>
+			</div>
 			<Field
 				label="Hora de inicio"
 				name="startTime"
@@ -419,19 +417,31 @@ function Field({
 	min?: string;
 	max?: string;
 }) {
+	const id = useId();
 	return (
-		<label className="field-label">
-			{label}
-			<input
-				className="field-outline"
-				defaultValue={value}
-				max={max}
-				min={min}
-				name={name}
-				required
-				type={type}
-			/>
-		</label>
+		<div className="field-label">
+			<label htmlFor={id}>{label}</label>
+			{type === "time" ? (
+				<TimePicker
+					id={id}
+					className="field-outline"
+					defaultValue={value}
+					name={name}
+					required
+				/>
+			) : (
+				<input
+					id={id}
+					className="field-outline"
+					defaultValue={value}
+					max={max}
+					min={min}
+					name={name}
+					required
+					type={type}
+				/>
+			)}
+		</div>
 	);
 }
 
@@ -446,24 +456,28 @@ function CatalogSelect({
 	current: { id: string; name: string };
 	entries: Array<{ id: string; name: string }>;
 }) {
+	const id = useId();
 	return (
-		<label className="field-label">
-			{label}
-			<select
+		<div className="field-label">
+			<label htmlFor={id}>{label}</label>
+			<Combobox
+				id={id}
 				className="field-outline"
 				defaultValue={current.id}
+				emptyText="Sin resultados."
 				name={name}
-				required
-			>
-				{!entries.some(({ id }) => id === current.id) && (
-					<option value={current.id}>{current.name} (nombre guardado)</option>
-				)}
-				{entries.map(({ id, name: entryName }) => (
-					<option key={id} value={id}>
-						{entryName}
-					</option>
-				))}
-			</select>
-		</label>
+				options={[
+					...(entries.some(({ id }) => id === current.id)
+						? []
+						: [
+								{
+									value: current.id,
+									label: `${current.name} (nombre guardado)`,
+								},
+							]),
+					...entries.map((entry) => ({ value: entry.id, label: entry.name })),
+				]}
+			/>
+		</div>
 	);
 }

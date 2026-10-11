@@ -1,7 +1,7 @@
-import { asc, inArray } from 'drizzle-orm'
+import { asc, count, eq, inArray } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type * as schema from '../db/schema.ts'
-import { periods } from '../db/schema.ts'
+import { groups, periods } from '../db/schema.ts'
 import {
 	currentAcademicPeriodCode,
 	regularPeriodCodes,
@@ -23,6 +23,22 @@ export async function listAcademicPeriods(
 			? currentCode
 			: null,
 	}
+}
+
+export async function listAcademicPeriodsWithGroupCounts(
+	database: PeriodDatabase,
+): Promise<Array<AcademicPeriod & { groupCount: number }>> {
+	return database
+		.select({
+			code: periods.code,
+			startsOn: periods.startsOn,
+			endsOn: periods.endsOn,
+			groupCount: count(groups.id),
+		})
+		.from(periods)
+		.leftJoin(groups, eq(groups.periodCode, periods.code))
+		.groupBy(periods.code)
+		.orderBy(asc(periods.code))
 }
 
 export async function saveAcademicPeriod(

@@ -66,6 +66,27 @@ export function upcomingSessionDates({
 	});
 }
 
+/** A date the professor picked by hand, or null when the group cannot meet then. */
+export function sessionDateOption({
+	date,
+	weekday,
+	today,
+	nowTime,
+	startTime,
+	minimumNoticeDays,
+}: {
+	date: string;
+	weekday: number;
+	today: string;
+	nowTime: string;
+	startTime: string;
+	minimumNoticeDays: number;
+}): SessionDateOption | null {
+	if (toDate(date).getUTCDay() !== weekday || date < today) return null;
+	if (date === today && nowTime >= startTime.slice(0, 5)) return null;
+	return { date, late: daysBetween(today, date) < minimumNoticeDays };
+}
+
 const dateFormats = {
 	/** "lun 12 oct" */
 	short: { weekday: "short", day: "numeric", month: "short" },

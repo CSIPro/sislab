@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
-import { listPendingAccounts } from "./accounts.ts";
+import { type AccountRole, listPendingAccounts } from "./accounts.ts";
 import { requireRole, requireUser } from "./auth.server.ts";
 import { createFirstUsableOperations } from "./first-usable-operations.ts";
 
@@ -15,9 +15,9 @@ export const listPendingAccountsFn = createServerFn({ method: "GET" }).handler(
 );
 
 export const activatePendingAccountFn = createServerFn({ method: "POST" })
-	.validator(parseUserId)
+	.validator(parseActivation)
 	.handler(async ({ data }) =>
-		firstUsableOperations.activateAccount(data.userId),
+		firstUsableOperations.activateAccount(data.userId, data.roles),
 	);
 
 function parseSignUpInput(input: unknown) {
@@ -38,12 +38,24 @@ function parseSignUpInput(input: unknown) {
 	};
 }
 
-function parseUserId(input: unknown): { userId: string } {
-	const userId = record(input).userId;
+const accountRoles: AccountRole[] = ["professor", "staff", "admin"];
+
+function parseActivation(input: unknown): {
+	userId: string;
+	roles?: AccountRole[];
+} {
+	const { userId, roles } = record(input);
 	if (typeof userId !== "string" || !/^[0-9a-f-]{36}$/i.test(userId)) {
 		throw new Error("Choose a valid pending account.");
 	}
-	return { userId };
+	if (roles === undefined) return { userId };
+	if (
+		!Array.isArray(roles) ||
+		!roles.every((role) => accountRoles.includes(role))
+	) {
+		throw new Error("Choose valid roles for the account.");
+	}
+	return { userId, roles };
 }
 
 function record(input: unknown): Record<string, unknown> {

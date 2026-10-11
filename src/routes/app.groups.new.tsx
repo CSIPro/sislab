@@ -1,7 +1,10 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { OptionSelect } from "../components/option-select.tsx";
+import { Combobox } from "../components/ui/combobox.tsx";
+import { TimePicker } from "../components/ui/time-picker.tsx";
 import { userFacingError } from "../lib/user-facing-error.ts";
-import { weekdays } from "../lib/weekdays.ts";
+import { weekdayOptions } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	getProfessorGroupOptionsFn,
@@ -26,11 +29,11 @@ function NewGroupPage() {
 	const [message, setMessage] = useState("");
 	const [createdNumber, setCreatedNumber] = useState<number | null>(null);
 	const [busy, setBusy] = useState(false);
+	const [formKey, setFormKey] = useState(0);
 
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		const formElement = event.currentTarget;
-		const form = new FormData(formElement);
+		const form = new FormData(event.currentTarget);
 		setBusy(true);
 		setMessage("");
 		setCreatedNumber(null);
@@ -53,9 +56,10 @@ function NewGroupPage() {
 			});
 			setCreatedNumber(group.number);
 			setMessage(
-				`El grupo ${group.number} se registró en el periodo ${group.periodCode}.`,
+				`El grupo ${group.number} se registró en el período ${group.periodCode}.`,
 			);
-			formElement.reset();
+			// A new key remounts the form, which also clears the pickers.
+			setFormKey((key) => key + 1);
 			setPeriodCode(options.suggestedCode ?? options.periods[0]?.code ?? "");
 		} catch (error) {
 			setMessage(userFacingError(error, "No se pudo registrar el grupo. Inténtalo de nuevo."));
@@ -71,11 +75,11 @@ function NewGroupPage() {
 					Registrar grupo
 				</h1>
 				<p className="text-[var(--muted-foreground)]">
-					Elige un periodo disponible y registra el horario de laboratorio asignado a tu grupo. SISLAB no asigna ni reserva horarios. Deja el número de grupo vacío para usar el siguiente número disponible.
+					Elige un período disponible y registra el horario de laboratorio asignado a tu grupo. SISLAB no asigna ni reserva horarios. Deja el número de grupo vacío para usar el siguiente número disponible.
 				</p>
 				{options.periods.length === 0 && (
 					<output className="mt-5 rounded-lg border border-[var(--border)] p-3">
-						Aún no hay periodos académicos disponibles. Pide a una persona administradora que configure uno.
+						Aún no hay períodos académicos disponibles. Pide a una persona administradora que configure uno.
 					</output>
 				)}
 				{(options.labs.length === 0 ||
@@ -89,24 +93,26 @@ function NewGroupPage() {
 					options.labs.length > 0 &&
 					options.careers.length > 0 &&
 					options.subjects.length > 0 && (
-						<form className="mt-6 grid gap-4" onSubmit={submit}>
-							<label className="grid gap-1 text-sm font-medium">
-								Periodo académico
-								<select
-									className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+						<form className="mt-6 grid gap-4" key={formKey} onSubmit={submit}>
+							<div className="grid gap-1 text-sm font-medium">
+								<label htmlFor="new-group-period">Período académico</label>
+								<Combobox
+									id="new-group-period"
+									className="field-outline"
+									emptyText="Ningún período coincide."
 									name="periodCode"
+									onValueChange={setPeriodCode}
+									options={options.periods.map(({ code }) => ({
+										value: code,
+										label:
+											code === options.suggestedCode
+												? `${code} (sugerido)`
+												: code,
+									}))}
+									searchPlaceholder="Buscar período"
 									value={periodCode}
-									onChange={(event) => setPeriodCode(event.currentTarget.value)}
-									required
-								>
-									{options.periods.map(({ code }) => (
-										<option key={code} value={code}>
-											{code}
-											{code === options.suggestedCode ? " (sugerido)" : ""}
-										</option>
-									))}
-								</select>
-							</label>
+								/>
+							</div>
 							<label className="grid gap-1 text-sm font-medium">
 								Número de grupo (opcional)
 								<input
@@ -118,48 +124,51 @@ function NewGroupPage() {
 									placeholder="Siguiente disponible"
 								/>
 							</label>
-							<label className="grid gap-1 text-sm font-medium">
-								Laboratorio
-								<select
-									className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+							<div className="grid gap-1 text-sm font-medium">
+								<label htmlFor="new-group-lab">Laboratorio</label>
+								<Combobox
+									id="new-group-lab"
+									className="field-outline"
+									defaultValue={options.labs[0]?.id}
+									emptyText="Ningún laboratorio coincide."
 									name="labId"
-									required
-								>
-									{options.labs.map(({ id, name }) => (
-										<option key={id} value={id}>
-											{name}
-										</option>
-									))}
-								</select>
-							</label>
-							<label className="grid gap-1 text-sm font-medium">
-								Carrera
-								<select
-									className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+									options={options.labs.map(({ id, name }) => ({
+										value: id,
+										label: name,
+									}))}
+									searchPlaceholder="Buscar laboratorio"
+								/>
+							</div>
+							<div className="grid gap-1 text-sm font-medium">
+								<label htmlFor="new-group-career">Carrera</label>
+								<Combobox
+									id="new-group-career"
+									className="field-outline"
+									defaultValue={options.careers[0]?.id}
+									emptyText="Ninguna carrera coincide."
 									name="careerId"
-									required
-								>
-									{options.careers.map(({ id, name }) => (
-										<option key={id} value={id}>
-											{name}
-										</option>
-									))}
-								</select>
-							</label>
-							<label className="grid gap-1 text-sm font-medium">
-								Materia
-								<select
-									className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+									options={options.careers.map(({ id, name }) => ({
+										value: id,
+										label: name,
+									}))}
+									searchPlaceholder="Buscar carrera"
+								/>
+							</div>
+							<div className="grid gap-1 text-sm font-medium">
+								<label htmlFor="new-group-subject">Materia</label>
+								<Combobox
+									id="new-group-subject"
+									className="field-outline"
+									defaultValue={options.subjects[0]?.id}
+									emptyText="Ninguna materia coincide."
 									name="subjectId"
-									required
-								>
-									{options.subjects.map(({ id, name }) => (
-										<option key={id} value={id}>
-											{name}
-										</option>
-									))}
-								</select>
-							</label>
+									options={options.subjects.map(({ id, name }) => ({
+										value: id,
+										label: name,
+									}))}
+									searchPlaceholder="Buscar materia"
+								/>
+							</div>
 							<label className="grid gap-1 text-sm font-medium">
 								Estudiantes
 								<input
@@ -185,39 +194,31 @@ function NewGroupPage() {
 									required
 								/>
 							</label>
-							<label className="grid gap-1 text-sm font-medium">
-								Día de la semana
-								<select
-									className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+							<div className="grid gap-1 text-sm font-medium">
+								<label htmlFor="new-group-weekday">Día de la semana</label>
+								<OptionSelect
+									id="new-group-weekday"
+									className="w-full"
+									defaultValue="0"
 									name="weekday"
-									required
-								>
-									{weekdays.map((day, index) => (
-										<option key={day} value={index}>
-											{day}
-										</option>
-									))}
-								</select>
-							</label>
+									options={weekdayOptions}
+								/>
+							</div>
 							<div className="grid grid-cols-2 gap-3">
-								<label className="grid gap-1 text-sm font-medium">
-									Hora de inicio
-									<input
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-										name="startTime"
-										type="time"
-										required
+								<div className="grid gap-1 text-sm font-medium">
+									<label htmlFor="new-group-start">Hora de inicio</label>
+									<TimePicker
+										id="new-group-start"
+										className="field-outline" name="startTime" required
 									/>
-								</label>
-								<label className="grid gap-1 text-sm font-medium">
-									Hora de término
-									<input
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-										name="endTime"
-										type="time"
-										required
+								</div>
+								<div className="grid gap-1 text-sm font-medium">
+									<label htmlFor="new-group-end">Hora de término</label>
+									<TimePicker
+										id="new-group-end"
+										className="field-outline" name="endTime" required
 									/>
-								</label>
+								</div>
 							</div>
 							<div>
 								<button

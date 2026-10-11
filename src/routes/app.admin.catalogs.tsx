@@ -1,155 +1,352 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
-import { getCurrentSessionFn } from '../server/auth-functions.ts'
-import { userFacingError } from '../lib/user-facing-error.ts'
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { type FormEvent, useState } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../components/ui/dialog.tsx";
+import { userFacingError } from "../lib/user-facing-error.ts";
+import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	addCatalogEntryFn,
 	importCatalogValuesFn,
 	listCatalogEntriesFn,
+	reactivateCatalogEntryFn,
 	renameCatalogEntryFn,
 	retireCatalogEntryFn,
-} from '../server/catalog-functions.ts'
-import type { CatalogEntry, CatalogKind } from '../server/catalogs.ts'
+} from "../server/catalog-functions.ts";
+import type { CatalogEntry, CatalogKind } from "../server/catalogs.ts";
 
-export const Route = createFileRoute('/app/admin/catalogs')({
+const kinds = ["labs", "careers", "subjects"] as const;
+
+export const Route = createFileRoute("/app/admin/catalogs")({
 	loader: async () => {
-		const user = await getCurrentSessionFn()
-		if (!user) throw redirect({ to: '/sign-in' })
-		if (!user.roles.includes('admin')) throw redirect({ to: '/app/dashboard' })
+		const user = await getCurrentSessionFn();
+		if (!user) throw redirect({ to: "/sign-in" });
+		if (!user.roles.includes("admin")) throw redirect({ to: "/app/dashboard" });
 		const [labs, careers, subjects] = await Promise.all(
-			(['labs', 'careers', 'subjects'] as const).map((kind) =>
-				listCatalogEntriesFn({ data: { kind } }),
-			),
-		)
-		return { labs, careers, subjects }
+			kinds.map((kind) => listCatalogEntriesFn({ data: { kind } })),
+		);
+		return { labs, careers, subjects };
 	},
-	component: CatálogosPage,
-})
+	component: CatalogsPage,
+});
 
-const labels: Record<CatalogKind, string> = {
-	labs: 'Laboratorios',
-	careers: 'Carreras',
-	subjects: 'Materias',
-}
+const catalogs: Record<
+	CatalogKind,
+	{
+		title: string;
+		addLabel: string;
+		placeholder: string;
+		active: string;
+		retired: string;
+	}
+> = {
+	labs: {
+		title: "Laboratorios",
+		addLabel: "Agregar laboratorio",
+		placeholder: "SN-210",
+		active: "Activo",
+		retired: "Retirado",
+	},
+	careers: {
+		title: "Carreras",
+		addLabel: "Agregar carrera",
+		placeholder: "Nombre de la carrera",
+		active: "Activa",
+		retired: "Retirada",
+	},
+	subjects: {
+		title: "Materias",
+		addLabel: "Agregar materia",
+		placeholder: "Nombre de la materia",
+		active: "Activa",
+		retired: "Retirada",
+	},
+};
 
-function CatálogosPage() {
-	const initial = Route.useLoaderData()
-	const [entries, setEntries] = useState<Record<CatalogKind, CatalogEntry[]>>({
-		labs: initial.labs,
-		careers: initial.careers,
-		subjects: initial.subjects,
-	})
-	const [message, setMessage] = useState('')
-	const [busy, setBusy] = useState(false)
+function CatalogsPage() {
+	const initial = Route.useLoaderData();
+	const [entries, setEntries] =
+		useState<Record<CatalogKind, CatalogEntry[]>>(initial);
+	const [renaming, setRenaming] = useState<{
+		kind: CatalogKind;
+		entry: CatalogEntry;
+		name: string;
+	} | null>(null);
+	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
+		null,
+	);
+	const [busy, setBusy] = useState(false);
 
 	async function refresh(kind: CatalogKind) {
-		const result = await listCatalogEntriesFn({ data: { kind } })
-		setEntries((current) => ({ ...current, [kind]: result }))
+		const result = await listCatalogEntriesFn({ data: { kind } });
+		setEntries((current) => ({ ...current, [kind]: result }));
+	}
+
+	async function run(
+		fallback: string,
+		action: () => Promise<string>,
+	): Promise<boolean> {
+		setBusy(true);
+		setNotice(null);
+		try {
+			setNotice({ text: await action(), error: false });
+			return true;
+		} catch (error) {
+			setNotice({ text: userFacingError(error, fallback), error: true });
+			return false;
+		} finally {
+			setBusy(false);
+		}
 	}
 
 	async function add(event: FormEvent<HTMLFormElement>, kind: CatalogKind) {
-		event.preventDefault()
-		const form = event.currentTarget
-		const data = new FormData(form)
-		setBusy(true)
-		setMessage('')
-		try {
-			await addCatalogEntryFn({ data: { kind, name: String(data.get('name') ?? '') } })
-			await refresh(kind)
-			form.reset()
-			setMessage(`Se guardó el elemento de ${labels[kind].toLowerCase()}.`)
-		} catch (error) {
-			setMessage(userFacingError(error, 'No se pudo guardar este elemento.'))
-		} finally {
-			setBusy(false)
-		}
+		event.preventDefault();
+		const form = event.currentTarget;
+		const name = String(new FormData(form).get("name") ?? "");
+		const added = await run("No se pudo guardar este elemento.", async () => {
+			await addCatalogEntryFn({ data: { kind, name } });
+			await refresh(kind);
+			return `Se agregó “${name.trim()}” a ${catalogs[kind].title.toLocaleLowerCase("es-MX")}.`;
+		});
+		if (added) form.reset();
 	}
 
-	async function rename(kind: CatalogKind, entry: CatalogEntry) {
-		const name = window.prompt('Nuevo nombre para el catálogo', entry.name)
-		if (name === null) return
-		setBusy(true)
-		setMessage('')
-		try {
-			await renameCatalogEntryFn({ data: { kind, id: entry.id, name } })
-			await refresh(kind)
-			setMessage('Se actualizó el nombre. Las etiquetas de los grupos existentes se conservaron.')
-		} catch (error) {
-			setMessage(userFacingError(error, 'No se pudo cambiar el nombre de este elemento.'))
-		} finally {
-			setBusy(false)
-		}
-	}
+	const setActive = (kind: CatalogKind, entry: CatalogEntry, active: boolean) =>
+		run(
+			active
+				? "No se pudo reactivar este elemento."
+				: "No se pudo retirar este elemento.",
+			async () => {
+				const change = active ? reactivateCatalogEntryFn : retireCatalogEntryFn;
+				await change({ data: { kind, id: entry.id } });
+				await refresh(kind);
+				return active
+					? `“${entry.name}” vuelve a ofrecerse al registrar grupos.`
+					: `“${entry.name}” ya no se ofrece. Los grupos que lo usan conservan su etiqueta.`;
+			},
+		);
 
-	async function retire(kind: CatalogKind, entry: CatalogEntry) {
-		setBusy(true)
-		setMessage('')
-		try {
-			await retireCatalogEntryFn({ data: { kind, id: entry.id } })
-			await refresh(kind)
-			setMessage('Se retiró el elemento. Las etiquetas de los grupos existentes se conservaron.')
-		} catch (error) {
-			setMessage(userFacingError(error, 'No se pudo retirar este elemento.'))
-		} finally {
-			setBusy(false)
-		}
+	async function rename(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!renaming) return;
+		const { kind, entry, name } = renaming;
+		const renamed = await run(
+			"No se pudo cambiar el nombre de este elemento.",
+			async () => {
+				await renameCatalogEntryFn({ data: { kind, id: entry.id, name } });
+				await refresh(kind);
+				return "Se actualizó el nombre. Los grupos existentes conservan la etiqueta anterior.";
+			},
+		);
+		if (renamed) setRenaming(null);
 	}
 
 	async function importSupplied(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault()
-		const form = new FormData(event.currentTarget)
-		const parseLines = (key: CatalogKind) => String(form.get(key) ?? '').split(/\r?\n/).filter((value) => value.trim())
-		setBusy(true)
-		setMessage('')
-		try {
-			await importCatalogValuesFn({
-				data: { labs: parseLines('labs'), careers: parseLines('careers'), subjects: parseLines('subjects') },
-			})
-			await Promise.all((['labs', 'careers', 'subjects'] as const).map(refresh))
-			setMessage('Se cargaron los valores proporcionados. Si repites la importación, no se crearán duplicados.')
-		} catch (error) {
-			setMessage(userFacingError(error, 'No se pudieron cargar los valores proporcionados.'))
-		} finally {
-			setBusy(false)
-		}
+		event.preventDefault();
+		const formElement = event.currentTarget;
+		const form = new FormData(formElement);
+		const lines = (kind: CatalogKind) =>
+			String(form.get(kind) ?? "")
+				.split(/\r?\n/)
+				.filter((value) => value.trim());
+		const imported = await run(
+			"No se pudieron cargar los valores.",
+			async () => {
+				await importCatalogValuesFn({
+					data: {
+						labs: lines("labs"),
+						careers: lines("careers"),
+						subjects: lines("subjects"),
+					},
+				});
+				await Promise.all(kinds.map(refresh));
+				return "Se cargaron los valores. Los que ya existían se omitieron.";
+			},
+		);
+		if (imported) formElement.reset();
 	}
 
 	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">Catálogos</h1>
-				<p className="text-[var(--muted-foreground)]">Administra los laboratorios, carreras y materias disponibles en los formularios de grupos. Los valores retirados se conservan en los grupos existentes.</p>
-				<form className="mt-8 grid gap-4 sm:grid-cols-3" onSubmit={importSupplied}>
-					<h2 className="sm:col-span-3 text-lg font-semibold">Cargar valores proporcionados</h2>
-					{(['labs', 'careers', 'subjects'] as const).map((kind) => (
-						<label className="grid gap-1 text-sm font-medium" key={kind}>{labels[kind]}<textarea className="min-h-28 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2" name={kind} placeholder="Un valor por línea" /></label>
-					))}
-					<button className="w-fit rounded-lg bg-[var(--primary)] px-5 py-2.5 font-semibold text-[var(--primary-foreground)] disabled:opacity-60 sm:col-span-3" disabled={busy} type="submit">Cargar catálogos</button>
-				</form>
-				<div className="mt-8 grid gap-6 lg:grid-cols-3">
-					{(['labs', 'careers', 'subjects'] as const).map((kind) => (
-						<section className="rounded-xl border border-[var(--border)] p-4" key={kind}>
-							<h2 className="text-lg font-semibold">{labels[kind]}</h2>
-							<form className="mt-3 flex gap-2" onSubmit={(event) => add(event, kind)}>
-								<input aria-label={`Nombre de ${labels[kind].toLowerCase()}`} className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2" name="name" required />
-								<button className="rounded-lg border border-[var(--border)] px-4 py-2 font-semibold" disabled={busy} type="submit">Agregar</button>
-							</form>
-							<ul className="mt-3 divide-y divide-[var(--border)]">
-								{entries[kind].map((entry) => (
-									<li className="flex items-center justify-between gap-2 py-3" key={entry.id}>
-									<span className={entry.active ? '' : 'text-[var(--muted-foreground)] line-through'}>{entry.name}{entry.active ? '' : ' (retirado)'}</span>
-										<span className="flex shrink-0 gap-2">
-											<button className="text-sm font-semibold underline" disabled={busy} onClick={() => rename(kind, entry)} type="button">Cambiar nombre</button>
-											{entry.active && <button className="text-sm font-semibold underline" disabled={busy} onClick={() => retire(kind, entry)} type="button">Retirar</button>}
-										</span>
-									</li>
-								))}
-							</ul>
-						</section>
-					))}
+		<main className="app-page">
+			<div className="app-page-inner is-compact">
+				<header className="page-head-copy">
+					<h1 className="page-title">Catálogos</h1>
+					<p className="page-sub">
+						Las listas que se usan al registrar grupos. Un elemento retirado
+						deja de ofrecerse, pero sigue visible en los grupos y solicitudes
+						que ya lo usan.
+					</p>
+				</header>
+
+				{notice && (
+					<output
+						aria-live="polite"
+						className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
+					>
+						{notice.text}
+					</output>
+				)}
+
+				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] items-start gap-6">
+					{kinds.map((kind) => {
+						const catalog = catalogs[kind];
+						return (
+							<section
+								aria-labelledby={`catalog-${kind}`}
+								className="panel"
+								key={kind}
+							>
+								<div className="flex items-baseline justify-between gap-3">
+									<h2 className="panel-title" id={`catalog-${kind}`}>
+										{catalog.title}
+									</h2>
+									<span className="text-[13.5px] text-muted-foreground">
+										{entries[kind].length === 1
+											? "1 elemento"
+											: `${entries[kind].length} elementos`}
+									</span>
+								</div>
+								<form
+									className="inline-form"
+									onSubmit={(event) => void add(event, kind)}
+								>
+									<label className="field-label">
+										{catalog.addLabel}
+										<input
+											className="field"
+											name="name"
+											placeholder={catalog.placeholder}
+											required
+										/>
+									</label>
+									<button
+										className="button-primary"
+										disabled={busy}
+										type="submit"
+									>
+										Agregar
+									</button>
+								</form>
+								<ul className="m-0 list-none p-0">
+									{entries[kind].map((entry) => (
+										<li
+											className={`list-row${entry.active ? "" : " is-retired"}`}
+											key={entry.id}
+										>
+											<span>{entry.name}</span>
+											<span
+												className={`chip ${entry.active ? "chip-ok" : "chip-off"}`}
+											>
+												{entry.active ? catalog.active : catalog.retired}
+											</span>
+											<button
+												aria-label={`Cambiar el nombre de ${entry.name}`}
+												className="button-text"
+												disabled={busy}
+												onClick={() =>
+													setRenaming({ kind, entry, name: entry.name })
+												}
+												type="button"
+											>
+												Renombrar
+											</button>
+											<button
+												aria-label={`${entry.active ? "Retirar" : "Reactivar"} ${entry.name}`}
+												className="button-text"
+												disabled={busy}
+												onClick={() =>
+													void setActive(kind, entry, !entry.active)
+												}
+												type="button"
+											>
+												{entry.active ? "Retirar" : "Reactivar"}
+											</button>
+										</li>
+									))}
+								</ul>
+							</section>
+						);
+					})}
 				</div>
-				{message && <p className="mt-4 text-sm" role="status">{message}</p>}
-			</section>
+
+				<details className="panel">
+					<summary className="cursor-pointer font-bold">
+						Cargar varios valores a la vez
+					</summary>
+					<form className="flex flex-col gap-4" onSubmit={importSupplied}>
+						<p className="request-step-help">
+							Escribe un valor por línea. Los que ya existen se omiten.
+						</p>
+						<div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4">
+							{kinds.map((kind) => (
+								<label className="field-label" key={kind}>
+									{catalogs[kind].title}
+									<textarea className="field" name={kind} />
+								</label>
+							))}
+						</div>
+						<div>
+							<button
+								className="button-secondary"
+								disabled={busy}
+								type="submit"
+							>
+								Cargar valores
+							</button>
+						</div>
+					</form>
+				</details>
+			</div>
+
+			<Dialog
+				onOpenChange={(open) => {
+					if (!open) setRenaming(null);
+				}}
+				open={renaming !== null}
+			>
+				<DialogContent className="rounded-lg">
+					<form className="flex flex-col gap-4" onSubmit={rename}>
+						<DialogHeader>
+							<DialogTitle>Cambiar nombre</DialogTitle>
+							<DialogDescription>
+								Los grupos y solicitudes existentes conservan la etiqueta
+								anterior.
+							</DialogDescription>
+						</DialogHeader>
+						<label className="field-label">
+							Nombre
+							<input
+								className="field"
+								onChange={(event) =>
+									setRenaming(
+										(current) =>
+											current && { ...current, name: event.target.value },
+									)
+								}
+								required
+								value={renaming?.name ?? ""}
+							/>
+						</label>
+						<DialogFooter>
+							<button
+								className="button-secondary button-tall"
+								onClick={() => setRenaming(null)}
+								type="button"
+							>
+								Cancelar
+							</button>
+							<button className="button-primary" disabled={busy} type="submit">
+								Guardar nombre
+							</button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
 		</main>
-	)
+	);
 }

@@ -1,6 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { db } from '../db/index.ts'
-import { ensureRegularAcademicPeriods, listAcademicPeriods, saveAcademicPeriod } from './academic-periods.ts'
+import {
+	ensureRegularAcademicPeriods,
+	listAcademicPeriods,
+	listAcademicPeriodsWithGroupCounts,
+	saveAcademicPeriod,
+} from './academic-periods.ts'
 import { requireRole, requireUser } from './auth.server.ts'
 
 export const listAcademicPeriodsFn = createServerFn({ method: 'GET' }).handler(
@@ -9,6 +14,13 @@ export const listAcademicPeriodsFn = createServerFn({ method: 'GET' }).handler(
 		return listAcademicPeriods(db)
 	},
 )
+
+export const listAcademicPeriodsWithGroupCountsFn = createServerFn({
+	method: 'GET',
+}).handler(async () => {
+	await requireAdmin()
+	return listAcademicPeriodsWithGroupCounts(db)
+})
 
 export const saveAcademicPeriodFn = createServerFn({ method: 'POST' })
 	.validator(parsePeriodInput)

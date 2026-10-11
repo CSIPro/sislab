@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { CalendarDays, ChevronRight, Clock, MapPin, Plus } from "lucide-react";
 import { StatusChip } from "../components/request-parts.tsx";
+import { TableShell } from "../components/table-shell.tsx";
 import {
 	addDays,
 	formatSessionDate,
@@ -82,7 +83,7 @@ function DashboardPage() {
 					</div>
 					<div className="page-actions">
 						{periodCode && (
-							<span className="period-chip">Periodo {periodCode}</span>
+							<span className="period-chip">Período {periodCode}</span>
 						)}
 						{isProfessor && (
 							<Link className="button-primary" to="/app/requests/new">
@@ -193,12 +194,12 @@ function DashboardPage() {
 								Abrir la vista completa
 							</Link>
 						</div>
-						<div className="table-shell">
+						<TableShell>
 							<table className="data-table" style={{ minWidth: 920 }}>
 								<thead>
 									<tr>
 										<th scope="col">Fecha y hora</th>
-										<th scope="col">Ejercicio</th>
+										<th scope="col">Práctica</th>
 										<th scope="col">Profesor</th>
 										<th scope="col">Grupo</th>
 										<th scope="col">Lab.</th>
@@ -236,7 +237,7 @@ function DashboardPage() {
 									No hay solicitudes en los próximos {STAFF_WINDOW_DAYS} días.
 								</p>
 							)}
-						</div>
+						</TableShell>
 					</section>
 				)}
 			</div>

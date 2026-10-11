@@ -1,12 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { Fragment, useState } from "react";
+import { OptionSelect } from "../components/option-select.tsx";
 import {
 	RequestDetails,
 	StatusChip,
 	statusFilterOptions,
 	voidedByName,
 } from "../components/request-parts.tsx";
+import { TableShell } from "../components/table-shell.tsx";
+import { Combobox } from "../components/ui/combobox.tsx";
+import { DatePicker } from "../components/ui/date-picker.tsx";
 import {
 	canDecideLateException,
 	requestStatusKey,
@@ -176,7 +180,7 @@ function AllPreparationRequestsPage() {
 							{range === "day"
 								? formatSessionDate(date, "full")
 								: `Semana del ${formatDateSpan(selected.from, selected.through)}`}
-							{periodCode && ` · Periodo ${periodCode}`}
+							{periodCode && ` · Período ${periodCode}`}
 						</p>
 					</div>
 					<button
@@ -249,47 +253,37 @@ function AllPreparationRequestsPage() {
 						>
 							<ChevronRight aria-hidden="true" size={18} />
 						</button>
-						<input
+						<DatePicker
 							aria-label="Fecha"
 							className="field-outline"
-							onChange={(event) => {
-								if (event.target.value) void show(event.target.value, range);
-							}}
-							type="date"
+							onValueChange={(value) => void show(value, range)}
 							value={date}
 						/>
 					</div>
 					<div className="toolbar-group">
 						<label htmlFor="all-requests-lab">Laboratorio</label>
-						<select
+						<Combobox
 							className="field-outline"
+							emptyText="Ningún laboratorio coincide."
 							id="all-requests-lab"
-							onChange={(event) => setLabFilter(event.target.value)}
+							onValueChange={setLabFilter}
+							options={[
+								{ value: "all", label: "Todos" },
+								...(labFilter !== "all" && !labs.includes(labFilter)
+									? [{ value: labFilter, label: labFilter }]
+									: []),
+								...labs.map((lab) => ({ value: lab, label: lab })),
+							]}
+							searchPlaceholder="Buscar laboratorio"
 							value={labFilter}
-						>
-							<option value="all">Todos</option>
-							{labFilter !== "all" && !labs.includes(labFilter) && (
-								<option value={labFilter}>{labFilter}</option>
-							)}
-							{labs.map((lab) => (
-								<option key={lab} value={lab}>
-									{lab}
-								</option>
-							))}
-						</select>
+						/>
 						<label htmlFor="all-requests-status">Estado</label>
-						<select
-							className="field-outline"
+						<OptionSelect
 							id="all-requests-status"
-							onChange={(event) => setStatusFilter(event.target.value)}
+							onValueChange={setStatusFilter}
+							options={statusFilterOptions}
 							value={statusFilter}
-						>
-							{statusFilterOptions.map(([value, label]) => (
-								<option key={value} value={value}>
-									{label}
-								</option>
-							))}
-						</select>
+						/>
 					</div>
 				</div>
 
@@ -299,12 +293,12 @@ function AllPreparationRequestsPage() {
 					</p>
 				)}
 
-				<div className="table-shell">
+				<TableShell>
 					<table className="data-table" style={{ minWidth: 1080 }}>
 						<thead>
 							<tr>
 								<th scope="col">Fecha y hora</th>
-								<th scope="col">Ejercicio</th>
+								<th scope="col">Práctica</th>
 								<th scope="col">Profesor</th>
 								<th scope="col">Grupo</th>
 								<th scope="col">Lab.</th>
@@ -325,9 +319,9 @@ function AllPreparationRequestsPage() {
 						</tbody>
 					</table>
 					{filtered.length === 0 && (
-						<p className="table-empty">No hay solicitudes en este periodo.</p>
+						<p className="table-empty">No hay solicitudes en estas fechas.</p>
 					)}
-				</div>
+				</TableShell>
 
 				<p className="footnote">
 					El ticket incluye las solicitudes ordinarias y las excepciones

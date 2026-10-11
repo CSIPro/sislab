@@ -6,6 +6,7 @@ import * as schema from '../src/db/schema.ts'
 import {
 	ensureRegularAcademicPeriods,
 	listAcademicPeriods,
+	listAcademicPeriodsWithGroupCounts,
 	saveAcademicPeriod,
 } from '../src/server/academic-periods.ts'
 
@@ -53,4 +54,14 @@ test('suggestion uses the Hermosillo month at January and July boundaries', asyn
 	const july = await listAcademicPeriods(database, new Date('2098-07-01T07:30:00.000Z'))
 	assert.equal(january.suggestedCode, '2098-1')
 	assert.equal(july.suggestedCode, '2098-2')
+})
+
+test('admins see how many groups each period holds', async () => {
+	await ensureRegularAcademicPeriods(database, [testYear])
+	const listed = await listAcademicPeriodsWithGroupCounts(database)
+	const seeded = listed.filter(({ code }) => [`${testYear}-1`, `${testYear}-2`].includes(code))
+	assert.deepEqual(
+		seeded.map(({ code, groupCount }) => [code, groupCount]),
+		[['2098-1', 0], ['2098-2', 0]],
+	)
 })

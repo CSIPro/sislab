@@ -1,6 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
+import { OptionSelect } from "../components/option-select.tsx";
+import { TableShell } from "../components/table-shell.tsx";
+import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { allRoles, initials, roleLabels } from "../lib/user-roles.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import type { ManagedUser, UserRole } from "../server/user-access.ts";
 import {
@@ -20,186 +24,295 @@ export const Route = createFileRoute("/app/admin/users")({
 	component: UserAccessPage,
 });
 
-const allRoles: UserRole[] = ["professor", "staff", "admin"];
+const roleFilterOptions = [
+	["all", "Todos"],
+	...allRoles.map((role) => [role, roleLabels[role]] as const),
+] as const;
 
 function UserAccessPage() {
 	const initial = Route.useLoaderData();
 	const [users, setUsers] = useState(initial.users);
-	const [roleDrafts, setRoleDrafts] = useState<Record<string, UserRole[]>>(() =>
-		Object.fromEntries(initial.users.map((user) => [user.id, user.roles])),
+	const [selectedId, setSelectedId] = useState(initial.users[0]?.id ?? null);
+	const [roleDrafts, setRoleDrafts] = useState<Record<string, UserRole[]>>({});
+	const [search, setSearch] = useState("");
+	const [roleFilter, setRoleFilter] = useState("all");
+	const [password, setPassword] = useState("");
+	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
+		null,
 	);
-	const [passwords, setPasswords] = useState<Record<string, string>>({});
-	const [message, setMessage] = useState("");
-	const [busyId, setBusyId] = useState<string | null>(null);
+	const [busy, setBusy] = useState(false);
 
-	async function saveRoles(user: ManagedUser) {
-		setBusyId(user.id);
-		setMessage("");
+	const query = searchable(search.trim());
+	const visible = users.filter(
+		(user) =>
+			(roleFilter === "all" || user.roles.includes(roleFilter as UserRole)) &&
+			searchable(`${user.name} ${user.surname} ${user.email}`).includes(query),
+	);
+	const selected = users.find(({ id }) => id === selectedId) ?? null;
+	const draftRoles = selected
+		? (roleDrafts[selected.id] ?? selected.roles)
+		: [];
+
+	function select(userId: string) {
+		setSelectedId(userId);
+		setPassword("");
+		setNotice(null);
+	}
+
+	async function run(fallback: string, action: () => Promise<string>) {
+		setBusy(true);
+		setNotice(null);
 		try {
-			const updated = await setUserRolesFn({
-				data: { userId: user.id, roles: roleDrafts[user.id] ?? [] },
-			});
-			updateUser(updated);
-			setMessage(`Se guardaron los roles de ${user.name} ${user.surname}.`);
+			setNotice({ text: await action(), error: false });
 		} catch (error) {
-			setMessage(errorText(error, "No se pudieron guardar los roles."));
+			setNotice({ text: userFacingError(error, fallback), error: true });
 		} finally {
-			setBusyId(null);
+			setBusy(false);
 		}
 	}
 
-	async function toggleActive(user: ManagedUser) {
-		setBusyId(user.id);
-		setMessage("");
-		try {
-			const updated = await setUserActiveFn({
-				data: { userId: user.id, active: !user.active },
-			});
-			updateUser(updated);
-			setMessage(
-				`${user.name} ${user.surname}: ${updated.active ? "acceso activo" : "acceso desactivado"}.`,
-			);
-		} catch (error) {
-			setMessage(errorText(error, "No se pudo actualizar el acceso."));
-		} finally {
-			setBusyId(null);
-		}
-	}
-
-	async function replacePassword(user: ManagedUser) {
-		const password = passwords[user.id] ?? "";
-		setBusyId(user.id);
-		setMessage("");
-		try {
-			await replaceUserPasswordFn({ data: { userId: user.id, password } });
-			setPasswords((current) => ({ ...current, [user.id]: "" }));
-			setMessage(
-				`Se cambió la contraseña de ${user.name} ${user.surname} y se cerraron sus otras sesiones.`,
-			);
-		} catch (error) {
-			setMessage(errorText(error, "No se pudo cambiar la contraseña."));
-		} finally {
-			setBusyId(null);
-		}
-	}
-
-	function updateUser(updated: ManagedUser) {
+	function applyUpdate(updated: ManagedUser) {
 		setUsers((current) =>
 			current.map((user) => (user.id === updated.id ? updated : user)),
 		);
-		setRoleDrafts((current) => ({ ...current, [updated.id]: updated.roles }));
+		setRoleDrafts(({ [updated.id]: _saved, ...rest }) => rest);
+	}
+
+	const saveRoles = (user: ManagedUser) =>
+		run("No se pudieron guardar los roles.", async () => {
+			applyUpdate(
+				await setUserRolesFn({ data: { userId: user.id, roles: draftRoles } }),
+			);
+			return `Se guardaron los roles de ${user.name} ${user.surname}.`;
+		});
+
+	const toggleActive = (user: ManagedUser) =>
+		run("No se pudo actualizar el acceso.", async () => {
+			const updated = await setUserActiveFn({
+				data: { userId: user.id, active: !user.active },
+			});
+			applyUpdate(updated);
+			return updated.active
+				? `${user.name} ${user.surname} ya puede ingresar de nuevo.`
+				: `Se desactivó la cuenta de ${user.name} ${user.surname}.`;
+		});
+
+	function replacePassword(event: FormEvent, user: ManagedUser) {
+		event.preventDefault();
+		return run("No se pudo cambiar la contraseña.", async () => {
+			await replaceUserPasswordFn({ data: { userId: user.id, password } });
+			setPassword("");
+			return `Se cambió la contraseña de ${user.name} ${user.surname} y se cerraron sus otras sesiones.`;
+		});
 	}
 
 	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell mx-auto max-w-5xl rounded-2xl p-6 sm:p-8">
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">
-					Acceso de usuarios
-				</h1>
-				<p className="text-[var(--muted-foreground)]">
-					Administra los roles y el acceso a las cuentas. Al cambiar una contraseña se cierran las sesiones activas de esa persona.
-				</p>
-				<ul className="mt-6 divide-y divide-[var(--border)]">
-					{users.map((user) => (
-						<li className="py-5" key={user.id}>
-							<div className="flex flex-wrap items-start justify-between gap-4">
-								<div>
-									<p className="m-0 font-semibold">
-										{user.name} {user.surname}
-									</p>
-									<p className="m-0 text-sm text-[var(--muted-foreground)]">
-										{user.email}
-									</p>
-								</div>
-								<button
-									className="rounded-lg border border-[var(--border)] px-4 py-2 font-semibold disabled:opacity-60"
-									type="button"
-									disabled={busyId !== null}
-									onClick={() => toggleActive(user)}
-								>
-									{user.active ? "Desactivar" : "Reactivar"}
-								</button>
+		<main className="app-page">
+			<div className="app-page-inner is-compact">
+				<header className="page-head-copy">
+					<h1 className="page-title">Usuarios</h1>
+					<p className="page-sub">
+						Administra los roles y el acceso de cada cuenta. Los accesos nuevos
+						se activan desde Cuentas.
+					</p>
+				</header>
+
+				<div className="split is-top">
+					<section className="stack-section min-w-0 flex-[1.8_1_560px]">
+						<div className="flex flex-wrap items-end gap-3">
+							<label className="field-label flex-[1_1_260px]">
+								Buscar
+								<input
+									className="field-outline"
+									onChange={(event) => setSearch(event.target.value)}
+									placeholder="Nombre o correo"
+									type="search"
+									value={search}
+								/>
+							</label>
+							<div className="field-label flex-[0_1_220px]">
+								<label htmlFor="users-role">Rol</label>
+								<OptionSelect
+									className="w-full"
+									id="users-role"
+									onValueChange={setRoleFilter}
+									options={roleFilterOptions}
+									value={roleFilter}
+								/>
 							</div>
-							<fieldset
-								className="mt-4 flex flex-wrap gap-4"
-								disabled={busyId !== null}
-							>
-								<legend className="sr-only">
-					Roles de {user.name} {user.surname}
-								</legend>
+						</div>
+
+						<TableShell>
+							<table className="data-table is-plain" style={{ minWidth: 640 }}>
+								<thead>
+									<tr>
+										<th scope="col">Nombre</th>
+										<th scope="col">Roles</th>
+										<th scope="col">Estado</th>
+									</tr>
+								</thead>
+								<tbody>
+									{visible.map((user) => (
+										<tr
+											className={
+												[
+													user.id === selectedId && "is-selected",
+													!user.active && "is-void",
+												]
+													.filter(Boolean)
+													.join(" ") || undefined
+											}
+											key={user.id}
+										>
+											<td>
+												<button
+													aria-pressed={user.id === selectedId}
+													className="row-button"
+													onClick={() => select(user.id)}
+													type="button"
+												>
+													<strong>
+														{user.name} {user.surname}
+													</strong>
+													<small>{user.email}</small>
+												</button>
+											</td>
+											<td>
+												<div className="flex flex-wrap gap-1.5">
+													{user.roles.map((role) => (
+														<span className="role-tag" key={role}>
+															{roleLabels[role]}
+														</span>
+													))}
+												</div>
+											</td>
+											<td>
+												<span
+													className={`chip ${user.active ? "chip-ok" : "chip-off"}`}
+												>
+													{user.active ? "Activa" : "Inactiva"}
+												</span>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+							{visible.length === 0 && (
+								<p className="table-empty">
+									Ninguna cuenta coincide con la búsqueda.
+								</p>
+							)}
+						</TableShell>
+					</section>
+
+					{selected && (
+						<section
+							aria-labelledby="user-detail-title"
+							className="panel max-w-[420px] flex-[1_1_320px]"
+						>
+							<div className="flex items-center gap-3.5">
+								<span aria-hidden="true" className="avatar is-accent">
+									{initials(selected)}
+								</span>
+								<div className="flex min-w-0 flex-col">
+									<h2 className="m-0 text-xl font-bold" id="user-detail-title">
+										{selected.name} {selected.surname}
+									</h2>
+									<span className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
+										{selected.email}
+									</span>
+								</div>
+							</div>
+
+							{notice && (
+								<output
+									aria-live="polite"
+									className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
+								>
+									{notice.text}
+								</output>
+							)}
+
+							<fieldset className="fieldset-plain" disabled={busy}>
+								<legend>Roles</legend>
 								{allRoles.map((role) => (
-									<label className="flex items-center gap-2" key={role}>
+									<label className="check-row" key={role}>
 										<input
-											checked={(roleDrafts[user.id] ?? []).includes(role)}
-											type="checkbox"
-											onChange={(event) => {
-												const selected = roleDrafts[user.id] ?? [];
+											checked={draftRoles.includes(role)}
+											onChange={(event) =>
 												setRoleDrafts((current) => ({
 													...current,
-													[user.id]: event.target.checked
-														? [...selected, role]
-														: selected.filter((entry) => entry !== role),
-												}));
-											}}
+													[selected.id]: event.target.checked
+														? [...draftRoles, role]
+														: draftRoles.filter((entry) => entry !== role),
+												}))
+											}
+											type="checkbox"
 										/>
-						{role === "professor" ? "Profesor" : role === "staff" ? "Personal de laboratorio" : "Administración"}
+										{roleLabels[role]}
 									</label>
 								))}
-								<button
-									className="rounded-lg border border-[var(--border)] px-4 py-1 font-semibold disabled:opacity-60"
-									type="button"
-									disabled={busyId !== null}
-									onClick={() => saveRoles(user)}
-								>
-					{busyId === user.id ? "Guardando…" : "Guardar roles"}
-								</button>
+								<p className="field-hint mt-1 mb-0">
+									Administración incluye los permisos del personal de
+									laboratorio.
+								</p>
 							</fieldset>
+
 							<form
-								className="mt-4 flex flex-wrap gap-2"
-								onSubmit={(event) => {
-									event.preventDefault();
-									void replacePassword(user);
-								}}
+								className="panel-section"
+								onSubmit={(event) => void replacePassword(event, selected)}
 							>
-								<label className="sr-only" htmlFor={`password-${user.id}`}>
-					Contraseña nueva para {user.name} {user.surname}
+								<h3>Contraseña</h3>
+								<p className="m-0 text-sm text-muted-foreground">
+									Las personas no pueden recuperarla por su cuenta. Escribe una
+									nueva y compártesela. Al cambiarla se cierran sus otras
+									sesiones.
+								</p>
+								<label className="field-label">
+									Contraseña nueva
+									<input
+										autoComplete="new-password"
+										className="field-outline"
+										minLength={12}
+										onChange={(event) => setPassword(event.target.value)}
+										required
+										value={password}
+									/>
+									<span className="field-hint">Al menos 12 caracteres.</span>
 								</label>
-								<input
-									className="rounded-lg border border-[var(--border)] px-4 py-2"
-									autoComplete="new-password"
-									id={`password-${user.id}`}
-									minLength={12}
-									placeholder="Contraseña nueva"
-									value={passwords[user.id] ?? ""}
-									required
-									onChange={(event) =>
-										setPasswords((current) => ({
-											...current,
-											[user.id]: event.target.value,
-										}))
-									}
-								/>
-								<button
-									className="rounded-lg border border-[var(--border)] px-4 py-2 font-semibold disabled:opacity-60"
-									type="submit"
-									disabled={busyId !== null}
-								>
-					Cambiar contraseña
-								</button>
+								<div>
+									<button
+										className="button-secondary"
+										disabled={busy}
+										type="submit"
+									>
+										Restablecer contraseña
+									</button>
+								</div>
 							</form>
-						</li>
-					))}
-				</ul>
-				{message && (
-					<output aria-live="polite" className="mt-4 block text-sm" role="status">
-						{message}
-					</output>
-				)}
-			</section>
+
+							<div className="panel-actions">
+								<button
+									className="button-primary"
+									disabled={busy}
+									onClick={() => void saveRoles(selected)}
+									type="button"
+								>
+									Guardar cambios
+								</button>
+								<button
+									className="button-secondary"
+									disabled={busy}
+									onClick={() => void toggleActive(selected)}
+									type="button"
+								>
+									{selected.active ? "Desactivar cuenta" : "Reactivar cuenta"}
+								</button>
+							</div>
+						</section>
+					)}
+				</div>
+			</div>
 		</main>
 	);
-}
-
-function errorText(error: unknown, fallback: string): string {
-	return userFacingError(error, fallback);
 }

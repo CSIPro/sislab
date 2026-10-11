@@ -14,8 +14,10 @@ export type PendingAccount = {
 	name: string;
 	surname: string;
 	active: boolean;
-	roles: ["professor"];
+	createdAt: Date;
+	roles: AccountRole[];
 };
+export type AccountRole = (typeof userRoles.$inferSelect)["role"];
 
 export type SignUpInput = {
 	email: string;
@@ -46,12 +48,13 @@ export async function signUp(
 					name: users.name,
 					surname: users.surname,
 					active: users.active,
+					createdAt: users.createdAt,
 				});
 			if (!user) throw new Error("Could not create the account.");
 			await transaction
 				.insert(userRoles)
 				.values({ userId: user.id, role: "professor" });
-			return { ...user, roles: ["professor"] };
+			return { ...user, roles: ["professor" as const] };
 		});
 	} catch (error) {
 		if (isUniqueViolation(error))
@@ -72,41 +75,53 @@ export async function listPendingAccounts(
 			name: users.name,
 			surname: users.surname,
 			active: users.active,
+			createdAt: users.createdAt,
 		})
 		.from(users)
 		.innerJoin(userRoles, eq(userRoles.userId, users.id))
 		.where(and(eq(users.active, false), eq(userRoles.role, "professor")))
 		.orderBy(asc(users.createdAt));
-	return rows.map((user) => ({ ...user, roles: ["professor"] }));
+	return rows.map((user) => ({ ...user, roles: ["professor" as const] }));
 }
 
 export async function activatePendingAccount(
 	database: AuthDatabase,
 	userId: string,
 	actor: AccountActor,
+	roles: AccountRole[] = ["professor"],
 ): Promise<PendingAccount> {
 	requireAdmin(actor);
-	const [user] = await database
-		.update(users)
-		.set({ active: true })
-		.from(userRoles)
-		.where(
-			and(
-				eq(users.id, userId),
-				eq(userRoles.userId, users.id),
-				eq(userRoles.role, "professor"),
-				eq(users.active, false),
-			),
-		)
-		.returning({
-			id: users.id,
-			email: users.email,
-			name: users.name,
-			surname: users.surname,
-			active: users.active,
-		});
-	if (!user) throw new Error("Pending professor account not found.");
-	return { ...user, roles: ["professor"] };
+	const granted = [...new Set(roles)];
+	if (granted.length === 0)
+		throw new Error("Choose at least one role for the account.");
+	return database.transaction(async (transaction) => {
+		const [user] = await transaction
+			.update(users)
+			.set({ active: true })
+			.from(userRoles)
+			.where(
+				and(
+					eq(users.id, userId),
+					eq(userRoles.userId, users.id),
+					eq(userRoles.role, "professor"),
+					eq(users.active, false),
+				),
+			)
+			.returning({
+				id: users.id,
+				email: users.email,
+				name: users.name,
+				surname: users.surname,
+				active: users.active,
+				createdAt: users.createdAt,
+			});
+		if (!user) throw new Error("Pending professor account not found.");
+		await transaction.delete(userRoles).where(eq(userRoles.userId, userId));
+		await transaction
+			.insert(userRoles)
+			.values(granted.map((role) => ({ userId, role })));
+		return { ...user, roles: granted };
+	});
 }
 
 function requireAdmin(actor: AccountActor): void {

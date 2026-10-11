@@ -45,7 +45,9 @@ test('professor signup remains pending until an admin activates the account', as
 		[userId, createHash('sha256').update(forgedToken).digest('hex')],
 	)
 	assert.equal(await getSession(database, forgedToken), null)
-	assert.ok((await listPendingAccounts(database, { roles: ['admin'] })).some(({ id }) => id === pending.id))
+	const listed = (await listPendingAccounts(database, { roles: ['admin'] })).find(({ id }) => id === pending.id)
+	assert.ok(listed)
+	assert.ok(listed.createdAt instanceof Date)
 	await assert.rejects(listPendingAccounts(database, { roles: ['professor'] }), /admin/i)
 	await assert.rejects(
 		signUp(database, {
@@ -57,10 +59,17 @@ test('professor signup remains pending until an admin activates the account', as
 		/already uses this email/i,
 	)
 
-	const activated = await activatePendingAccount(database, pending.id, { roles: ['admin'] })
+	await assert.rejects(
+		activatePendingAccount(database, pending.id, { roles: ['admin'] }, []),
+		/at least one role/i,
+	)
+	const activated = await activatePendingAccount(database, pending.id, { roles: ['admin'] }, ['staff', 'professor'])
 	assert.equal(activated.active, true)
+	assert.deepEqual([...activated.roles].sort(), ['professor', 'staff'])
 	assert.ok(!(await listPendingAccounts(database, { roles: ['admin'] })).some(({ id }) => id === pending.id))
 	const session = await signIn(database, { email, password: 'a supplied long professor secret' })
 	assert.ok(session)
-	assert.equal((await getSession(database, session.token))?.id, pending.id)
+	const signedIn = await getSession(database, session.token)
+	assert.equal(signedIn?.id, pending.id)
+	assert.deepEqual([...(signedIn?.roles ?? [])].sort(), ['professor', 'staff'])
 })

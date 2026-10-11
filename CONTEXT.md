@@ -12,8 +12,8 @@ _Avoid_: Semester
 A class assigned to one professor and a recurring laboratory slot during an academic period. Its number is unique among that professor's groups in the period.
 
 **Lab exercise**:
-A reusable description of work that a group can perform in a laboratory.
-_Avoid_: Practice, assignment
+A reusable description of work that a group can perform in a laboratory. The Spanish interface calls it a **práctica** ("Prácticas" in the navigation, "Elige la práctica" in the request form). Code, English docs, and the `lab_exercises` table keep "lab exercise".
+_Avoid_: Assignment. In the interface, avoid "ejercicio".
 
 **Preparation request**:
 A professor's request for laboratory staff to prepare the reagents, equipment, and waste handling needed for a lab exercise. It is fulfilled, not approved.
