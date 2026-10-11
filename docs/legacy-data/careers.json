@@ -1,0 +1,116 @@
+{
+  "total": 23,
+  "carreras": [
+    {
+      "_id": "64d6f216fbfe12bd2c84af38",
+      "carrera": "Ing. Agrónomo",
+      "estado": true
+    },
+    {
+      "_id": "63ffb43b99a18f8ea82edf1a",
+      "carrera": "Ing. Biomédica",
+      "estado": true
+    },
+    {
+      "_id": "63ffa10d99a18f8ea82edf15",
+      "carrera": "Ing. Civil",
+      "estado": true
+    },
+    {
+      "_id": "63ffb42699a18f8ea82edf19",
+      "carrera": "Ing. Energías Renovables",
+      "estado": true
+    },
+    {
+      "_id": "63ffa0cc99a18f8ea82edf12",
+      "carrera": "Ing. Industrial y de Sistemas",
+      "estado": true
+    },
+    {
+      "_id": "63ffb3ef99a18f8ea82edf17",
+      "carrera": "Ing. Materiales",
+      "estado": true
+    },
+    {
+      "_id": "63ffa14e99a18f8ea82edf16",
+      "carrera": "Ing. Mecatrónica",
+      "estado": true
+    },
+    {
+      "_id": "64d6f19bfbfe12bd2c84af36",
+      "carrera": "Ing. Metalúrgica",
+      "estado": true
+    },
+    {
+      "_id": "63ffa0e599a18f8ea82edf13",
+      "carrera": "Ing. Minero",
+      "estado": true
+    },
+    {
+      "_id": "63ffb45099a18f8ea82edf1b",
+      "carrera": "Ing. Química",
+      "estado": true
+    },
+    {
+      "_id": "63ffb40099a18f8ea82edf18",
+      "carrera": "Ing. Sistemas de Información",
+      "estado": true
+    },
+    {
+      "_id": "64d6f22efbfe12bd2c84af3a",
+      "carrera": "Ing. en Semiconductores",
+      "estado": true
+    },
+    {
+      "_id": "64d6f258fbfe12bd2c84af3d",
+      "carrera": "Ing. en Tecnología Electrónica",
+      "estado": true
+    },
+    {
+      "_id": "63ffa0f599a18f8ea82edf14",
+      "carrera": "Lic. Geología",
+      "estado": true
+    },
+    {
+      "_id": "63ffa04499a18f8ea82edf10",
+      "carrera": "Lic. Químico Biólogo Clínico",
+      "estado": true
+    },
+    {
+      "_id": "63ffa07399a18f8ea82edf11",
+      "carrera": "Lic. Químico en Alimentos",
+      "estado": true
+    },
+    {
+      "_id": "64d6f23ffbfe12bd2c84af3b",
+      "carrera": "Lic. en Ciencias Nutricionales",
+      "estado": true
+    },
+    {
+      "_id": "64d6f1fefbfe12bd2c84af37",
+      "carrera": "Lic. en Física Médica",
+      "estado": true
+    },
+    {
+      "_id": "64d6f24cfbfe12bd2c84af3c",
+      "carrera": "Lic. en Química",
+      "estado": true
+    },
+    {
+      "_id": "63ffb46999a18f8ea82edf1c",
+      "carrera": "Tronco Común Biológicas",
+      "estado": true
+    },
+    {
+      "_id": "63ffb47c99a18f8ea82edf1d",
+      "carrera": "Tronco Común Ingenierías",
+      "estado": true
+    },
+    {
+      "_id": "64d6f266fbfe12bd2c84af3e",
+      "carrera": "Otra",
+      "estado": true
+    }
+  ],
+  "message": "Carreras obtenidas correctamente."
+}

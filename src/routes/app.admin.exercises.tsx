@@ -6,10 +6,12 @@ import {
 	type QuantityDraft,
 	QuantityEditor,
 	QuantityList,
+	quantityDrafts,
 	quantityItems,
 	type WasteDraft,
 	WasteEditor,
 	WasteList,
+	wasteDrafts,
 	wasteItems,
 } from "../components/materials.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
@@ -27,7 +29,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
-import type { QuantityItem } from "../db/schema.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
@@ -67,23 +68,13 @@ const emptyDraft = (): ExerciseDraft => ({
 	waste: [],
 });
 
-const quantityDrafts = (items: QuantityItem[]): QuantityDraft[] =>
-	items.map((item) => ({
-		...item,
-		amount: String(item.amount),
-		key: crypto.randomUUID(),
-	}));
-
 const draftFrom = (exercise: LabExercise): ExerciseDraft => ({
 	id: exercise.id,
 	number: exercise.number,
 	name: exercise.name,
 	reagents: quantityDrafts(exercise.materials.reagents),
 	equipment: quantityDrafts(exercise.materials.equipment),
-	waste: exercise.materials.waste.map((item) => ({
-		...item,
-		key: crypto.randomUUID(),
-	})),
+	waste: wasteDrafts(exercise.materials.waste),
 });
 
 function LabExercisesPage() {

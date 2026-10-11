@@ -1,0 +1,60 @@
+{
+  "total": 11,
+  "materias": [
+    {
+      "estado": true,
+      "materia": "7162 | Química General",
+      "uid": "63ff9e3b99a18f8ea82edf0b"
+    },
+    {
+      "estado": true,
+      "materia": "05859 | Química General",
+      "uid": "63ff9e5499a18f8ea82edf0c"
+    },
+    {
+      "estado": true,
+      "materia": "07791 | Química Inorgánica",
+      "uid": "63ff9e6b99a18f8ea82edf0d"
+    },
+    {
+      "estado": true,
+      "materia": "08150 | Fundamentos de Química",
+      "uid": "63ff9f8999a18f8ea82edf0f"
+    },
+    {
+      "estado": true,
+      "materia": "04777 | Química",
+      "uid": "64d6f2b8fbfe12bd2c84af40"
+    },
+    {
+      "estado": true,
+      "materia": "25001 | Química I",
+      "uid": "64d6f2d8fbfe12bd2c84af41"
+    },
+    {
+      "estado": true,
+      "materia": "25181 | Química I",
+      "uid": "64d6f2e3fbfe12bd2c84af42"
+    },
+    {
+      "estado": true,
+      "materia": "09400 | Química General e Inorgánica",
+      "uid": "64d6f2edfbfe12bd2c84af43"
+    },
+    {
+      "estado": true,
+      "materia": "25005 | Laboratorio de Química",
+      "uid": "64d6f2fefbfe12bd2c84af44"
+    },
+    {
+      "estado": true,
+      "materia": "9400 | Química I",
+      "uid": "63ff9e0b99a18f8ea82edf0a"
+    },
+    {
+      "estado": true,
+      "materia": "6883 | Química I",
+      "uid": "63ff9df799a18f8ea82edf09"
+    }
+  ]
+}

@@ -16,18 +16,22 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 
+/** A material may be listed without a quantity. Amount and unit are then both null. */
 export type QuantityItem = {
 	name: string;
-	amount: number;
-	unit: string;
+	amount: number | null;
+	unit: string | null;
 	basis: "team" | "group";
 };
 
+/** Only the treatment is required. */
 export type WasteItem = {
-	name: string;
-	container: string;
+	name: string | null;
+	container: string | null;
 	treatment: string;
 };
+
+type RequestQuantityItem = QuantityItem & { totalAmount: number | null };
 
 export type ExerciseMaterials = {
 	reagents: QuantityItem[];
@@ -36,12 +40,12 @@ export type ExerciseMaterials = {
 };
 
 export type RequestMaterials = {
-	reagents: (QuantityItem & { totalAmount: number })[];
-	equipment: (QuantityItem & { totalAmount: number })[];
+	reagents: RequestQuantityItem[];
+	equipment: RequestQuantityItem[];
 	waste: WasteItem[];
 	omittedReagents: string[];
-	addedReagents: (QuantityItem & { totalAmount: number })[];
-	addedEquipment: (QuantityItem & { totalAmount: number })[];
+	addedReagents: RequestQuantityItem[];
+	addedEquipment: RequestQuantityItem[];
 	addedWaste: WasteItem[];
 };
 
@@ -258,7 +262,7 @@ export const preparationRequests = pgTable(
 	(table) => [
 		uniqueIndex("requests_active_group_date_unique")
 			.on(table.groupId, table.sessionDate)
-			.where(sql.raw('"status" <> \'voided\'')),
+			.where(sql.raw("\"status\" <> 'voided'")),
 		index("requests_session_date_idx").on(table.sessionDate),
 		check("requests_time_order", sql`${table.startTime} < ${table.endTime}`),
 		check(

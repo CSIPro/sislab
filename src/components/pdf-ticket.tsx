@@ -564,12 +564,16 @@ function ExtrasByGroup({
 function WasteLines({ waste }: { waste: TicketWaste }) {
 	return (
 		<Fragment>
-			<Text style={styles.wasteLabel}>
-				Envase: <Text style={styles.wasteData}>{waste.container}</Text>
-			</Text>
-			<Text style={styles.wasteLabel}>
-				Residuo: <Text style={styles.wasteData}>{waste.residue}</Text>
-			</Text>
+			{waste.container && (
+				<Text style={styles.wasteLabel}>
+					Envase: <Text style={styles.wasteData}>{waste.container}</Text>
+				</Text>
+			)}
+			{waste.residue && (
+				<Text style={styles.wasteLabel}>
+					Residuo: <Text style={styles.wasteData}>{waste.residue}</Text>
+				</Text>
+			)}
 			{waste.treatment && (
 				<Text style={styles.wasteLabel}>
 					Tratamiento: <Text style={styles.wasteData}>{waste.treatment}</Text>
@@ -580,6 +584,7 @@ function WasteLines({ waste }: { waste: TicketWaste }) {
 }
 
 function extraReagent(reagent: TicketReagent): string {
+	if (reagent.quantity === null) return reagent.reagent;
 	return `${reagent.quantity}${reagent.unit} de ${reagent.reagent}`;
 }
 

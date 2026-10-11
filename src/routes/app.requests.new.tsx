@@ -20,7 +20,9 @@ import {
 	quantityItems,
 	type WasteDraft,
 	WasteEditor,
+	WasteRow,
 	wasteItems,
+	wasteSummary,
 } from "../components/materials.tsx";
 import { Notice } from "../components/notice.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
@@ -140,7 +142,7 @@ function NewPreparationRequestPage() {
 		...quantityItems(addedReagents)
 			.filter((item) => item.name.trim())
 			.map((item) => ({ item, omitted: false })),
-	];
+	].filter(({ item }) => item.amount !== null);
 
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -392,16 +394,7 @@ function NewPreparationRequestPage() {
 
 								<MaterialHeading>Residuos esperados</MaterialHeading>
 								{materials?.waste.map((item) => (
-									<MaterialRow
-										className="items-start"
-										key={`${item.name}-${item.container}-${item.treatment}`}
-									>
-										<MaterialName
-											note={`${item.container} · ${item.treatment}`}
-										>
-											{item.name}
-										</MaterialName>
-									</MaterialRow>
+									<WasteRow item={item} key={wasteSummary(item)} />
 								))}
 								<WasteEditor items={addedWaste} onChange={setAddedWaste} />
 							</div>

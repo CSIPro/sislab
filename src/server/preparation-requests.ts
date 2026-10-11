@@ -388,13 +388,10 @@ function snapshotMaterials(
 	return {
 		reagents: exercise.reagents
 			.filter((item) => !omitted.has(item.name))
-			.map((item) => ({
-				...item,
-				totalAmount: item.amount * (item.basis === "team" ? teams : 1),
-			})),
+			.map((item) => ({ ...item, totalAmount: totalAmount(item, teams) })),
 		equipment: exercise.equipment.map((item) => ({
 			...item,
-			totalAmount: item.amount * (item.basis === "team" ? teams : 1),
+			totalAmount: totalAmount(item, teams),
 		})),
 		waste: exercise.waste.map((item) => ({ ...item })),
 		omittedReagents: exercise.reagents
@@ -402,14 +399,19 @@ function snapshotMaterials(
 			.map((item) => item.name),
 		addedReagents: customization.addedReagents.map((item) => ({
 			...item,
-			totalAmount: item.amount * (item.basis === "team" ? teams : 1),
+			totalAmount: totalAmount(item, teams),
 		})),
 		addedEquipment: customization.addedEquipment.map((item) => ({
 			...item,
-			totalAmount: item.amount * (item.basis === "team" ? teams : 1),
+			totalAmount: totalAmount(item, teams),
 		})),
 		addedWaste: customization.addedWaste.map((item) => ({ ...item })),
 	};
+}
+
+function totalAmount(item: QuantityItem, teams: number): number | null {
+	if (item.amount === null) return null;
+	return item.amount * (item.basis === "team" ? teams : 1);
 }
 
 function normalizeCustomization(
@@ -446,19 +448,22 @@ function normalizeQuantityItems(value: unknown): QuantityItem[] {
 			throw new Error("Enter valid material details.");
 		const item = candidate as Record<string, unknown>;
 		const name = typeof item.name === "string" ? item.name.trim() : "";
-		const unit = typeof item.unit === "string" ? item.unit.trim() : "";
+		const unit =
+			typeof item.unit === "string" ? item.unit.trim() || null : null;
+		const amount = item.amount ?? null;
 		if (
 			!name ||
-			!unit ||
-			typeof item.amount !== "number" ||
-			!Number.isFinite(item.amount) ||
-			item.amount <= 0 ||
+			(amount === null) !== (unit === null) ||
+			(amount !== null &&
+				(typeof amount !== "number" ||
+					!Number.isFinite(amount) ||
+					amount <= 0)) ||
 			(item.basis !== "team" && item.basis !== "group")
 		)
 			throw new Error(
-				"Enter a name, positive amount, unit, and quantity basis for every added material.",
+				"Enter a name and quantity basis for every added material, and a positive amount with its unit or neither.",
 			);
-		return { name, amount: item.amount, unit, basis: item.basis };
+		return { name, amount, unit, basis: item.basis };
 	});
 }
 
@@ -468,15 +473,13 @@ function normalizeWasteItems(value: unknown): WasteItem[] {
 		if (!candidate || typeof candidate !== "object")
 			throw new Error("Enter valid waste details.");
 		const item = candidate as Record<string, unknown>;
-		const name = typeof item.name === "string" ? item.name.trim() : "";
+		const name =
+			typeof item.name === "string" ? item.name.trim() || null : null;
 		const container =
-			typeof item.container === "string" ? item.container.trim() : "";
+			typeof item.container === "string" ? item.container.trim() || null : null;
 		const treatment =
 			typeof item.treatment === "string" ? item.treatment.trim() : "";
-		if (!name || !container || !treatment)
-			throw new Error(
-				"Enter a name, container, and treatment for every waste item.",
-			);
+		if (!treatment) throw new Error("Enter a treatment for every waste item.");
 		return { name, container, treatment };
 	});
 }

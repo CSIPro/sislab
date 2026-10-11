@@ -1,0 +1,25 @@
+{
+  "total": 4,
+  "laboratorios": [
+    {
+      "laboratorio": "5N - 204",
+      "estado": true,
+      "uid": "63ff9a7499a18f8ea82edef7"
+    },
+    {
+      "laboratorio": "5N - 201",
+      "estado": true,
+      "uid": "63ff99fc99a18f8ea82edef4"
+    },
+    {
+      "laboratorio": "5N - 202",
+      "estado": true,
+      "uid": "63ff9a3599a18f8ea82edef5"
+    },
+    {
+      "laboratorio": "5N - 203",
+      "estado": true,
+      "uid": "63ff9a4c99a18f8ea82edef6"
+    }
+  ]
+}

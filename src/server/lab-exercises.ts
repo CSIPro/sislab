@@ -112,18 +112,21 @@ function normalizeQuantityItems(
 	}
 	return items.map((item) => {
 		const name = item.name.trim();
-		const unit = item.unit.trim();
+		const unit = item.unit?.trim() || null;
+		const amount = item.amount ?? null;
 		if (!name || name.length > 120)
 			throw new Error(
 				"Material names are required and limited to 120 characters.",
 			);
-		if (!Number.isFinite(item.amount) || item.amount <= 0)
+		if ((amount === null) !== (unit === null))
+			throw new Error("Enter both a material amount and its unit, or neither.");
+		if (amount !== null && (!Number.isFinite(amount) || amount <= 0))
 			throw new Error("Material amounts must be greater than zero.");
-		if (!unit || unit.length > 40)
+		if (unit && unit.length > 40)
 			throw new Error("Enter a material unit of 40 characters or fewer.");
 		if (item.basis !== "team" && item.basis !== "group")
 			throw new Error("Choose per team or per group for each quantity.");
-		return { name, amount: item.amount, unit, basis: item.basis };
+		return { name, amount, unit, basis: item.basis };
 	});
 }
 
@@ -133,14 +136,12 @@ function normalizeWasteItems(
 	if (!Array.isArray(items) || items.length > 100)
 		throw new Error("Enter up to 100 waste details.");
 	return items.map((item) => {
-		const name = item.name.trim();
-		const container = item.container.trim();
+		const name = item.name?.trim() || null;
+		const container = item.container?.trim() || null;
 		const treatment = item.treatment.trim();
-		if (!name || name.length > 120)
-			throw new Error(
-				"Waste names are required and limited to 120 characters.",
-			);
-		if (!container || container.length > 120)
+		if (name && name.length > 120)
+			throw new Error("Waste names are limited to 120 characters.");
+		if (container && container.length > 120)
 			throw new Error("Enter a waste container of 120 characters or fewer.");
 		if (!treatment || treatment.length > 240)
 			throw new Error("Enter a waste treatment of 240 characters or fewer.");

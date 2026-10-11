@@ -4,7 +4,7 @@ import {
 	DescriptionItem,
 	DescriptionList,
 } from "#/components/description-list.tsx";
-import { QuantityAmount } from "#/components/materials.tsx";
+import { QuantityAmount, wasteSummary } from "#/components/materials.tsx";
 import { Notice } from "#/components/notice.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
@@ -85,26 +85,18 @@ function MaterialList({
 }: {
 	materials: RequestListRow["request"]["materials"];
 }) {
-	const quantity = (item: {
-		name: string;
-		amount: number;
-		totalAmount: number;
-		unit: string;
-		basis: "team" | "group";
-	}) => (
-		<>
-			{item.name}:{" "}
-			<QuantityAmount
-				item={item}
-				teams={item.amount ? Math.round(item.totalAmount / item.amount) : 1}
-			/>
-		</>
-	);
-	const waste = (item: {
-		name: string;
-		container: string;
-		treatment: string;
-	}) => `${item.name} · ${item.container} · ${item.treatment}`;
+	const quantity = (item: (typeof materials.reagents)[number]) =>
+		item.amount && item.totalAmount ? (
+			<>
+				{item.name}:{" "}
+				<QuantityAmount
+					item={item}
+					teams={Math.round(item.totalAmount / item.amount)}
+				/>
+			</>
+		) : (
+			item.name
+		);
 	const sections: Array<[string, ReactNode[]]> = [
 		["Reactivos", materials.reagents.map(quantity)],
 		["Equipo", materials.equipment.map(quantity)],
@@ -115,7 +107,7 @@ function MaterialList({
 		],
 		[
 			"Residuos esperados",
-			[...materials.waste, ...materials.addedWaste].map(waste),
+			[...materials.waste, ...materials.addedWaste].map(wasteSummary),
 		],
 	];
 	return (

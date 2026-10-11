@@ -1,0 +1,1432 @@
+{
+  "assignments": [
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f47",
+      "number": "0",
+      "name": "Normas de seguridad",
+      "reagents": {
+        "groups": []
+      },
+      "equipment": ["Proyector"],
+      "waste": []
+    },
+    {
+      "residue": [],
+      "_id": "64a58f7d841d96b685e15cf0",
+      "number": "1",
+      "name": "Material y equipo básico de laboratorio",
+      "reagents": {
+        "groups": []
+      },
+      "equipment": ["Todo el material de laboratorio disponible"],
+      "waste": []
+    },
+    {
+      "residue": [],
+      "_id": "64a59c7d841d96b685e15cf2",
+      "number": "2",
+      "name": "Método científico",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "HCl concentrado",
+                "quantity": 10,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NH&#8324;OH concentrado",
+                "quantity": 10,
+                "unit": "mL"
+              },
+              {
+                "reagent": "HNO&#8323; 50 %",
+                "quantity": 30,
+                "unit": "mL"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Campana de extracción"],
+      "waste": [
+        {
+          "container": "Frasco de vidrio con tapa anticorrosión",
+          "residue": "HNO&#8323; + Cu",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5cbb2841d96b685e15cf3",
+      "number": "3",
+      "name": "Separación de una mezcla mediante cambios físicos",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "CaSO&#8324;",
+                "quantity": 25,
+                "unit": "g"
+              },
+              {
+                "reagent": "Arena fina",
+                "quantity": 25,
+                "unit": "g"
+              },
+              {
+                "reagent": "CuSO&#8324;",
+                "quantity": 10,
+                "unit": "g"
+              },
+              {
+                "reagent": "Gotero AgNO&#8323; 1 %"
+              },
+              {
+                "reagent": "Mezcla carbón con naftaleno",
+                "quantity": 20,
+                "unit": "g"
+              },
+              {
+                "reagent": "Solución de CuSO&#8324; 10 %"
+              },
+              {
+                "reagent": "I&#8322;/KI",
+                "quantity": 50,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Hexano",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Papel filtro"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [
+        "Bomba vacío",
+        "Centrífuga",
+        "Balanza granataria",
+        "Campana de extracción",
+        "Bomba de recirculación de agua"
+      ],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "NaCl",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "AgNO&#8323;",
+          "treatment": "Decantar y colectar sólido"
+        },
+        {
+          "container": "Frasco",
+          "residue": "CuSO&#8324;",
+          "treatment": "Reciclar cristales"
+        },
+        {
+          "container": "Frasco",
+          "residue": "Naftaleno + carbón",
+          "treatment": "Reciclar"
+        },
+        {
+          "container": "Frasco para solventes",
+          "residue": "I&#8322;, KI, Hexano",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "residue": "CuSO&#8324; solución",
+          "treatment": "Colectar y enviar a PISSA",
+          "container": "Frasco"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f48",
+      "number": "3B",
+      "name": "Tabla periódica",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Gotero con H&#8322;SO&#8324;"
+              },
+              {
+                "reagent": "Gotero con HNO&#8323;"
+              },
+              {
+                "reagent": "Gotero con HCl"
+              },
+              {
+                "reagent": "Gotero con H&#8323;PO&#8324;"
+              },
+              {
+                "reagent": "Gotero con H&#8322;BO&#8323;"
+              },
+              {
+                "reagent": "Gotero con NaOH"
+              },
+              {
+                "reagent": "Gotero con Mg(OH)&#8322;"
+              },
+              {
+                "reagent": "Gotero con Cu(OH)&#8322;"
+              },
+              {
+                "reagent": "Gotero con ZnOH"
+              },
+              {
+                "reagent": "Gotero con Al(OH)&#8323;"
+              },
+              {
+                "reagent": "Gotero con Co(OH)&#8323;"
+              },
+              {
+                "reagent": "Gotero con azul de bromotimol"
+              },
+              {
+                "reagent": "Gotero con fenolftaleína"
+              },
+              {
+                "reagent": "Gotero con Fe(NO&#8323;)&#8322;"
+              },
+              {
+                "reagent": "Gotero con Co(NO&#8323;)&#8322;"
+              },
+              {
+                "reagent": "Gotero con Ni(NO&#8323;)&#8322;"
+              },
+              {
+                "reagent": "Gotero con CuSO&#8324;"
+              },
+              {
+                "reagent": "Gotero con ZnCl&#8322;"
+              },
+              {
+                "reagent": "Gotero con AlCl&#8323;"
+              },
+              {
+                "reagent": "Gotero con Pb(NO&#8323;)&#8322;"
+              },
+              {
+                "reagent": "Gotero con Bi(NO&#8323;)&#8323;"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Sales de cationes",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5cbc1841d96b685e15cf4",
+      "number": "4",
+      "name": "Identificación de metales por ensaye a la flama",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "HCl 6M o 3M",
+                "quantity": 30,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NaCl"
+              },
+              {
+                "reagent": "KCl"
+              },
+              {
+                "reagent": "LiCl"
+              },
+              {
+                "reagent": "CuCl"
+              },
+              {
+                "reagent": "SrCl&#8322;"
+              },
+              {
+                "reagent": "CaCl&#8322;"
+              },
+              {
+                "reagent": "BaCl&#8322;"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Solo gas"],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "NaCl, KCl, LiCl, CuCl, CaCl&#8322;, BaCl&#8322;, SrCl&#8322;, HCl",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f49",
+      "number": "4B",
+      "name": "Espectros de emisión y espectroscopio",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "NaCl"
+              },
+              {
+                "reagent": "KCl"
+              },
+              {
+                "reagent": "SrCl&#8322;"
+              },
+              {
+                "reagent": "Mg en tiras"
+              },
+              {
+                "reagent": "Etanol"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Sales con etanol",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5cdaf841d96b685e15cf5",
+      "number": "5",
+      "name": "Compuestos iónicos y covalentes",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "NaCl sólido",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "KNO&#8323; sólido",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "CuSO&#8324; 5H&#8322;O sólido",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "C&#8321;&#8322;H&#8322;&#8322;O&#8321;&#8321; sólido",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Almidón",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "C (grafito)",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "NaCl 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "KNO&#8323; 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "CuSO&#8324; 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Sacarosa 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Almidón 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "CH&#8323;COOH 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "HCl 5%",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Papel de trazado"
+              },
+              {
+                "reagent": "Etanol",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Hexano",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Vaselina",
+                "quantity": 10,
+                "unit": "g"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Circuito eléctrico"],
+      "waste": [
+        {
+          "residue": "Etanol, agua, ácido benzoico, CuSO&#8324; y NaCl",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "residue": "Hexano, ácido benzoico, CuSO&#8324; y NaCl",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4a",
+      "number": "5B",
+      "name": "Compuestos iónicos y covalentes (segunda parte)",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "CaCl&#8322;"
+              },
+              {
+                "reagent": "NaCl"
+              },
+              {
+                "reagent": "KBr"
+              },
+              {
+                "reagent": "Sacarosa"
+              },
+              {
+                "reagent": "Ácido cítrico"
+              },
+              {
+                "reagent": "Almidón"
+              },
+              {
+                "reagent": "Gotero con HCl 3M"
+              },
+              {
+                "reagent": "Gotero con H&#8322;SO&#8324; 3M"
+              },
+              {
+                "reagent": "Gotero con AgNO&#8323; 0.1%"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Parrilla de calentamiento"],
+      "waste": [
+        {
+          "residue": "Sólidos y líquidos de paso 1 y 2",
+          "treatment": "Ajustar pH y vertir a lavabo bajo chorro de agua"
+        },
+        {
+          "container": "Frasco",
+          "residue": "Primera parte de paso 3",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "residue": "Residuos en solución de segunda parte",
+          "treatment": "Desechar al chorro de agua en lavabo"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5d361841d96b685e15cf6",
+      "number": "6",
+      "name": "Enlace Metálico",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Tiras o láminas: Fe"
+              },
+              {
+                "reagent": "Tiras o láminas: Cu"
+              },
+              {
+                "reagent": "Tiras o láminas: Sn"
+              },
+              {
+                "reagent": "Tiras o láminas: Al"
+              },
+              {
+                "reagent": "Tiras o láminas: Mg"
+              },
+              {
+                "reagent": "Tiras o láminas: Ag"
+              },
+              {
+                "reagent": "Tiras o láminas: Au"
+              },
+              {
+                "reagent": "Tiras o láminas: Zn"
+              },
+              {
+                "reagent": "Tiras o láminas: Sb"
+              },
+              {
+                "reagent": "Tiras o láminas: Pb"
+              },
+              {
+                "reagent": "Calcio metálico",
+                "quantity": 1,
+                "unit": "g"
+              },
+              {
+                "reagent": "Solución de fenolftaleína (gotero)"
+              },
+              {
+                "reagent": "Papel pH"
+              },
+              {
+                "reagent": "Cal",
+                "quantity": 50,
+                "unit": "g"
+              },
+              {
+                "reagent": "Papel filtro"
+              },
+              {
+                "reagent": "Alambre de cobre"
+              },
+              {
+                "reagent": "Gotero con fenolftaleína"
+              },
+              {
+                "reagent": "HCl 3M"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Circuito eléctrico"],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "CaOH, H&#8322;O, CaO",
+          "treatment": "Neutralizar y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4b",
+      "number": "6B",
+      "name": "Interacciones intermoleculares",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Etanol"
+              },
+              {
+                "reagent": "Hexano"
+              },
+              {
+                "reagent": "Tolueno"
+              },
+              {
+                "reagent": "Glicirena"
+              },
+              {
+                "reagent": "Yodo"
+              },
+              {
+                "reagent": "Acetona"
+              },
+              {
+                "reagent": "Aceite"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Colectar",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5d57b841d96b685e15cf7",
+      "number": "7",
+      "name": "Estudio sobre los diferentes tipos de reacciones",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "KClO&#8323;",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "NH&#8324;Cr&#8322;O&#8327;",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Cinta de Mg"
+              },
+              {
+                "reagent": "H&#8322;SO&#8324; 3M",
+                "quantity": 10,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Zn",
+                "quantity": 3,
+                "unit": "g"
+              },
+              {
+                "reagent": "HCl 3M"
+              },
+              {
+                "reagent": "AgNO&#8323; diluido"
+              },
+              {
+                "reagent": "HCl 6M (gotero)",
+                "quantity": 5,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Fenolftaleína (gotero)",
+                "quantity": 5,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Papel pH"
+              },
+              {
+                "reagent": "Palitos de madera"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Descomposición: NH&#8324;Cr&#8322;O&#8327;",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "Doble sustitución: HCl + AgNO&#8323;",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "Sustitución: H&#8322;SO&#8324; + ZnSO&#8324; + H&#8322;",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4c",
+      "number": "7B",
+      "name": "Acidez de cationes",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Cloruros o nitratos de Li"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Mg"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Al"
+              },
+              {
+                "reagent": "Cloruros o nitratos de K"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Zn"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Sn"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Fe"
+              },
+              {
+                "reagent": "Gotero con NaOH 1M"
+              },
+              {
+                "reagent": "Gotero con NaOH 3M"
+              },
+              {
+                "reagent": "Indicador universal"
+              },
+              {
+                "reagent": "Tiras de papel pH"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Sales de metales",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4d",
+      "number": "8B",
+      "name": "Ácidos duros y blandos",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Gotero con nitratos o cloruros de Li"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Mg"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Sr"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Ca"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Ni"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Pb"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Hg"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Fe"
+              },
+              {
+                "reagent": "Cloruros o nitratos de Ag"
+              },
+              {
+                "reagent": "gotero con NaI"
+              },
+              {
+                "reagent": "Gotero con NaF"
+              },
+              {
+                "reagent": "Gotero con Na&#8322;S"
+              },
+              {
+                "reagent": "Gotero con NaOH"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Sales de metales",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4e",
+      "number": "9B",
+      "name": "Factores que afectan la velocidad de reacción",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "KmnO&#8324; 0.03M"
+              },
+              {
+                "reagent": "Ácido Oxálico 0.1M"
+              },
+              {
+                "reagent": "H&822;SO&8324; concentrado"
+              },
+              {
+                "reagent": "HCl 6M"
+              },
+              {
+                "reagent": "Tiras de Mg"
+              },
+              {
+                "reagent": "Solución A"
+              },
+              {
+                "reagent": "Solución B"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "residue": "Residuos de reactivos",
+          "treatment": "Ajustar pH, diluir y verter a drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5d587841d96b685e15cf8",
+      "number": "10",
+      "name": "Reacciones de oxidación-reducción",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "KMnO&#8324; 0.1 %",
+                "quantity": 25,
+                "unit": "mL"
+              },
+              {
+                "reagent": "HCl 3M",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Papel pH o tornasol"
+              },
+              {
+                "reagent": "H&#8322;SO&#8324; 10 %",
+                "quantity": 10,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Na&#8322;SO&#8323;",
+                "quantity": 10,
+                "unit": "g"
+              },
+              {
+                "reagent": "FeSO&#8324;",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "K&#8322;CrO&#8324; 0.1M",
+                "quantity": 20,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Zn granalla",
+                "quantity": 3,
+                "unit": "g"
+              },
+              {
+                "reagent": "K&#8322;Cr&#8322;O&#8327; 0.1M",
+                "quantity": 10,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Papel pH"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "KMnO&#8324;, HCl, H&#8322;SO&#8324;, Na&#8322;SO&#8323;, Zn",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "K&#8322;CrO&#8324;, H&#8322;SO&#8324;, Zn",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "K&#8322;Cr&#8322;O&#8327;, Zn, H&#8322;SO&#8324;",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "68cf51019437688dface5f4f",
+      "number": "10B",
+      "name": "Ley de la conservación de la materia y mol",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Pb(NO&#8323;)&#8323;  0.1M"
+              },
+              {
+                "reagent": "KI 0.1M"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "PbI&#8322;",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5d6f8841d96b685e15cf9",
+      "number": "11",
+      "name": "Ley de las proporciones definidas",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Zn polvo",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "HCl 6M",
+                "quantity": 75,
+                "unit": "mL"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Campana de extracción", "Goggles", "Guantes"],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "ZnCl&#8322; + HCl",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5d772841d96b685e15cfa",
+      "number": "12",
+      "name": "Ley de la conservación de la materia",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "H&#8322;SO&#8324; 5%",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "BaCl&#8322; 5%",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "H&#8322;SO&#8324; concentrado",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Sacarosa",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Pb(CH&#8323;COO)&#8322; 5%",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "KI 5%",
+                "quantity": 15,
+                "unit": "mL"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "container": "Frasco",
+          "residue": "Sólidos: BaSO&#8324; y PbI&#8322;",
+          "treatment": "Concentrar y enviar a PISSA"
+        },
+        {
+          "container": "Frasco",
+          "residue": "Líquidos: HCl y H&#8322;SO&#8324; - Sólidos: H&#8322;SO&#8324;",
+          "treatment": "Diluir y neutralizar"
+        },
+        {
+          "residue": "H&#8322;SO&#8324;, BaCl&#8322;",
+          "treatment": "Concentrar y enviar a PISSA"
+        },
+        {
+          "residue": "H&#8322;SO&#8324;, Sacarosa",
+          "treatment": "Concentrar y enviar a PISSA"
+        },
+        {
+          "residue": "Pb(CH&#8323;COO)&#8322;, KI",
+          "treatment": "Concentrar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5db12841d96b685e15cfb",
+      "number": "13",
+      "name": "Agua de hidratación",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "CuSO4 + 5H2O",
+                "quantity": 6,
+                "unit": "g",
+                "alternatives": [
+                  {
+                    "reagent": "Na2CO3-10H2O2"
+                  },
+                  {
+                    "reagent": "CaSO4-2H2O"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "treatment": "Se puede juntar y reutilizar"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5dbfc841d96b685e15cfc",
+      "number": "14",
+      "name": "Determinación de pesos atómicos",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Cu (puede ser una moneda)"
+              },
+              {
+                "reagent": "Zn o Al"
+              },
+              {
+                "reagent": "HNO&#8323; concentrado"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Campana de extracción", "Balanza analítica"],
+      "waste": [
+        {
+          "residue": "Sólido CuO tóxico",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "residue": "Sólido Al&#8322;O&#8323; verde, no peligroso",
+          "treatment": "Colectar y enviar a PISSA"
+        },
+        {
+          "residue": "Sólido ZnO tóxico",
+          "treatment": "Colectar y enviar a PISSA"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5dcb7841d96b685e15cfd",
+      "number": "15",
+      "name": "Estequiometría",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "MnO&#8322;",
+                "quantity": 0.5,
+                "unit": "g"
+              },
+              {
+                "reagent": "KClO&#8323;",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Muestra problema NaCl-KClO&#8323;"
+              },
+              {
+                "reagent": "HCl 1M"
+              },
+              {
+                "reagent": "Gotero fenolftaleína"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "treatment": "Neutralizar y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e25d841d96b685e15cfe",
+      "number": "16",
+      "name": "Estequiometría en la síntesis de NaCl",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Na&#8322;CO&#8323;",
+                "quantity": 8,
+                "unit": "g"
+              },
+              {
+                "reagent": "HCl 2M",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NaOH 1M",
+                "quantity": 50,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Gotero con fenolftaleína"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "treatment": "Neutralizar y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e2e8841d96b685e15cff",
+      "number": "17",
+      "name": "Reactivo limitante",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "HCl 1M",
+                "quantity": 20,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NaOH 1M",
+                "quantity": 15,
+                "unit": "mL"
+              },
+              {
+                "reagent": "CaCO&#8323;",
+                "quantity": 15,
+                "unit": "g"
+              },
+              {
+                "reagent": "HCl 2M",
+                "quantity": 150,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NaOH 2M (gotero)"
+              },
+              {
+                "reagent": "Gotero con fenolftaleína"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "residue": "HCl, NaOH, CaCO&#8323;",
+          "treatment": "Neutralizar residuos con NaOH"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e3cc841d96b685e15d00",
+      "number": "18",
+      "name": "Concentración de soluciones",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Manzana o papa"
+              },
+              {
+                "reagent": "Solución NaCl"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Estufa", "Balanza analítica"],
+      "waste": [
+        {
+          "treatment": "Desechar a la basura"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e501841d96b685e15d01",
+      "number": "19",
+      "name": "Valoración de soluciones 1",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "H&#8322;SO&#8324; concentrado",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "NaOH",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "KHP",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Gotero fenoftaleína"
+              },
+              {
+                "reagent": "Agua hervida"
+              },
+              {
+                "reagent": "Agua fría"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "residue": "NaOH, H&#8322;SO&#8324;, KHP, fenolftaleína",
+          "treatment": "Diluir y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e531841d96b685e15d02",
+      "number": "20",
+      "name": "Valoración de soluciones 2",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "NaOH",
+                "quantity": 3,
+                "unit": "g"
+              },
+              {
+                "reagent": "Agua destilada hervida y fría",
+                "quantity": 3,
+                "unit": "L"
+              },
+              {
+                "reagent": "KHP",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "Gotero fenolftaleína"
+              },
+              {
+                "reagent": "HCl concentrado o HCl 6M",
+                "quantity": 10,
+                "unit": "mL"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "residue": "NaOH, KHP, HCl, fenolftaleína",
+          "treatment": "Neutralizar y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e5b1841d96b685e15d03",
+      "number": "21",
+      "name": "Peso equivalente del ácido fosfórico",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "H&#8323;PO&#8324; 0.1M",
+                "quantity": 100,
+                "unit": "mL"
+              },
+              {
+                "reagent": "NaOH 0.1M",
+                "quantity": 300,
+                "unit": "mL"
+              },
+              {
+                "reagent": "Gotero con anaranjado de metilo"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": ["Balanza analítica"],
+      "waste": [
+        {
+          "residue": "H&#8323;PO&#8324;, NaOH, anaranjado de metilo",
+          "treatment": "Diluir y verter al drenaje"
+        }
+      ]
+    },
+    {
+      "residue": [],
+      "_id": "64a5e631841d96b685e15d04",
+      "number": "22",
+      "name": "Peso equivalente de un metal",
+      "reagents": {
+        "groups": [
+          {
+            "reagents": [
+              {
+                "reagent": "Zn",
+                "quantity": 5,
+                "unit": "g"
+              },
+              {
+                "reagent": "HCl 1:1",
+                "quantity": 100,
+                "unit": "mL"
+              }
+            ]
+          }
+        ]
+      },
+      "equipment": [],
+      "waste": [
+        {
+          "treatment": "Sólido a PISSA"
+        },
+        {
+          "treatment": "Líquido a neutralizar y tirar"
+        }
+      ]
+    }
+  ]
+}

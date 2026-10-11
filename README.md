@@ -36,6 +36,17 @@ characters, and refuses to run once an admin role exists. No password or
 bootstrap secret is stored in the repository. Use `/sign-in` to authenticate;
 sessions are stored as token hashes and expire after 12 hours.
 
+## Legacy catalog seed
+
+`pnpm db:seed` loads the labs, careers, subjects and lab exercises saved from
+the legacy SISLAB API in `docs/legacy-data`. It reads `DATABASE_URL` from
+`.env.local`. You can run it again safely. It adds only the catalog names and
+exercises that are missing and leaves existing rows unchanged.
+
+The adapter in `src/lib/legacy-seed.ts` seeds legacy quantities as per team. A
+reagent or equipment item without a legacy quantity has no amount, and a waste
+entry keeps only the fields the legacy record had.
+
 To verify authentication against PostgreSQL, create a dedicated empty test
 database, apply migrations to it, set `DATABASE_URL_TEST` to its connection
 string, and run `pnpm test:integration`. The integration test provisions and

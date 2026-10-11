@@ -12,12 +12,16 @@ import {
 import type { QuantityItem, WasteItem } from "#/db/schema.ts";
 import { cn } from "#/lib/utils.ts";
 
-/** A reagent or equipment line while the person edits it. The amount stays text until it is saved. */
-export type QuantityDraft = Omit<QuantityItem, "amount"> & {
+/** A reagent or equipment line while the person edits it. Amount and unit stay text until it is saved; empty text means none. */
+export type QuantityDraft = Omit<QuantityItem, "amount" | "unit"> & {
 	amount: string;
+	unit: string;
 	key: string;
 };
-export type WasteDraft = WasteItem & { key: string };
+/** A waste line while the person edits it. An empty name or container means none. */
+export type WasteDraft = { [Field in keyof WasteItem]: string } & {
+	key: string;
+};
 
 export const emptyQuantityDraft = (): QuantityDraft => ({
 	key: crypto.randomUUID(),
@@ -37,11 +41,36 @@ export const emptyWasteDraft = (): WasteDraft => ({
 export const quantityItems = (drafts: QuantityDraft[]): QuantityItem[] =>
 	drafts.map(({ key: _key, ...item }) => ({
 		...item,
-		amount: Number(item.amount),
+		amount: item.amount.trim() ? Number(item.amount) : null,
+		unit: item.unit.trim() || null,
 	}));
 
 export const wasteItems = (drafts: WasteDraft[]): WasteItem[] =>
-	drafts.map(({ key: _key, ...item }) => item);
+	drafts.map(({ key: _key, ...item }) => ({
+		...item,
+		name: item.name.trim() || null,
+		container: item.container.trim() || null,
+	}));
+
+export const quantityDrafts = (items: QuantityItem[]): QuantityDraft[] =>
+	items.map((item) => ({
+		...item,
+		amount: item.amount === null ? "" : String(item.amount),
+		unit: item.unit ?? "",
+		key: crypto.randomUUID(),
+	}));
+
+export const wasteDrafts = (items: WasteItem[]): WasteDraft[] =>
+	items.map((item) => ({
+		...item,
+		name: item.name ?? "",
+		container: item.container ?? "",
+		key: crypto.randomUUID(),
+	}));
+
+/** "Residuo · Contenedor · Tratamiento", without the parts the waste item lacks. */
+export const wasteSummary = (item: WasteItem): string =>
+	[item.name, item.container, item.treatment].filter(Boolean).join(" · ");
 
 const basisOptions = [
 	["team", "Por equipo"],
@@ -50,15 +79,17 @@ const basisOptions = [
 
 /**
  * A material's standalone amount. When it is per team, hovering shows the total
- * for the whole group (the amount times the number of teams).
+ * for the whole group (the amount times the number of teams). Renders nothing
+ * for a material without a quantity.
  */
 export function QuantityAmount({
 	item,
 	teams,
 }: {
-	item: { amount: number; unit: string; basis: QuantityItem["basis"] };
+	item: Pick<QuantityItem, "amount" | "unit" | "basis">;
 	teams: number;
 }) {
+	if (item.amount === null) return null;
 	const amount = `${item.amount} ${item.unit}`;
 	if (item.basis !== "team") return <>{amount}</>;
 	return (
@@ -93,7 +124,7 @@ export function MaterialRow({
 	);
 }
 
-/** "50 mL" and "por equipo", struck through when the reagent is omitted. */
+/** "50 mL" and "por equipo", struck through when the reagent is omitted. Renders nothing for a material without a quantity. */
 export function QuantityDetails({
 	item,
 	omitted = false,
@@ -101,6 +132,7 @@ export function QuantityDetails({
 	item: QuantityItem;
 	omitted?: boolean;
 }) {
+	if (item.amount === null) return null;
 	return (
 		<>
 			<span
@@ -170,16 +202,23 @@ export function WasteList({ items }: { items: WasteItem[] }) {
 				<p className="text-[14.5px] text-muted-foreground">Ninguno.</p>
 			)}
 			{items.map((item) => (
-				<MaterialRow
-					className="items-start"
-					key={`${item.name}-${item.container}-${item.treatment}`}
-				>
-					<MaterialName note={`${item.container} · ${item.treatment}`}>
-						{item.name}
-					</MaterialName>
-				</MaterialRow>
+				<WasteRow item={item} key={wasteSummary(item)} />
 			))}
 		</div>
+	);
+}
+
+/** A waste line: the residue name over its container and treatment, or those alone when it has no name. */
+export function WasteRow({ item }: { item: WasteItem }) {
+	const details = [item.container, item.treatment].filter(Boolean).join(" · ");
+	return (
+		<MaterialRow className="items-start">
+			{item.name ? (
+				<MaterialName note={details}>{item.name}</MaterialName>
+			) : (
+				<MaterialName>{details}</MaterialName>
+			)}
+		</MaterialRow>
 	);
 }
 
@@ -239,7 +278,7 @@ export function QuantityEditor({
 						min="0.000001"
 						onChange={(event) => change(index, { amount: event.target.value })}
 						placeholder="Cantidad"
-						required
+						required={item.unit.trim() !== ""}
 						step="any"
 						type="number"
 						value={item.amount}
@@ -248,7 +287,7 @@ export function QuantityEditor({
 						aria-label={`Unidad del ${kind} ${index + 1}`}
 						onChange={(event) => change(index, { unit: event.target.value })}
 						placeholder="g, mL, pza"
-						required
+						required={item.amount.trim() !== ""}
 						value={item.unit}
 					/>
 					<OptionSelect
@@ -311,7 +350,7 @@ export function WasteEditor({
 								)
 							}
 							placeholder={placeholder}
-							required
+							required={field === "treatment"}
 							value={item[field]}
 						/>
 					))}

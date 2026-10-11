@@ -102,10 +102,16 @@ function parseQuantityItems(input: unknown): QuantityItem[] {
 		throw new Error("Material requirements must be lists of items.");
 	}
 	return input.map((item) => {
-		if (typeof item.name !== "string" || typeof item.unit !== "string") {
+		if (
+			typeof item.name !== "string" ||
+			(item.unit !== null && typeof item.unit !== "string")
+		) {
 			throw new Error("Enter each material name and unit.");
 		}
-		if (typeof item.amount !== "number" || !Number.isFinite(item.amount)) {
+		if (
+			item.amount !== null &&
+			(typeof item.amount !== "number" || !Number.isFinite(item.amount))
+		) {
 			throw new Error("Enter a numeric material amount.");
 		}
 		if (item.basis !== "team" && item.basis !== "group") {
@@ -126,11 +132,11 @@ function parseWasteItems(input: unknown): WasteItem[] {
 	}
 	return input.map((item) => {
 		if (
-			typeof item.name !== "string" ||
-			typeof item.container !== "string" ||
+			(item.name !== null && typeof item.name !== "string") ||
+			(item.container !== null && typeof item.container !== "string") ||
 			typeof item.treatment !== "string"
 		) {
-			throw new Error("Enter each waste name, container, and treatment.");
+			throw new Error("Enter a treatment for each waste item.");
 		}
 		return {
 			name: item.name,

@@ -11,7 +11,7 @@ Status: agreed model. The first application slice is professor group registratio
 | `periods` | Code, optional official start and end dates | Regular codes use `YEAR-1` and `YEAR-2`; group forms suggest the current half-year but allow another period. Summer codes can be added when dates are available. |
 | `labs`, `careers`, `subjects` | Name, active state | Admin-managed catalogs, initially seeded. Retired entries remain available to historical records. |
 | `groups` | Professor, period, stable number, lab, career, subject, their historical labels, students, teams, weekday, start and end times, active state | Number unique per professor and period, including inactive groups. Students: 1–60; teams: 1–students. Active lab slots cannot overlap within a period and weekday. A group with a future, non-voided preparation request cannot change lab, weekday, time, or team count, or be deactivated. |
-| `lab_exercises` | Number, name, reagent/equipment/waste requirements as structured JSON, active state | Admin-managed, initially seeded from reviewed Mongo data. Exercises are available to every group; exercise number is a label, not a unique key. |
+| `lab_exercises` | Number, name, reagent/equipment/waste requirements as structured JSON, active state | Admin-managed, initially seeded from the legacy data in `docs/legacy-data` with `pnpm db:seed`. Exercises are available to every group; exercise number is a label, not a unique key. |
 | `preparation_requests` | Group, submitting professor, exercise, session date, lab and time snapshot, material and quantity snapshot, professor note, late decision, void reason and actor | One non-voided request per group and date. Exercise edits do not silently rewrite submitted requests. |
 | `settings` | Minimum notice in calendar days | One global admin-managed value, initially 7. Dates use `America/Hermosillo`. |
 
@@ -19,7 +19,7 @@ The authentication implementation may need session tables. It must not use Clerk
 
 ## Material shape
 
-Reagents and equipment have a name, amount, unit, and quantity basis (`per team` or `per group`). Expected waste has a name, container, and treatment. Requests copy the relevant exercise requirements, apply permitted reagent additions/omissions and equipment/waste additions, and retain calculated quantities. Ticket totals combine matching items and units across groups without changing the legacy ticket grouping by exercise, professor, and group.
+Reagents and equipment have a name, an optional amount with its unit, and a quantity basis (`per team` or `per group`). An item has both an amount and a unit or neither, because the legacy catalog lists many reagents and all equipment without a quantity. Expected waste has a treatment and an optional name and container. Requests copy the relevant exercise requirements, apply permitted reagent additions/omissions and equipment/waste additions, and retain calculated quantities. Ticket totals combine matching items and units across groups without changing the legacy ticket grouping by exercise, professor, and group.
 
 ## First preparation-request release
 

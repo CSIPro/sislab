@@ -140,20 +140,20 @@ export function formatTicketDate(date: string): string {
 
 function toReagent(item: {
 	name: string;
-	amount: number;
-	unit: string;
+	amount: number | null;
+	unit: string | null;
 }): TicketReagent {
 	return { reagent: item.name, quantity: item.amount, unit: item.unit };
 }
 
 function toWaste(item: {
-	name: string;
-	container: string;
+	name: string | null;
+	container: string | null;
 	treatment: string;
 }): TicketWaste {
 	return {
-		residue: item.name,
-		container: item.container,
+		residue: item.name ?? "",
+		container: item.container ?? "",
 		treatment: item.treatment,
 	};
 }
