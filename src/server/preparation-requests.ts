@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, ne, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../db/schema.ts";
@@ -357,7 +357,7 @@ export async function getDailyTicketRequests(
 		.where(
 			and(
 				eq(preparationRequests.sessionDate, date),
-				eq(preparationRequests.status, "open"),
+				ne(preparationRequests.status, "voided"),
 				sql`(${preparationRequests.lateReason} IS NULL OR ${preparationRequests.lateAcceptedAt} IS NOT NULL)`,
 			),
 		)
@@ -367,28 +367,6 @@ export async function getDailyTicketRequests(
 			asc(groups.number),
 			asc(preparationRequests.startTime),
 		);
-}
-
-export function getRequestStatusLabel(
-	request: typeof preparationRequests.$inferSelect,
-): string {
-	if (request.status === "voided") return "Anulada";
-	if (request.lateReason && request.lateAcceptedAt) return "Excepción aceptada";
-	if (request.lateReason && request.lateDeclinedAt)
-		return "Excepción rechazada";
-	if (request.lateReason) return "Pendiente de excepción";
-	return "Abierta";
-}
-
-export function mayDecideLateException(
-	request: typeof preparationRequests.$inferSelect,
-): boolean {
-	return (
-		request.status !== "voided" &&
-		!!request.lateReason &&
-		!request.lateAcceptedAt &&
-		!request.lateDeclinedAt
-	);
 }
 
 function snapshotMaterials(
