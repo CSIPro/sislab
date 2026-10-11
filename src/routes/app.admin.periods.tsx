@@ -69,7 +69,6 @@ function AcademicPeriodsPage() {
 	return (
 		<main className="page-wrap px-4 py-12">
 			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Administración</p>
 				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">Periodos académicos</h1>
 				<p className="text-[var(--muted-foreground)]">El periodo sugerido depende del mes actual en America/Hermosillo. El profesorado puede elegir otro periodo disponible.</p>
 				<button className="mt-4 rounded-lg bg-[var(--primary)] px-5 py-2.5 font-semibold text-[var(--primary-foreground)] disabled:opacity-60" disabled={busy} onClick={seedPeriods} type="button">

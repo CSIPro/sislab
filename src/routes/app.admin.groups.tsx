@@ -92,23 +92,24 @@ function AdminGroupsPage() {
 	return (
 		<main className="page-wrap px-4 py-12">
 			<section className="island-shell mx-auto max-w-6xl rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Administración</p>
 				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">
 					Grupos del profesorado
 				</h1>
 				<p className="text-[var(--muted-foreground)]">
 					Consulta y corrige los datos de los grupos de todo el profesorado, conservando a cada persona como responsable de sus grupos.
 				</p>
-				<div className="mt-5 flex flex-wrap gap-4">
+				<div aria-label="Filtrar grupos" className="group-toolbar mt-5 flex flex-wrap gap-3" role="group">
 					<button
-						className="font-semibold underline"
+						aria-pressed={!includeInactive}
+						className={`button-secondary button-sm group-filter${includeInactive ? "" : " is-active"}`}
 						onClick={() => void showGroups(false)}
 						type="button"
 					>
 						Grupos activos
 					</button>
 					<button
-						className="font-semibold underline"
+						aria-pressed={includeInactive}
+						className={`button-secondary button-sm group-filter${includeInactive ? " is-active" : ""}`}
 						onClick={() => void showGroups(true)}
 						type="button"
 					>

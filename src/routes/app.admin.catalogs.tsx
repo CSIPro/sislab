@@ -117,7 +117,6 @@ function CatálogosPage() {
 	return (
 		<main className="page-wrap px-4 py-12">
 			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Administración</p>
 				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">Catálogos</h1>
 				<p className="text-[var(--muted-foreground)]">Administra los laboratorios, carreras y materias disponibles en los formularios de grupos. Los valores retirados se conservan en los grupos existentes.</p>
 				<form className="mt-8 grid gap-4 sm:grid-cols-3" onSubmit={importSupplied}>

@@ -93,7 +93,6 @@ function UserAccessPage() {
 	return (
 		<main className="page-wrap px-4 py-12">
 			<section className="island-shell mx-auto max-w-5xl rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Administración</p>
 				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">
 					Acceso de usuarios
 				</h1>

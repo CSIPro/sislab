@@ -90,30 +90,30 @@ function ManageGroupsPage() {
 	return (
 		<main className="page-wrap px-4 py-12">
 			<section className="island-shell mx-auto max-w-5xl rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">Espacio de profesorado</p>
 				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">
 					Mis grupos
 				</h1>
 				<p className="text-[var(--muted-foreground)]">
-					Consulta los datos de tus grupos, corrígelos o desactiva los que ya no impartes
-					.
+					Consulta y corrige los datos de tus grupos o desactiva los que ya no impartes.
 				</p>
-				<div className="mt-5 flex flex-wrap gap-4">
+				<div aria-label="Filtrar grupos" className="group-toolbar mt-5 flex flex-wrap gap-3" role="group">
 					<button
-						className="font-semibold underline"
+						aria-pressed={!includeInactive}
+						className={`button-secondary button-sm group-filter${includeInactive ? "" : " is-active"}`}
 						onClick={() => void showGroups(false)}
 						type="button"
 					>
 						Grupos activos
 					</button>
 					<button
-						className="font-semibold underline"
+						aria-pressed={includeInactive}
+						className={`button-secondary button-sm group-filter${includeInactive ? " is-active" : ""}`}
 						onClick={() => void showGroups(true)}
 						type="button"
 					>
 						Incluir grupos inactivos
 					</button>
-					<Link className="font-semibold underline" to="/app/groups/new">
+					<Link className="button-primary button-sm" to="/app/groups/new">
 						Registrar grupo
 					</Link>
 				</div>
@@ -124,7 +124,7 @@ function ManageGroupsPage() {
 				)}
 				{groups.length === 0 && (
 					<p className="mt-6">
-						No {includeInactive ? "grupos" : "grupos activos"} para mostrar.
+						{includeInactive ? "No hay grupos para mostrar." : "No hay grupos activos para mostrar."}
 					</p>
 				)}
 				<div className="mt-6 grid gap-5">
