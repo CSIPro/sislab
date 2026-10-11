@@ -1,7 +1,7 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
-import { careers, groups, labs, periods, subjects } from "../db/schema.ts";
+import { careers, groups, labs, periods, preparationRequests, subjects } from "../db/schema.ts";
 
 export type GroupDatabase = NodePgDatabase<typeof schema>;
 export type GroupActor = { id: string; roles: readonly string[] };
@@ -184,6 +184,14 @@ export async function updateProfessorGroup(
 				.for("update")
 				.limit(1);
 			if (!current) throw new Error("That group was not found.");
+			const changesPreparation = current.labId !== normalized.labId ||
+				current.weekday !== normalized.weekday ||
+				current.startTime !== normalized.startTime ||
+				current.endTime !== normalized.endTime ||
+				current.teams !== normalized.teams;
+			if (changesPreparation && await hasFutureRequest(transaction, current.id)) {
+				throw new Error("This group has a future preparation request. Its lab, schedule, and team count are locked until the request is voided or its session date passes.");
+			}
 
 			for (const periodCode of [
 				...new Set([current.periodCode, normalized.periodCode]),
@@ -266,13 +274,19 @@ export async function deactivateProfessorGroup(
 	groupId: string,
 ): Promise<typeof groups.$inferSelect> {
 	requireProfessor(actor);
-	const [deactivated] = await database
-		.update(groups)
-		.set({ active: false })
-		.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
-		.returning();
-	if (!deactivated) throw new Error("That group was not found.");
-	return deactivated;
+	return database.transaction(async (transaction) => {
+		const [current] = await transaction.select().from(groups)
+			.where(and(eq(groups.id, groupId), eq(groups.professorId, actor.id)))
+			.for("update").limit(1);
+		if (!current) throw new Error("That group was not found.");
+		if (await hasFutureRequest(transaction, current.id)) {
+			throw new Error("This group has a future preparation request. It cannot be deactivated until the request is voided or its session date passes.");
+		}
+		const [deactivated] = await transaction.update(groups).set({ active: false })
+			.where(eq(groups.id, current.id)).returning();
+		if (!deactivated) throw new Error("That group was not found.");
+		return deactivated;
+	});
 }
 
 export async function reactivateProfessorGroup(
@@ -327,6 +341,22 @@ function translateGroupConstraint(error: unknown): unknown {
 		return new Error("That group number has already been used in this period.");
 	}
 	return error;
+}
+
+async function hasFutureRequest(
+	database: Pick<GroupDatabase, "select">,
+	groupId: string,
+): Promise<boolean> {
+	const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Hermosillo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+	const [request] = await database.select({ id: preparationRequests.id })
+		.from(preparationRequests)
+		.where(and(
+			eq(preparationRequests.groupId, groupId),
+			gte(preparationRequests.sessionDate, today),
+			sql`${preparationRequests.status} <> 'voided'`,
+		))
+		.limit(1);
+	return !!request;
 }
 
 function requireProfessor(actor: GroupActor): void {

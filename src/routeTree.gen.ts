@@ -32,6 +32,9 @@ import { Route as AppAdminPeriodsRouteImport } from './routes/app.admin.periods'
 import { Route as AppAdminUsersRouteImport } from './routes/app.admin.users'
 import { Route as AppGroupsManageRouteImport } from './routes/app.groups.manage'
 import { Route as AppGroupsNewRouteImport } from './routes/app.groups.new'
+import { Route as AppRequestsAllRouteImport } from './routes/app.requests.all'
+import { Route as AppRequestsMineRouteImport } from './routes/app.requests.mine'
+import { Route as AppRequestsNewRouteImport } from './routes/app.requests.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -148,6 +151,21 @@ const AppGroupsNewRoute = AppGroupsNewRouteImport.update({
   path: '/groups/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRequestsAllRoute = AppRequestsAllRouteImport.update({
+  id: '/requests/all',
+  path: '/requests/all',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRequestsMineRoute = AppRequestsMineRouteImport.update({
+  id: '/requests/mine',
+  path: '/requests/mine',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRequestsNewRoute = AppRequestsNewRouteImport.update({
+  id: '/requests/new',
+  path: '/requests/new',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -173,6 +191,9 @@ export interface FileRoutesByFullPath {
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
+  '/app/requests/all': typeof AppRequestsAllRoute
+  '/app/requests/mine': typeof AppRequestsMineRoute
+  '/app/requests/new': typeof AppRequestsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -197,6 +218,9 @@ export interface FileRoutesByTo {
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
+  '/app/requests/all': typeof AppRequestsAllRoute
+  '/app/requests/mine': typeof AppRequestsMineRoute
+  '/app/requests/new': typeof AppRequestsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -223,6 +247,9 @@ export interface FileRoutesById {
   '/app/admin/users': typeof AppAdminUsersRoute
   '/app/groups/manage': typeof AppGroupsManageRoute
   '/app/groups/new': typeof AppGroupsNewRoute
+  '/app/requests/all': typeof AppRequestsAllRoute
+  '/app/requests/mine': typeof AppRequestsMineRoute
+  '/app/requests/new': typeof AppRequestsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,6 +277,9 @@ export interface FileRouteTypes {
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
+    | '/app/requests/all'
+    | '/app/requests/mine'
+    | '/app/requests/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -274,6 +304,9 @@ export interface FileRouteTypes {
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
+    | '/app/requests/all'
+    | '/app/requests/mine'
+    | '/app/requests/new'
   id:
     | '__root__'
     | '/'
@@ -299,6 +332,9 @@ export interface FileRouteTypes {
     | '/app/admin/users'
     | '/app/groups/manage'
     | '/app/groups/new'
+    | '/app/requests/all'
+    | '/app/requests/mine'
+    | '/app/requests/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -481,6 +517,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGroupsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/requests/all': {
+      id: '/app/requests/all'
+      path: '/requests/all'
+      fullPath: '/app/requests/all'
+      preLoaderRoute: typeof AppRequestsAllRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/requests/mine': {
+      id: '/app/requests/mine'
+      path: '/requests/mine'
+      fullPath: '/app/requests/mine'
+      preLoaderRoute: typeof AppRequestsMineRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/requests/new': {
+      id: '/app/requests/new'
+      path: '/requests/new'
+      fullPath: '/app/requests/new'
+      preLoaderRoute: typeof AppRequestsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -494,6 +551,9 @@ interface AppRouteChildren {
   AppAdminUsersRoute: typeof AppAdminUsersRoute
   AppGroupsManageRoute: typeof AppGroupsManageRoute
   AppGroupsNewRoute: typeof AppGroupsNewRoute
+  AppRequestsAllRoute: typeof AppRequestsAllRoute
+  AppRequestsMineRoute: typeof AppRequestsMineRoute
+  AppRequestsNewRoute: typeof AppRequestsNewRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -506,6 +566,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminUsersRoute: AppAdminUsersRoute,
   AppGroupsManageRoute: AppGroupsManageRoute,
   AppGroupsNewRoute: AppGroupsNewRoute,
+  AppRequestsAllRoute: AppRequestsAllRoute,
+  AppRequestsMineRoute: AppRequestsMineRoute,
+  AppRequestsNewRoute: AppRequestsNewRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
