@@ -144,7 +144,7 @@ function DashboardPage() {
 					<div className="dashboard-staff-icon"><FlaskConical aria-hidden="true" size={22} /></div>
 					<div>
 					<h2>Preparaciones para laboratorio</h2>
-					<p>El flujo para revisar y preparar solicitudes todavía no está disponible. Aquí aparecerá cuando esté listo.</p>
+					<p>Las solicitudes de preparación y los tickets diarios todavía no están disponibles. Aquí aparecerán cuando estén listos.</p>
 				</div>
 			</section>
 			)}

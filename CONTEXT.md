@@ -19,6 +19,9 @@ _Avoid_: Practice, assignment
 A professor's request for laboratory staff to prepare the reagents, equipment, and waste handling needed for a lab exercise. It is fulfilled, not approved.
 _Avoid_: Approval request
 
+**Access request**:
+A person's request for a SISLAB account. An admin verifies the person's identity and activates the account; it does not ask laboratory staff to prepare an exercise.
+
 **Reviewed**:
 A preparation request whose materials and waste plan have been checked by laboratory staff.
 
@@ -28,14 +31,17 @@ A preparation request for which laboratory staff have completed the preparation.
 **Cancelled**:
 A preparation request that will no longer be prepared, retained as part of the request history.
 
+**Voided**:
+A preparation request that lab staff or an admin marked as a mistaken submission. It remains in the request history and releases its group and date for a replacement.
+
 **Late exception**:
-A request or preparation-changing edit made with less than the configured notice period, requiring laboratory staff acceptance and a reason.
+A preparation request submitted with less than the configured notice period. The professor provides a reason, and laboratory staff decide whether to accept the short notice.
 
 **Ticket**:
 The printable daily document laboratory staff use to track preparation requests on paper.
 
 **Lab staff**:
-People who review and fulfill preparation requests.
+People who use preparation requests and daily tickets to prepare laboratory exercises.
 
 **Admin**:
 A person who has lab staff privileges and also manages the catalogs, settings, and user access.

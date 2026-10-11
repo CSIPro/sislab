@@ -9,12 +9,12 @@ web
 ## Users
 
 - Professors register groups and manage their recurring laboratory schedules.
-- Lab staff prepare laboratory requests; the preparation-request workflow is planned, not part of the current application slice.
+- Lab staff use preparation requests and daily tickets to prepare lab exercises; the preparation-request workflow is planned, not part of the current application slice.
 - Admins manage user access and academic catalogs, and have lab staff privileges.
 
 ## Product Purpose
 
-SISLAB (Sistema de Laboratorios) supports teaching laboratories at the Universidad de Sonora. Its current application slice lets professors register groups and schedule laboratory time. The planned next workflow lets professors request preparation for lab exercises and lets lab staff fulfill those requests. Success means staff and professors can coordinate teaching-lab schedules and preparation through the system.
+SISLAB (Sistema de Laboratorios) supports teaching laboratories at the Universidad de Sonora. Its current application slice lets professors register groups and schedule laboratory time. The planned next workflow lets professors request preparation for lab exercises and lets lab staff work from daily tickets. Success means staff and professors can coordinate teaching-lab schedules and preparation through the system.
 
 ## Positioning
 
@@ -22,7 +22,7 @@ SISLAB is for university teaching laboratories. It connects recurring group sche
 
 ## Operating Context
 
-Professors create groups for academic periods, assigning each a laboratory, course labels, student and team counts, weekday, and time slot. Admins activate accounts after checking identity outside SISLAB. Lab staff review and fulfill preparation requests when that workflow is available.
+Professors create groups for academic periods, assigning each a laboratory, course labels, student and team counts, weekday, and time slot. Admins activate accounts after checking identity outside SISLAB. In the planned request release, lab staff decide short-notice exceptions and prepare from daily tickets; recorded review and fulfillment can follow later.
 
 ## Capabilities and Constraints
 

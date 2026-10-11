@@ -106,13 +106,10 @@ function AppLayout() {
 					{admin && (
 						<>
 							<div className="sidebar-group">
-								<p className="sidebar-caption">Solicitudes</p>
+								<p className="sidebar-caption">Administración</p>
 								<Link aria-current={pathname === "/app/admin/accounts" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/accounts" onClick={closeMenu}>
 									<UsersRound aria-hidden="true" size={17} />Accesos pendientes
 								</Link>
-							</div>
-							<div className="sidebar-group">
-								<p className="sidebar-caption">Administración</p>
 								<Link aria-current={pathname === "/app/admin/users" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/users" onClick={closeMenu}>
 									<UsersRound aria-hidden="true" size={17} />Usuarios
 								</Link>
