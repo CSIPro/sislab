@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, lazy, Suspense, useRef, useState } from "react";
 import { Notice } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { Footnote, Page, PageHeader } from "../components/page.tsx";
@@ -14,8 +14,15 @@ import { Button } from "../components/ui/button.tsx";
 import { Card, CardHeader, CardTitle } from "../components/ui/card.tsx";
 import { Combobox } from "../components/ui/combobox.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "../components/ui/dialog.tsx";
 import { Field, FieldLabel } from "../components/ui/field.tsx";
 import { Label } from "../components/ui/label.tsx";
+import { Skeleton } from "../components/ui/skeleton.tsx";
 import {
 	Table,
 	TableBody,
@@ -31,6 +38,7 @@ import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "../components/ui/toggle-group.tsx";
+import { buildDailyTicket, type TicketExercise } from "../lib/daily-ticket.ts";
 import {
 	canDecideLateException,
 	requestStatusKey,
@@ -57,6 +65,9 @@ import {
 import type { RequestListRow } from "../server/preparation-requests.ts";
 
 type Range = "day" | "week";
+
+// The PDF renderer only runs in the browser, and only staff who open a ticket need it.
+const PDFTicket = lazy(() => import("../components/pdf-ticket.tsx"));
 
 export const Route = createFileRoute("/app/requests/all")({
 	loader: async () => {
@@ -102,6 +113,10 @@ function AllPreparationRequestsPage() {
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [message, setMessage] = useState("");
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [ticket, setTicket] = useState<{
+		date: string;
+		exercises: TicketExercise[];
+	} | null>(null);
 	const labs = [
 		...new Set(requests.map(({ request }) => request.labName)),
 	].sort((a, b) => a.localeCompare(b, "es-MX"));
@@ -187,19 +202,11 @@ function AllPreparationRequestsPage() {
 		);
 
 	async function printTicket() {
-		const printWindow = window.open("about:blank", "_blank");
-		if (!printWindow) {
-			setMessage("Permite las ventanas emergentes para generar el ticket.");
-			return;
-		}
 		setMessage("");
 		try {
 			const rows = await getDailyTicketRequestsFn({ data: { date } });
-			printWindow.document.open();
-			printWindow.document.write(buildTicketHtml(rows, date));
-			printWindow.document.close();
+			setTicket({ date, exercises: buildDailyTicket(rows) });
 		} catch (error) {
-			printWindow.close();
 			setMessage(
 				userFacingError(
 					error,
@@ -375,6 +382,27 @@ function AllPreparationRequestsPage() {
 				del día. Las excepciones sin decisión, las rechazadas y las anuladas no
 				aparecen.
 			</Footnote>
+
+			<Dialog
+				onOpenChange={(open) => {
+					if (!open) setTicket(null);
+				}}
+				open={ticket !== null}
+			>
+				<DialogContent className="flex items-center justify-center sm:h-[90%] sm:w-[90%] sm:max-w-[600px]">
+					<DialogTitle className="sr-only">Ticket del día</DialogTitle>
+					{ticket?.exercises.length === 0 && (
+						<DialogDescription>
+							No hay solicitudes pendientes para esta fecha
+						</DialogDescription>
+					)}
+					{ticket && ticket.exercises.length > 0 && (
+						<Suspense fallback={<Skeleton className="size-[95%]" />}>
+							<PDFTicket date={ticket.date} exercises={ticket.exercises} />
+						</Suspense>
+					)}
+				</DialogContent>
+			</Dialog>
 		</Page>
 	);
 }
@@ -566,96 +594,4 @@ function WeekDayButton({
 			{extra && <span className="mt-0.5 text-xs font-bold">{extra}</span>}
 		</Button>
 	);
-}
-
-function buildTicketHtml(rows: RequestListRow[], date: string) {
-	const groups = new Map<string, RequestListRow[]>();
-	for (const row of rows) {
-		const key = `${row.request.exerciseId}|${row.request.professorId}|${row.group.id}`;
-		groups.set(key, [...(groups.get(key) ?? []), row]);
-	}
-	const groupsHtml = [...groups.values()]
-		.map(([item]) => {
-			const { request, group, professor } = item;
-			const materials = request.materials;
-			return `<article class="ticket-group"><h2>${escapeHtml(request.exerciseNumber)} · ${escapeHtml(request.exerciseName)}</h2><p><b>${escapeHtml(professor.name)} ${escapeHtml(professor.surname)}</b> · Grupo ${group.number}</p><p>${escapeHtml(request.labName)} · ${escapeHtml(request.startTime.slice(0, 5))}–${escapeHtml(request.endTime.slice(0, 5))}</p>${request.professorNote ? `<p><b>Nota:</b> ${escapeHtml(request.professorNote)}</p>` : ""}${section(
-				"Reactivos",
-				materials.reagents.map(
-					(item) => `${item.name}: ${item.totalAmount} ${item.unit}`,
-				),
-			)}${section(
-				"Reactivos añadidos",
-				materials.addedReagents.map(
-					(item) => `${item.name}: ${item.totalAmount} ${item.unit}`,
-				),
-			)}${section("Reactivos omitidos", materials.omittedReagents)}${section(
-				"Equipo",
-				[...materials.equipment, ...materials.addedEquipment].map(
-					(item) => `${item.name}: ${item.totalAmount} ${item.unit}`,
-				),
-			)}${section(
-				"Residuos",
-				[...materials.waste, ...materials.addedWaste].map(
-					(item) => `${item.name} · ${item.container} · ${item.treatment}`,
-				),
-			)}</article>`;
-		})
-		.join("");
-	const totals = [
-		[
-			"Reactivos",
-			combine(
-				rows.flatMap(({ request }) => [
-					...request.materials.reagents,
-					...request.materials.addedReagents,
-				]),
-			),
-		],
-		[
-			"Equipo",
-			combine(
-				rows.flatMap(({ request }) => [
-					...request.materials.equipment,
-					...request.materials.addedEquipment,
-				]),
-			),
-		],
-	]
-		.map(([title, values]) => section(String(title), values as string[]))
-		.join("");
-	return `<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"><title>Ticket diario · ${escapeHtml(date)}</title><style>@page{size:80mm auto;margin:4mm}*{box-sizing:border-box}body{width:72mm;margin:0 auto;font:12px/1.35 Inconsolata,monospace;color:#181818}h1{font-size:18px;text-align:center;margin:0 0 4px}h2{font-size:14px;margin:12px 0 4px}.date{text-align:center;margin:0 0 10px}.ticket-group{border-top:1px dashed #444;padding:3px 0 7px}.ticket-group p{margin:3px 0}ul{margin:3px 0 8px;padding-left:15px}li{margin:2px 0}.totals{border-top:2px solid #181818;margin-top:8px;padding-top:4px}@media screen{body{margin:20px auto}}@media print{body{margin:0 auto}}</style></head><body><h1>SISLAB</h1><p class="date">Ticket de preparación · ${escapeHtml(formatDate(date))}<br/>${rows.length} solicitudes</p>${groupsHtml}${rows.length ? `<section class="totals"><h2>Totales por material</h2>${totals}</section>` : "<p>No hay solicitudes elegibles para esta fecha.</p>"}<script>window.addEventListener('load',()=>window.print())</script></body></html>`;
-}
-
-function section(title: string, entries: string[]) {
-	return entries.length
-		? `<section><h2>${escapeHtml(title)}</h2><ul>${entries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul></section>`
-		: "";
-}
-function combine(
-	items: Array<{ name: string; totalAmount: number; unit: string }>,
-) {
-	const totals = new Map<string, number>();
-	for (const item of items) {
-		const key = `${item.name}|||${item.unit}`;
-		totals.set(key, (totals.get(key) ?? 0) + item.totalAmount);
-	}
-	return [...totals].map(([key, amount]) => {
-		const [name, unit] = key.split("|||");
-		return `${name}: ${amount} ${unit}`;
-	});
-}
-function escapeHtml(value: string) {
-	return value.replace(
-		/[&<>"']/g,
-		(character) =>
-			({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-				character
-			] ?? character,
-	);
-}
-function formatDate(value: string) {
-	return new Intl.DateTimeFormat("es-MX", {
-		timeZone: "UTC",
-		dateStyle: "long",
-	}).format(new Date(`${value}T12:00:00Z`));
 }
