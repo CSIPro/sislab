@@ -95,7 +95,7 @@ test('guest landing, access request, and protected-route redirect work in Spanis
 	pendingPassword = `Pending-${randomUUID()}-Access`
 	await page.getByLabel('Nombre').fill('Browser')
 	await page.getByLabel('Apellidos').fill('Pending')
-	await page.getByLabel('Correo institucional').fill(pendingEmail)
+	await page.getByLabel('Correo electrónico').fill(pendingEmail)
 	await page.getByLabel('Contraseña').fill(pendingPassword)
 	await page.getByRole('button', { name: 'Solicitar acceso' }).click()
 	await expect(page.getByRole('status')).toContainText('Una persona administradora debe verificar')
@@ -127,7 +127,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByRole('link', { name: 'Ir a mi espacio' }).first()).toBeVisible()
 	await page.goto('/sign-up')
 	await expect(page.getByText('Sesión activa')).toBeVisible()
-	await expect(page.getByRole('textbox', { name: 'Correo institucional' })).toHaveCount(0)
+	await expect(page.getByRole('textbox', { name: 'Correo electrónico' })).toHaveCount(0)
 
 	await page.goto('/app/dashboard')
 	await page.setViewportSize({ width: 390, height: 844 })
@@ -242,7 +242,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 async function signIn(page: import('@playwright/test').Page, email: string, userPassword = password) {
 	await page.goto('/sign-in')
 	await page.waitForLoadState('networkidle')
-	await page.getByLabel('Correo institucional').fill(email)
+	await page.getByLabel('Correo electrónico').fill(email)
 	await page.getByLabel('Contraseña').fill(userPassword)
 	await page.getByRole('button', { name: 'Ingresar' }).click()
 	await expect(page).toHaveURL(/\/app\/dashboard$/)

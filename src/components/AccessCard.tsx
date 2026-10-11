@@ -108,12 +108,12 @@ function SignInForm() {
 	return (
 		<form className="access-form" method="post" onSubmit={submit}>
 			<label className="field-label">
-				Correo institucional
+				Correo electrónico
 				<input
 					autoComplete="username"
 					className="field"
 					name="email"
-					placeholder="nombre@unison.mx"
+					placeholder="nombre@correo.com"
 					required
 					type="email"
 				/>
@@ -204,12 +204,12 @@ function SignUpForm() {
 				/>
 			</label>
 			<label className="field-label">
-				Correo institucional
+				Correo electrónico
 				<input
 					autoComplete="email"
 					className="field"
 					name="email"
-					placeholder="nombre@unison.mx"
+					placeholder="nombre@correo.com"
 					required
 					type="email"
 				/>
