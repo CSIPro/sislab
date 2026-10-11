@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
 import { labExercises, type ExerciseMaterials } from "../db/schema.ts";
@@ -12,6 +12,17 @@ export type LabExerciseInput = {
 };
 export type LabExerciseActor = { roles: string[] };
 
+/**
+ * Exercise numbers are labels such as "10B", so text order would put "10"
+ * before "2". The leading digits sort as a number, then the whole label, and
+ * labels without leading digits come last.
+ */
+const exerciseOrder = [
+	sql`substring(${labExercises.number} from '^[0-9]+')::numeric`,
+	asc(labExercises.number),
+	asc(labExercises.name),
+];
+
 export async function listActiveLabExercises(
 	database: LabExerciseDatabase,
 ): Promise<LabExercise[]> {
@@ -19,7 +30,7 @@ export async function listActiveLabExercises(
 		.select()
 		.from(labExercises)
 		.where(eq(labExercises.active, true))
-		.orderBy(asc(labExercises.number), asc(labExercises.name));
+		.orderBy(...exerciseOrder);
 }
 
 export async function listLabExercises(
@@ -30,7 +41,7 @@ export async function listLabExercises(
 	return database
 		.select()
 		.from(labExercises)
-		.orderBy(asc(labExercises.number), asc(labExercises.name));
+		.orderBy(...exerciseOrder);
 }
 
 export async function createLabExercise(
