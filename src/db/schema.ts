@@ -40,8 +40,8 @@ export type RequestMaterials = {
 	equipment: (QuantityItem & { totalAmount: number })[];
 	waste: WasteItem[];
 	omittedReagents: string[];
-	addedReagents: QuantityItem[];
-	addedEquipment: QuantityItem[];
+	addedReagents: (QuantityItem & { totalAmount: number })[];
+	addedEquipment: (QuantityItem & { totalAmount: number })[];
 	addedWaste: WasteItem[];
 };
 
@@ -51,6 +51,7 @@ export const requestStatus = pgEnum("request_status", [
 	"reviewed",
 	"fulfilled",
 	"cancelled",
+	"voided",
 ]);
 
 export const users = pgTable(
@@ -214,6 +215,8 @@ export const preparationRequests = pgTable(
 		exerciseId: uuid("exercise_id")
 			.notNull()
 			.references(() => labExercises.id),
+		exerciseNumber: text("exercise_number").notNull(),
+		exerciseName: text("exercise_name").notNull(),
 		sessionDate: date("session_date").notNull(),
 		labId: uuid("lab_id")
 			.notNull()
@@ -228,6 +231,11 @@ export const preparationRequests = pgTable(
 		lateReason: text("late_reason"),
 		lateAcceptedBy: uuid("late_accepted_by").references(() => users.id),
 		lateAcceptedAt: timestamp("late_accepted_at", { withTimezone: true }),
+		lateDeclinedBy: uuid("late_declined_by").references(() => users.id),
+		lateDeclinedAt: timestamp("late_declined_at", { withTimezone: true }),
+		voidReason: text("void_reason"),
+		voidedBy: uuid("voided_by").references(() => users.id),
+		voidedAt: timestamp("voided_at", { withTimezone: true }),
 		scheduleNeedsConfirmation: boolean("schedule_needs_confirmation")
 			.notNull()
 			.default(false),
@@ -250,7 +258,7 @@ export const preparationRequests = pgTable(
 	(table) => [
 		uniqueIndex("requests_active_group_date_unique")
 			.on(table.groupId, table.sessionDate)
-			.where(sql.raw('"status" <> \'cancelled\'')),
+			.where(sql.raw('"status" <> \'voided\'')),
 		index("requests_session_date_idx").on(table.sessionDate),
 		check("requests_time_order", sql`${table.startTime} < ${table.endTime}`),
 		check(
@@ -259,6 +267,17 @@ export const preparationRequests = pgTable(
     ${table.lateAcceptedAt} IS NULL OR
     (${table.lateReason} IS NOT NULL AND ${table.lateAcceptedBy} IS NOT NULL)
   `,
+		),
+		check(
+			"requests_late_decision_exclusive",
+			sql`NOT (${table.lateAcceptedAt} IS NOT NULL AND ${table.lateDeclinedAt} IS NOT NULL)`,
+		),
+		check(
+			"requests_voided_details_valid",
+			sql`
+				${table.status} <> 'voided' OR
+				(${table.voidReason} IS NOT NULL AND ${table.voidedBy} IS NOT NULL AND ${table.voidedAt} IS NOT NULL)
+			`,
 		),
 	],
 );
