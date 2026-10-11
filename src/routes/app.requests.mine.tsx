@@ -1,5 +1,9 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+	requestStatusKey,
+	requestStatusLabel,
+} from "../lib/preparation-request-status.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import { listMyPreparationRequestsFn } from "../server/preparation-request-functions.ts";
 import type { RequestListRow } from "../server/preparation-requests.ts";
@@ -19,7 +23,7 @@ function MyPreparationRequestsPage() {
 	const requests = Route.useLoaderData();
 	const [state, setState] = useState("all");
 	const visible = requests.filter(
-		({ request }) => state === "all" || statusKey(request) === state,
+		({ request }) => state === "all" || requestStatusKey(request) === state,
 	);
 
 	return (
@@ -34,10 +38,7 @@ function MyPreparationRequestsPage() {
 							Consulta tus solicitudes actuales e históricas por fecha.
 						</p>
 					</div>
-					<Link
-						className="rounded-lg bg-[var(--primary)] px-5 py-3 font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-strong)]"
-						to="/app/requests/new"
-					>
+					<Link className="button-primary" to="/app/requests/new">
 						Nueva solicitud
 					</Link>
 				</header>
@@ -270,23 +271,6 @@ export function Status({ status }: { status: string }) {
 			{status}
 		</span>
 	);
-}
-
-function statusKey(request: RequestListRow["request"]) {
-	if (request.status === "voided") return "voided";
-	if (request.lateReason && request.lateAcceptedAt) return "accepted";
-	if (request.lateReason && request.lateDeclinedAt) return "declined";
-	if (request.lateReason) return "pending";
-	return "open";
-}
-
-function requestStatusLabel(request: RequestListRow["request"]) {
-	if (request.status === "voided") return "Anulada";
-	if (request.lateReason && request.lateAcceptedAt) return "Excepción aceptada";
-	if (request.lateReason && request.lateDeclinedAt)
-		return "Excepción rechazada";
-	if (request.lateReason) return "Pendiente de excepción";
-	return "Abierta";
 }
 
 function formatDate(value: string) {

@@ -1,5 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+	canDecideLateException,
+	requestStatusKey,
+	requestStatusLabel,
+} from "../lib/preparation-request-status.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
@@ -45,7 +50,7 @@ function AllPreparationRequestsPage() {
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const filtered = requests.filter(
 		({ request }) =>
-			statusFilter === "all" || statusKey(request) === statusFilter,
+			statusFilter === "all" || requestStatusKey(request) === statusFilter,
 	);
 
 	async function refresh(nextDate = date, nextRange = range) {
@@ -135,7 +140,7 @@ function AllPreparationRequestsPage() {
 						</p>
 					</div>
 					<button
-						className="rounded-lg bg-[var(--primary)] px-5 py-3 font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-strong)]"
+						className="button-primary"
 						onClick={printTicket}
 						type="button"
 					>
@@ -148,7 +153,7 @@ function AllPreparationRequestsPage() {
 						<div className="flex rounded-lg bg-[var(--secondary)] p-1">
 							<button
 								aria-pressed={range === "day"}
-								className={`rounded-md px-4 py-2 text-sm font-semibold ${range === "day" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}`}
+								className={`button-secondary !min-h-10 !px-3 !py-1 ${range === "day" ? "!border-transparent !bg-[var(--primary)] !text-[var(--primary-foreground)]" : ""}`}
 								onClick={() => {
 									setRange("day");
 									void refresh(date, "day");
@@ -159,7 +164,7 @@ function AllPreparationRequestsPage() {
 							</button>
 							<button
 								aria-pressed={range === "week"}
-								className={`rounded-md px-4 py-2 text-sm font-semibold ${range === "week" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : ""}`}
+								className={`button-secondary !min-h-10 !px-3 !py-1 ${range === "week" ? "!border-transparent !bg-[var(--primary)] !text-[var(--primary-foreground)]" : ""}`}
 								onClick={() => {
 									setRange("week");
 									void refresh(date, "week");
@@ -295,10 +300,10 @@ function StaffRequestRow({
 			</td>
 			<td className="px-4 py-5">
 				<div className="flex min-w-48 flex-wrap gap-2">
-					{canDecide(request) && (
+					{canDecideLateException(request) && (
 						<>
 							<button
-								className="rounded-lg bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-[var(--primary-foreground)] disabled:opacity-50"
+								className="button-primary !min-h-10 !px-3 !py-1 disabled:opacity-50"
 								disabled={busy}
 								onClick={() => onDecide(request.id, "accepted")}
 								type="button"
@@ -306,7 +311,7 @@ function StaffRequestRow({
 								Aceptar
 							</button>
 							<button
-								className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold disabled:opacity-50"
+								className="button-secondary !min-h-10 !px-3 !py-1 disabled:opacity-50"
 								disabled={busy}
 								onClick={() => onDecide(request.id, "declined")}
 								type="button"
@@ -353,7 +358,7 @@ function StaffRequestRow({
 							/>
 						</label>
 						<button
-							className="w-fit rounded-lg bg-[var(--destructive)] px-3 py-2 text-xs font-bold text-[var(--destructive-foreground)] disabled:opacity-50"
+							className="w-fit button-primary !min-h-10 !px-3 !py-1 !bg-[var(--destructive)] !text-[var(--destructive-foreground)] disabled:opacity-50"
 							disabled={busy || !reason.trim()}
 							type="submit"
 						>
@@ -411,32 +416,6 @@ function dateRange(value: string, range: "day" | "week") {
 	return { from, through: date.toISOString().slice(0, 10) };
 }
 
-function statusKey(request: RequestListRow["request"]) {
-	if (request.status === "voided") return "voided";
-	if (request.lateReason && request.lateAcceptedAt) return "accepted";
-	if (request.lateReason && request.lateDeclinedAt) return "declined";
-	if (request.lateReason) return "pending";
-	return "open";
-}
-
-function requestStatusLabel(request: RequestListRow["request"]) {
-	if (request.status === "voided") return "Anulada";
-	if (request.lateReason && request.lateAcceptedAt) return "Excepción aceptada";
-	if (request.lateReason && request.lateDeclinedAt)
-		return "Excepción rechazada";
-	if (request.lateReason) return "Pendiente de excepción";
-	return "Abierta";
-}
-
-function canDecide(request: RequestListRow["request"]) {
-	return (
-		request.status !== "voided" &&
-		!!request.lateReason &&
-		!request.lateAcceptedAt &&
-		!request.lateDeclinedAt
-	);
-}
-
 function buildTicketHtml(rows: RequestListRow[], date: string) {
 	const groups = new Map<string, RequestListRow[]>();
 	for (const row of rows) {
@@ -492,7 +471,7 @@ function buildTicketHtml(rows: RequestListRow[], date: string) {
 	]
 		.map(([title, values]) => section(String(title), values as string[]))
 		.join("");
-	return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Ticket diario · ${escapeHtml(date)}</title><style>@page{size:80mm auto;margin:4mm}*{box-sizing:border-box}body{width:72mm;margin:0 auto;font:12px/1.35 Arial,sans-serif;color:#181818}h1{font-size:18px;text-align:center;margin:0 0 4px}h2{font-size:14px;margin:12px 0 4px}.date{text-align:center;margin:0 0 10px}.ticket-group{border-top:1px dashed #444;padding:3px 0 7px}.ticket-group p{margin:3px 0}ul{margin:3px 0 8px;padding-left:15px}li{margin:2px 0}.totals{border-top:2px solid #181818;margin-top:8px;padding-top:4px}@media screen{body{margin:20px auto}}@media print{body{margin:0 auto}}</style></head><body><h1>SISLAB</h1><p class="date">Ticket de preparación · ${escapeHtml(formatDate(date))}<br/>${rows.length} solicitudes</p>${groupsHtml}${rows.length ? `<section class="totals"><h2>Totales por material</h2>${totals}</section>` : "<p>No hay solicitudes elegibles para esta fecha.</p>"}<script>window.addEventListener('load',()=>window.print())</script></body></html>`;
+	return `<!doctype html><html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"><title>Ticket diario · ${escapeHtml(date)}</title><style>@page{size:80mm auto;margin:4mm}*{box-sizing:border-box}body{width:72mm;margin:0 auto;font:12px/1.35 Inconsolata,monospace;color:#181818}h1{font-size:18px;text-align:center;margin:0 0 4px}h2{font-size:14px;margin:12px 0 4px}.date{text-align:center;margin:0 0 10px}.ticket-group{border-top:1px dashed #444;padding:3px 0 7px}.ticket-group p{margin:3px 0}ul{margin:3px 0 8px;padding-left:15px}li{margin:2px 0}.totals{border-top:2px solid #181818;margin-top:8px;padding-top:4px}@media screen{body{margin:20px auto}}@media print{body{margin:0 auto}}</style></head><body><h1>SISLAB</h1><p class="date">Ticket de preparación · ${escapeHtml(formatDate(date))}<br/>${rows.length} solicitudes</p>${groupsHtml}${rows.length ? `<section class="totals"><h2>Totales por material</h2>${totals}</section>` : "<p>No hay solicitudes elegibles para esta fecha.</p>"}<script>window.addEventListener('load',()=>window.print())</script></body></html>`;
 }
 
 function section(title: string, entries: string[]) {
