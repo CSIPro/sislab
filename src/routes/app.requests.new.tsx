@@ -125,9 +125,7 @@ function NewPreparationRequestPage() {
 			setMessage(
 				userFacingError(
 					error,
-					error instanceof Error
-						? error.message
-						: "No se pudo enviar tu solicitud.",
+					"No se pudo enviar tu solicitud. Inténtalo de nuevo más tarde.",
 				),
 			);
 		} finally {

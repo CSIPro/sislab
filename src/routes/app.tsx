@@ -8,6 +8,7 @@ import {
 import {
 	ArrowUpRight,
 	CalendarDays,
+	ClipboardList,
 	FlaskConical,
 	LayoutDashboard,
 	LogOut,
@@ -150,6 +151,7 @@ function AppLayout() {
 									to="/app/requests/mine"
 									onClick={closeMenu}
 								>
+									<ClipboardList aria-hidden="true" size={17} />
 									Mis solicitudes
 								</Link>
 							)}
@@ -162,6 +164,7 @@ function AppLayout() {
 									to="/app/requests/new"
 									onClick={closeMenu}
 								>
+									<FlaskConical aria-hidden="true" size={17} />
 									Nueva solicitud
 								</Link>
 							)}
@@ -174,6 +177,7 @@ function AppLayout() {
 									to="/app/requests/all"
 									onClick={closeMenu}
 								>
+									<ClipboardList aria-hidden="true" size={17} />
 									Todas las solicitudes
 								</Link>
 							)}

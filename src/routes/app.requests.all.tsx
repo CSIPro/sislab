@@ -38,6 +38,22 @@ export const Route = createFileRoute("/app/requests/all")({
 		};
 	},
 	component: AllPreparationRequestsPage,
+	errorComponent: ({ reset }) => (
+		<main className="page-wrap px-4 py-10 sm:py-12">
+			<section className="island-shell mx-auto max-w-6xl rounded-2xl p-5 sm:p-8">
+				<h1 className="display-title text-3xl font-bold text-[var(--foreground)] sm:text-4xl">
+					No se pudieron cargar las solicitudes
+				</h1>
+				<p className="mt-2 text-[var(--muted-foreground)]">
+					Inténtalo de nuevo. Si el problema continúa, contacta al
+					administrador.
+				</p>
+				<button className="button-primary mt-5" onClick={reset} type="button">
+					Intentar de nuevo
+				</button>
+			</section>
+		</main>
+	),
 });
 
 function AllPreparationRequestsPage() {

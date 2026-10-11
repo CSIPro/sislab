@@ -252,6 +252,16 @@ export async function submitPreparationRequest(
 			throw new Error(
 				"A request already uses this group and date. Choose another date or contact lab staff if it was submitted by mistake.",
 			);
+		const databaseError = getDatabaseErrorSummary(error);
+		if (databaseError) {
+			console.error(
+				"Database error while submitting a preparation request.",
+				databaseError,
+			);
+			throw new Error(
+				"No se pudo enviar tu solicitud. Inténtalo de nuevo más tarde.",
+			);
+		}
 		throw error;
 	}
 }
@@ -559,4 +569,34 @@ function isDatabaseError(
 	if (candidate.code === code && candidate.constraint === constraint)
 		return true;
 	return isDatabaseError(candidate.cause, code, constraint);
+}
+
+function getDatabaseErrorSummary(error: unknown): {
+	code?: string;
+	column?: string;
+	constraint?: string;
+	table?: string;
+} | null {
+	if (!error || typeof error !== "object") return null;
+	const candidate = error as {
+		code?: unknown;
+		column?: unknown;
+		constraint?: unknown;
+		table?: unknown;
+		cause?: unknown;
+	};
+	if (typeof candidate.code === "string")
+		return {
+			code: candidate.code,
+			...(typeof candidate.column === "string"
+				? { column: candidate.column }
+				: {}),
+			...(typeof candidate.constraint === "string"
+				? { constraint: candidate.constraint }
+				: {}),
+			...(typeof candidate.table === "string"
+				? { table: candidate.table }
+				: {}),
+		};
+	return getDatabaseErrorSummary(candidate.cause);
 }
