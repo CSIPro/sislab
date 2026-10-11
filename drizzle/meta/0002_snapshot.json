@@ -1,6 +1,6 @@
 {
-  "id": "c40a08f9-79fc-45e4-ba51-522ce63c7ae7",
-  "prevId": "fbe197d9-4d06-42a3-aee7-c07ee4ca43d5",
+  "id": "bfa32f3c-d2af-488b-99ce-cb3799bd1cf0",
+  "prevId": "c40a08f9-79fc-45e4-ba51-522ce63c7ae7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -452,6 +452,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "exercise_number": {
+          "name": "exercise_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exercise_name": {
+          "name": "exercise_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "session_date": {
           "name": "session_date",
           "type": "date",
@@ -522,6 +534,36 @@
         },
         "late_accepted_at": {
           "name": "late_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "late_declined_by": {
+          "name": "late_declined_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "late_declined_at": {
+          "name": "late_declined_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "void_reason": {
+          "name": "void_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_by": {
+          "name": "voided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_at": {
+          "name": "voided_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -607,7 +649,7 @@
             }
           ],
           "isUnique": true,
-          "where": "\"status\" <> 'cancelled'",
+          "where": "\"status\" <> 'voided'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -694,6 +736,32 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
+        "preparation_requests_late_declined_by_users_id_fk": {
+          "name": "preparation_requests_late_declined_by_users_id_fk",
+          "tableFrom": "preparation_requests",
+          "tableTo": "users",
+          "columnsFrom": [
+            "late_declined_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "preparation_requests_voided_by_users_id_fk": {
+          "name": "preparation_requests_voided_by_users_id_fk",
+          "tableFrom": "preparation_requests",
+          "tableTo": "users",
+          "columnsFrom": [
+            "voided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "preparation_requests_schedule_confirmed_by_users_id_fk": {
           "name": "preparation_requests_schedule_confirmed_by_users_id_fk",
           "tableFrom": "preparation_requests",
@@ -758,6 +826,14 @@
         "requests_late_acceptance_valid": {
           "name": "requests_late_acceptance_valid",
           "value": "\n    \"preparation_requests\".\"late_accepted_at\" IS NULL OR\n    (\"preparation_requests\".\"late_reason\" IS NOT NULL AND \"preparation_requests\".\"late_accepted_by\" IS NOT NULL)\n  "
+        },
+        "requests_late_decision_exclusive": {
+          "name": "requests_late_decision_exclusive",
+          "value": "NOT (\"preparation_requests\".\"late_accepted_at\" IS NOT NULL AND \"preparation_requests\".\"late_declined_at\" IS NOT NULL)"
+        },
+        "requests_voided_details_valid": {
+          "name": "requests_voided_details_valid",
+          "value": "\n\t\t\t\t\"preparation_requests\".\"status\" <> 'voided' OR\n\t\t\t\t(\"preparation_requests\".\"void_reason\" IS NOT NULL AND \"preparation_requests\".\"voided_by\" IS NOT NULL AND \"preparation_requests\".\"voided_at\" IS NOT NULL)\n\t\t\t"
         }
       },
       "isRLSEnabled": false
@@ -1067,7 +1143,8 @@
         "open",
         "reviewed",
         "fulfilled",
-        "cancelled"
+        "cancelled",
+        "voided"
       ]
     },
     "public.user_role": {
