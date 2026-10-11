@@ -1,0 +1,5 @@
+/src/lib/preparation-request-status.ts text eol=lf
+/src/routes/app.requests.new.tsx text eol=lf
+/src/routes/app.requests.mine.tsx text eol=lf
+/src/routes/app.requests.all.tsx text eol=lf
+/src/server/preparation-requests.ts text eol=lf
