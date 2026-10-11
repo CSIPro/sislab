@@ -1,10 +1,33 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { ActiveBadge } from "../components/active-badge.tsx";
+import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
-import { TableShell } from "../components/table-shell.tsx";
+import { Page, PageHeader } from "../components/page.tsx";
+import { PersonAvatar } from "../components/person-avatar.tsx";
+import { RoleCheckboxes } from "../components/role-checkboxes.tsx";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "../components/ui/field.tsx";
+import { Input } from "../components/ui/input.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableCellNote,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
-import { allRoles, initials, roleLabels } from "../lib/user-roles.ts";
+import { allRoles, roleLabels } from "../lib/user-roles.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import type { ManagedUser, UserRole } from "../server/user-access.ts";
 import {
@@ -37,9 +60,7 @@ function UserAccessPage() {
 	const [search, setSearch] = useState("");
 	const [roleFilter, setRoleFilter] = useState("all");
 	const [password, setPassword] = useState("");
-	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
-		null,
-	);
+	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
 	const query = searchable(search.trim());
@@ -107,212 +128,176 @@ function UserAccessPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head-copy">
-					<h1 className="page-title">Usuarios</h1>
-					<p className="page-sub">
-						Administra los roles y el acceso de cada cuenta. Los accesos nuevos
-						se activan desde Cuentas.
-					</p>
-				</header>
+		<Page size="compact">
+			<PageHeader
+				description="Administra los roles y el acceso de cada cuenta. Los accesos nuevos se activan desde Cuentas."
+				title="Usuarios"
+			/>
 
-				<div className="split is-top">
-					<section className="stack-section min-w-0 flex-[1.8_1_560px]">
-						<div className="flex flex-wrap items-end gap-3">
-							<label className="field-label flex-[1_1_260px]">
-								Buscar
-								<input
-									className="field-outline"
-									onChange={(event) => setSearch(event.target.value)}
-									placeholder="Nombre o correo"
-									type="search"
-									value={search}
-								/>
-							</label>
-							<div className="field-label flex-[0_1_220px]">
-								<label htmlFor="users-role">Rol</label>
-								<OptionSelect
-									className="w-full"
-									id="users-role"
-									onValueChange={setRoleFilter}
-									options={roleFilterOptions}
-									value={roleFilter}
-								/>
+			<div className="flex flex-wrap items-start gap-6">
+				<section className="flex min-w-0 flex-[1.8_1_560px] flex-col gap-4">
+					<div className="flex flex-wrap items-end gap-3">
+						<Field className="flex-[1_1_260px]">
+							<FieldLabel htmlFor="users-search">Buscar</FieldLabel>
+							<Input
+								id="users-search"
+								onChange={(event) => setSearch(event.target.value)}
+								placeholder="Nombre o correo"
+								type="search"
+								value={search}
+							/>
+						</Field>
+						<Field className="flex-[0_1_220px]">
+							<FieldLabel htmlFor="users-role">Rol</FieldLabel>
+							<OptionSelect
+								className="w-full"
+								id="users-role"
+								onValueChange={setRoleFilter}
+								options={roleFilterOptions}
+								value={roleFilter}
+							/>
+						</Field>
+					</div>
+
+					<Table className="min-w-[640px]">
+						<TableHeader>
+							<TableRow>
+								<TableHead>Nombre</TableHead>
+								<TableHead>Roles</TableHead>
+								<TableHead>Estado</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{visible.map((user) => (
+								<TableRow
+									data-muted={!user.active}
+									data-state={user.id === selectedId ? "selected" : undefined}
+									key={user.id}
+								>
+									<TableCell className={personCell}>
+										<Button
+											aria-pressed={user.id === selectedId}
+											className="min-h-0 w-full flex-col items-start gap-0 rounded-sm px-0 text-left text-[14.5px] font-normal whitespace-normal text-inherit hover:bg-transparent hover:text-primary-text"
+											onClick={() => select(user.id)}
+											variant="ghost"
+										>
+											<strong>
+												{user.name} {user.surname}
+											</strong>
+											<TableCellNote>{user.email}</TableCellNote>
+										</Button>
+									</TableCell>
+									<TableCell className={personCell}>
+										<div className="flex flex-wrap gap-1.5">
+											{user.roles.map((role) => (
+												<Badge key={role} variant="outline">
+													{roleLabels[role]}
+												</Badge>
+											))}
+										</div>
+									</TableCell>
+									<TableCell className={personCell}>
+										<ActiveBadge active={user.active} />
+									</TableCell>
+								</TableRow>
+							))}
+							{visible.length === 0 && (
+								<TableEmpty colSpan={3}>
+									Ninguna cuenta coincide con la búsqueda.
+								</TableEmpty>
+							)}
+						</TableBody>
+					</Table>
+				</section>
+
+				{selected && (
+					<Card
+						aria-labelledby="user-detail-title"
+						className="max-w-[420px] flex-[1_1_320px] gap-5"
+					>
+						<div className="flex items-center gap-3.5">
+							<PersonAvatar accent className="size-12" person={selected} />
+							<div className="flex min-w-0 flex-col">
+								<CardTitle className="text-xl" id="user-detail-title">
+									{selected.name} {selected.surname}
+								</CardTitle>
+								<span className="text-sm text-muted-foreground">
+									{selected.email}
+								</span>
 							</div>
 						</div>
 
-						<TableShell>
-							<table className="data-table is-plain" style={{ minWidth: 640 }}>
-								<thead>
-									<tr>
-										<th scope="col">Nombre</th>
-										<th scope="col">Roles</th>
-										<th scope="col">Estado</th>
-									</tr>
-								</thead>
-								<tbody>
-									{visible.map((user) => (
-										<tr
-											className={
-												[
-													user.id === selectedId && "is-selected",
-													!user.active && "is-void",
-												]
-													.filter(Boolean)
-													.join(" ") || undefined
-											}
-											key={user.id}
-										>
-											<td>
-												<button
-													aria-pressed={user.id === selectedId}
-													className="row-button"
-													onClick={() => select(user.id)}
-													type="button"
-												>
-													<strong>
-														{user.name} {user.surname}
-													</strong>
-													<small>{user.email}</small>
-												</button>
-											</td>
-											<td>
-												<div className="flex flex-wrap gap-1.5">
-													{user.roles.map((role) => (
-														<span className="role-tag" key={role}>
-															{roleLabels[role]}
-														</span>
-													))}
-												</div>
-											</td>
-											<td>
-												<span
-													className={`chip ${user.active ? "chip-ok" : "chip-off"}`}
-												>
-													{user.active ? "Activa" : "Inactiva"}
-												</span>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-							{visible.length === 0 && (
-								<p className="table-empty">
-									Ninguna cuenta coincide con la búsqueda.
-								</p>
-							)}
-						</TableShell>
-					</section>
+						<ActionNotice notice={notice} />
 
-					{selected && (
-						<section
-							aria-labelledby="user-detail-title"
-							className="panel max-w-[420px] flex-[1_1_320px]"
+						<RoleCheckboxes
+							disabled={busy}
+							onChange={(roles) =>
+								setRoleDrafts((current) => ({
+									...current,
+									[selected.id]: roles,
+								}))
+							}
+							roles={draftRoles}
 						>
-							<div className="flex items-center gap-3.5">
-								<span aria-hidden="true" className="avatar is-accent">
-									{initials(selected)}
-								</span>
-								<div className="flex min-w-0 flex-col">
-									<h2 className="m-0 text-xl font-bold" id="user-detail-title">
-										{selected.name} {selected.surname}
-									</h2>
-									<span className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
-										{selected.email}
-									</span>
-								</div>
-							</div>
+							<FieldDescription className="mt-1">
+								Administración incluye los permisos del personal de laboratorio.
+							</FieldDescription>
+						</RoleCheckboxes>
 
-							{notice && (
-								<output
-									aria-live="polite"
-									className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
-								>
-									{notice.text}
-								</output>
-							)}
-
-							<fieldset className="fieldset-plain" disabled={busy}>
-								<legend>Roles</legend>
-								{allRoles.map((role) => (
-									<label className="check-row" key={role}>
-										<input
-											checked={draftRoles.includes(role)}
-											onChange={(event) =>
-												setRoleDrafts((current) => ({
-													...current,
-													[selected.id]: event.target.checked
-														? [...draftRoles, role]
-														: draftRoles.filter((entry) => entry !== role),
-												}))
-											}
-											type="checkbox"
-										/>
-										{roleLabels[role]}
-									</label>
-								))}
-								<p className="field-hint mt-1 mb-0">
-									Administración incluye los permisos del personal de
-									laboratorio.
-								</p>
-							</fieldset>
-
-							<form
-								className="panel-section"
-								onSubmit={(event) => void replacePassword(event, selected)}
-							>
-								<h3>Contraseña</h3>
-								<p className="m-0 text-sm text-muted-foreground">
-									Las personas no pueden recuperarla por su cuenta. Escribe una
-									nueva y compártesela. Al cambiarla se cierran sus otras
-									sesiones.
-								</p>
-								<label className="field-label">
+						<form
+							className="flex flex-col gap-2.5 border-t pt-5"
+							onSubmit={(event) => void replacePassword(event, selected)}
+						>
+							<h3 className="text-[15px] font-bold">Contraseña</h3>
+							<p className="text-sm text-muted-foreground">
+								Las personas no pueden recuperarla por su cuenta. Escribe una
+								nueva y compártesela. Al cambiarla se cierran sus otras
+								sesiones.
+							</p>
+							<Field>
+								<FieldLabel htmlFor="user-new-password">
 									Contraseña nueva
-									<input
-										autoComplete="new-password"
-										className="field-outline"
-										minLength={12}
-										onChange={(event) => setPassword(event.target.value)}
-										required
-										value={password}
-									/>
-									<span className="field-hint">Al menos 12 caracteres.</span>
-								</label>
-								<div>
-									<button
-										className="button-secondary"
-										disabled={busy}
-										type="submit"
-									>
-										Restablecer contraseña
-									</button>
-								</div>
-							</form>
-
-							<div className="panel-actions">
-								<button
-									className="button-primary"
-									disabled={busy}
-									onClick={() => void saveRoles(selected)}
-									type="button"
-								>
-									Guardar cambios
-								</button>
-								<button
-									className="button-secondary"
-									disabled={busy}
-									onClick={() => void toggleActive(selected)}
-									type="button"
-								>
-									{selected.active ? "Desactivar cuenta" : "Reactivar cuenta"}
-								</button>
+								</FieldLabel>
+								<Input
+									autoComplete="new-password"
+									id="user-new-password"
+									minLength={12}
+									onChange={(event) => setPassword(event.target.value)}
+									required
+									value={password}
+								/>
+								<FieldDescription>Al menos 12 caracteres.</FieldDescription>
+							</Field>
+							<div>
+								<Button disabled={busy} type="submit" variant="outline">
+									Restablecer contraseña
+								</Button>
 							</div>
-						</section>
-					)}
-				</div>
+						</form>
+
+						<CardFooter>
+							<Button
+								disabled={busy}
+								onClick={() => void saveRoles(selected)}
+								size="lg"
+							>
+								Guardar cambios
+							</Button>
+							<Button
+								disabled={busy}
+								onClick={() => void toggleActive(selected)}
+								size="lg"
+								variant="outline"
+							>
+								{selected.active ? "Desactivar cuenta" : "Reactivar cuenta"}
+							</Button>
+						</CardFooter>
+					</Card>
+				)}
 			</div>
-		</main>
+		</Page>
 	);
 }
+
+/** Names and emails read badly in the monospace face the other tables use. */
+const personCell = "font-sans text-[14.5px]";

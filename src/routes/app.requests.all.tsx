@@ -1,16 +1,35 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { Fragment, useState } from "react";
+import { Notice } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
+import { Footnote, Page, PageHeader } from "../components/page.tsx";
 import {
 	RequestDetails,
 	StatusChip,
 	statusFilterOptions,
 	voidedByName,
 } from "../components/request-parts.tsx";
-import { TableShell } from "../components/table-shell.tsx";
+import { Button } from "../components/ui/button.tsx";
 import { Combobox } from "../components/ui/combobox.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
+import { Field, FieldLabel } from "../components/ui/field.tsx";
+import { Label } from "../components/ui/label.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableCellNote,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
+import {
+	ToggleGroup,
+	ToggleGroupItem,
+} from "../components/ui/toggle-group.tsx";
 import {
 	canDecideLateException,
 	requestStatusKey,
@@ -53,22 +72,17 @@ export const Route = createFileRoute("/app/requests/all")({
 	},
 	component: AllPreparationRequestsPage,
 	errorComponent: ({ reset }) => (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head-copy">
-					<h1 className="page-title">No se pudieron cargar las solicitudes</h1>
-					<p className="page-sub">
-						Inténtalo de nuevo. Si el problema continúa, contacta al
-						administrador.
-					</p>
-				</header>
-				<div>
-					<button className="button-primary" onClick={reset} type="button">
-						Intentar de nuevo
-					</button>
-				</div>
+		<Page size="compact">
+			<PageHeader
+				description="Inténtalo de nuevo. Si el problema continúa, contacta al administrador."
+				title="No se pudieron cargar las solicitudes"
+			/>
+			<div>
+				<Button onClick={reset} size="lg">
+					Intentar de nuevo
+				</Button>
 			</div>
-		</main>
+		</Page>
 	),
 });
 
@@ -171,165 +185,143 @@ function AllPreparationRequestsPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head">
-					<div className="page-head-copy">
-						<h1 className="page-title">Todas las solicitudes</h1>
-						<p className="page-sub">
-							{range === "day"
-								? formatSessionDate(date, "full")
-								: `Semana del ${formatDateSpan(selected.from, selected.through)}`}
-							{periodCode && ` · Período ${periodCode}`}
-						</p>
-					</div>
-					<button
-						className="button-primary"
-						onClick={printTicket}
-						type="button"
+		<Page size="compact">
+			<PageHeader
+				description={`${
+					range === "day"
+						? formatSessionDate(date, "full")
+						: `Semana del ${formatDateSpan(selected.from, selected.through)}`
+				}${periodCode ? ` · Período ${periodCode}` : ""}`}
+				title="Todas las solicitudes"
+			>
+				<Button onClick={printTicket} size="lg">
+					<Download aria-hidden="true" size={18} strokeWidth={2} />
+					Ticket del{" "}
+					{formatSessionDate(date, "weekdayDay").toLocaleLowerCase("es-MX")}{" "}
+					(PDF)
+				</Button>
+			</PageHeader>
+
+			{pending > 0 && (
+				<Notice icon={Clock} tone="warning">
+					<strong>
+						{pending}{" "}
+						{pending === 1
+							? "excepción por decidir."
+							: "excepciones por decidir."}
+					</strong>{" "}
+					{pending === 1
+						? "Mientras no la aceptes, queda fuera del ticket del día."
+						: "Mientras no las aceptes, quedan fuera del ticket del día."}
+				</Notice>
+			)}
+
+			<div className="flex flex-wrap items-center justify-between gap-4">
+				<div className="flex flex-wrap items-center gap-3">
+					<ToggleGroup
+						aria-label="Vista"
+						onValueChange={(value) => {
+							if (value) void show(date, value as Range);
+						}}
+						type="single"
+						value={range}
+						variant="outline"
 					>
-						<Download aria-hidden="true" size={18} strokeWidth={2} />
-						Ticket del{" "}
-						{formatSessionDate(date, "weekdayDay").toLocaleLowerCase("es-MX")}{" "}
-						(PDF)
-					</button>
-				</header>
-
-				{pending > 0 && (
-					<output className="notice notice-warning">
-						<Clock aria-hidden="true" size={20} strokeWidth={2} />
-						<p>
-							<strong>
-								{pending}{" "}
-								{pending === 1
-									? "excepción por decidir."
-									: "excepciones por decidir."}
-							</strong>{" "}
-							{pending === 1
-								? "Mientras no la aceptes, queda fuera del ticket del día."
-								: "Mientras no las aceptes, quedan fuera del ticket del día."}
-						</p>
-					</output>
-				)}
-
-				<div className="toolbar">
-					<div className="toolbar-group">
-						{/* biome-ignore lint/a11y/useSemanticElements: a fieldset would add a legend the design does not have */}
-						<div aria-label="Vista" className="seg-group" role="group">
-							<button
-								aria-pressed={range === "day"}
-								className="seg"
-								onClick={() => void show(date, "day")}
-								type="button"
-							>
-								Día
-							</button>
-							<button
-								aria-pressed={range === "week"}
-								className="seg"
-								onClick={() => void show(date, "week")}
-								type="button"
-							>
-								Semana
-							</button>
-						</div>
-						<button
-							aria-label={`${rangeLabel} anterior`}
-							className="button-secondary button-sm button-icon"
-							onClick={() =>
-								void show(addDays(date, range === "day" ? -1 : -7), range)
-							}
-							type="button"
-						>
-							<ChevronLeft aria-hidden="true" size={18} />
-						</button>
-						<button
-							aria-label={`${rangeLabel} siguiente`}
-							className="button-secondary button-sm button-icon"
-							onClick={() =>
-								void show(addDays(date, range === "day" ? 1 : 7), range)
-							}
-							type="button"
-						>
-							<ChevronRight aria-hidden="true" size={18} />
-						</button>
-						<DatePicker
-							aria-label="Fecha"
-							className="field-outline"
-							onValueChange={(value) => void show(value, range)}
-							value={date}
-						/>
-					</div>
-					<div className="toolbar-group">
-						<label htmlFor="all-requests-lab">Laboratorio</label>
-						<Combobox
-							className="field-outline"
-							emptyText="Ningún laboratorio coincide."
-							id="all-requests-lab"
-							onValueChange={setLabFilter}
-							options={[
-								{ value: "all", label: "Todos" },
-								...(labFilter !== "all" && !labs.includes(labFilter)
-									? [{ value: labFilter, label: labFilter }]
-									: []),
-								...labs.map((lab) => ({ value: lab, label: lab })),
-							]}
-							searchPlaceholder="Buscar laboratorio"
-							value={labFilter}
-						/>
-						<label htmlFor="all-requests-status">Estado</label>
-						<OptionSelect
-							id="all-requests-status"
-							onValueChange={setStatusFilter}
-							options={statusFilterOptions}
-							value={statusFilter}
-						/>
-					</div>
+						<ToggleGroupItem value="day">Día</ToggleGroupItem>
+						<ToggleGroupItem value="week">Semana</ToggleGroupItem>
+					</ToggleGroup>
+					<Button
+						aria-label={`${rangeLabel} anterior`}
+						onClick={() =>
+							void show(addDays(date, range === "day" ? -1 : -7), range)
+						}
+						size="icon"
+						variant="outline"
+					>
+						<ChevronLeft aria-hidden="true" size={18} />
+					</Button>
+					<Button
+						aria-label={`${rangeLabel} siguiente`}
+						onClick={() =>
+							void show(addDays(date, range === "day" ? 1 : 7), range)
+						}
+						size="icon"
+						variant="outline"
+					>
+						<ChevronRight aria-hidden="true" size={18} />
+					</Button>
+					<DatePicker
+						aria-label="Fecha"
+						className="w-auto min-w-36"
+						onValueChange={(value) => void show(value, range)}
+						value={date}
+					/>
 				</div>
-
-				{message && (
-					<p className="notice notice-error" role="alert">
-						{message}
-					</p>
-				)}
-
-				<TableShell>
-					<table className="data-table" style={{ minWidth: 1080 }}>
-						<thead>
-							<tr>
-								<th scope="col">Fecha y hora</th>
-								<th scope="col">Práctica</th>
-								<th scope="col">Profesor</th>
-								<th scope="col">Grupo</th>
-								<th scope="col">Lab.</th>
-								<th scope="col">Estado</th>
-								<th scope="col">Acciones</th>
-							</tr>
-						</thead>
-						<tbody>
-							{filtered.map((item) => (
-								<StaffRequestRow
-									busy={busyId === item.request.id}
-									item={item}
-									key={item.request.id}
-									onDecide={decide}
-									onVoid={voidRequest}
-								/>
-							))}
-						</tbody>
-					</table>
-					{filtered.length === 0 && (
-						<p className="table-empty">No hay solicitudes en estas fechas.</p>
-					)}
-				</TableShell>
-
-				<p className="footnote">
-					El ticket incluye las solicitudes ordinarias y las excepciones
-					aceptadas del día. Las excepciones sin decisión, las rechazadas y las
-					anuladas no aparecen.
-				</p>
+				<div className="flex flex-wrap items-center gap-3">
+					<Label htmlFor="all-requests-lab">Laboratorio</Label>
+					<Combobox
+						className="w-auto min-w-36"
+						emptyText="Ningún laboratorio coincide."
+						id="all-requests-lab"
+						onValueChange={setLabFilter}
+						options={[
+							{ value: "all", label: "Todos" },
+							...(labFilter !== "all" && !labs.includes(labFilter)
+								? [{ value: labFilter, label: labFilter }]
+								: []),
+							...labs.map((lab) => ({ value: lab, label: lab })),
+						]}
+						searchPlaceholder="Buscar laboratorio"
+						value={labFilter}
+					/>
+					<Label htmlFor="all-requests-status">Estado</Label>
+					<OptionSelect
+						id="all-requests-status"
+						onValueChange={setStatusFilter}
+						options={statusFilterOptions}
+						value={statusFilter}
+					/>
+				</div>
 			</div>
-		</main>
+
+			{message && <Notice tone="error">{message}</Notice>}
+
+			<Table className="min-w-[1080px]">
+				<TableHeader>
+					<TableRow>
+						<TableHead>Fecha y hora</TableHead>
+						<TableHead>Práctica</TableHead>
+						<TableHead>Profesor</TableHead>
+						<TableHead>Grupo</TableHead>
+						<TableHead>Lab.</TableHead>
+						<TableHead>Estado</TableHead>
+						<TableHead>Acciones</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{filtered.map((item) => (
+						<StaffRequestRow
+							busy={busyId === item.request.id}
+							item={item}
+							key={item.request.id}
+							onDecide={decide}
+							onVoid={voidRequest}
+						/>
+					))}
+					{filtered.length === 0 && (
+						<TableEmpty colSpan={7}>
+							No hay solicitudes en estas fechas.
+						</TableEmpty>
+					)}
+				</TableBody>
+			</Table>
+
+			<Footnote>
+				El ticket incluye las solicitudes ordinarias y las excepciones aceptadas
+				del día. Las excepciones sin decisión, las rechazadas y las anuladas no
+				aparecen.
+			</Footnote>
+		</Page>
 	);
 }
 
@@ -352,119 +344,124 @@ function StaffRequestRow({
 		setPanel((current) => (current === next ? null : next));
 	return (
 		<Fragment>
-			<tr className={voided ? "is-void" : undefined}>
-				<td>
+			<TableRow data-muted={voided}>
+				<TableCell>
 					<strong>{formatSessionDate(request.sessionDate, "short")}</strong>
-					<small>{timeRange(request.startTime, request.endTime)}</small>
-				</td>
-				<td>
+					<TableCellNote>
+						{timeRange(request.startTime, request.endTime)}
+					</TableCellNote>
+				</TableCell>
+				<TableCell>
 					{request.exerciseName}
 					{voided ? (
-						<small className="cell-note">
+						<TableCellNote className="font-sans">
 							Anulada por {voidedByName(item)}
 							{request.voidedAt &&
 								`, ${formatSessionDate(sislabToday(new Date(request.voidedAt)), "dayMonth")}`}
 							.
-						</small>
+						</TableCellNote>
 					) : (
 						request.lateReason && (
-							<small className="cell-note">Motivo: {request.lateReason}</small>
+							<TableCellNote className="font-sans">
+								Motivo: {request.lateReason}
+							</TableCellNote>
 						)
 					)}
-				</td>
-				<td>
+				</TableCell>
+				<TableCell>
 					{professor.name} {professor.surname}
-				</td>
-				<td>
+				</TableCell>
+				<TableCell>
 					{group.subjectName} · {groupLabel(group.number)}
-				</td>
-				<td className="whitespace-nowrap">{request.labName}</td>
-				<td>
+				</TableCell>
+				<TableCell className="whitespace-nowrap">{request.labName}</TableCell>
+				<TableCell>
 					<StatusChip request={request} />
-				</td>
-				<td>
-					<div className="row-actions">
+				</TableCell>
+				<TableCell>
+					<div className="flex gap-2">
 						{canDecideLateException(request) && (
 							<>
-								<button
-									className="button-primary button-sm"
+								<Button
 									disabled={busy}
 									onClick={() => onDecide(request.id, "accepted")}
-									type="button"
+									size="sm"
 								>
 									Aceptar
-								</button>
-								<button
-									className="button-secondary button-sm"
+								</Button>
+								<Button
 									disabled={busy}
 									onClick={() => onDecide(request.id, "declined")}
-									type="button"
+									size="sm"
+									variant="outline"
 								>
 									Rechazar
-								</button>
+								</Button>
 							</>
 						)}
-						<button
+						<Button
 							aria-expanded={panel === "details"}
-							className="button-secondary button-sm"
 							onClick={() => toggle("details")}
-							type="button"
+							size="sm"
+							variant="outline"
 						>
 							Ver
-						</button>
+						</Button>
 						{!voided && (
-							<button
+							<Button
 								aria-expanded={panel === "void"}
-								className="button-secondary button-sm button-danger"
 								disabled={busy}
 								onClick={() => toggle("void")}
-								type="button"
+								size="sm"
+								variant="destructive"
 							>
 								Anular
-							</button>
+							</Button>
 						)}
 					</div>
-				</td>
-			</tr>
+				</TableCell>
+			</TableRow>
 			{panel === "details" && (
-				<tr className="detail-row">
-					<td colSpan={7}>
+				<TableRow>
+					<TableCell className="bg-background font-sans text-sm" colSpan={7}>
 						<RequestDetails item={item} />
-					</td>
-				</tr>
+					</TableCell>
+				</TableRow>
 			)}
 			{panel === "void" && !voided && (
-				<tr className="detail-row">
-					<td colSpan={7}>
+				<TableRow>
+					<TableCell className="bg-background font-sans text-sm" colSpan={7}>
 						<form
-							className="stack"
+							className="flex max-w-[600px] flex-col gap-3"
 							onSubmit={(event) => {
 								event.preventDefault();
 								onVoid(request.id, reason);
 							}}
-							style={{ maxWidth: 600 }}
 						>
-							<label className="field-label">
-								Motivo de la anulación
-								<textarea
-									className="field"
+							<Field>
+								<FieldLabel htmlFor={`void-reason-${request.id}`}>
+									Motivo de la anulación
+								</FieldLabel>
+								<Textarea
+									id={`void-reason-${request.id}`}
 									onChange={(event) => setReason(event.target.value)}
 									required
 									value={reason}
 								/>
-							</label>
+							</Field>
 							<div>
-								<button
-									className="button-secondary button-sm button-danger"
+								<Button
 									disabled={busy || !reason.trim()}
+									size="sm"
 									type="submit"
+									variant="destructive"
 								>
 									Confirmar anulación
-								</button>
+								</Button>
 							</div>
 						</form>
-					</td>
-				</tr>
+					</TableCell>
+				</TableRow>
 			)}
 		</Fragment>
 	);

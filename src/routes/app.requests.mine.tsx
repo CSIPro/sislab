@@ -2,12 +2,24 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { Fragment, useState } from "react";
 import { OptionSelect } from "../components/option-select.tsx";
+import { Footnote, Page, PageHeader } from "../components/page.tsx";
 import {
 	RequestDetails,
 	StatusChip,
 	statusFilterOptions,
 } from "../components/request-parts.tsx";
-import { TableShell } from "../components/table-shell.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Label } from "../components/ui/label.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableCellNote,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
 import { requestStatusKey } from "../lib/preparation-request-status.ts";
 import {
 	formatSessionDate,
@@ -27,22 +39,17 @@ export const Route = createFileRoute("/app/requests/mine")({
 	},
 	component: MyPreparationRequestsPage,
 	errorComponent: ({ reset }) => (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head-copy">
-					<h1 className="page-title">No se pudieron cargar tus solicitudes</h1>
-					<p className="page-sub">
-						Inténtalo de nuevo. Si el problema continúa, contacta al personal de
-						laboratorio.
-					</p>
-				</header>
-				<div>
-					<button className="button-primary" onClick={reset} type="button">
-						Intentar de nuevo
-					</button>
-				</div>
+		<Page size="compact">
+			<PageHeader
+				description="Inténtalo de nuevo. Si el problema continúa, contacta al personal de laboratorio."
+				title="No se pudieron cargar tus solicitudes"
+			/>
+			<div>
+				<Button onClick={reset} size="lg">
+					Intentar de nuevo
+				</Button>
 			</div>
-		</main>
+		</Page>
 	),
 });
 
@@ -56,109 +63,103 @@ function MyPreparationRequestsPage() {
 	);
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head">
-					<div className="page-head-copy">
-						<h1 className="page-title">Mis solicitudes</h1>
-						<p className="page-sub">
-							{periodCode && `Período ${periodCode} · `}
-							{visible.length}{" "}
-							{visible.length === 1 ? "solicitud" : "solicitudes"}
-						</p>
-					</div>
-					<Link className="button-primary" to="/app/requests/new">
+		<Page size="compact">
+			<PageHeader
+				description={`${periodCode ? `Período ${periodCode} · ` : ""}${visible.length} ${visible.length === 1 ? "solicitud" : "solicitudes"}`}
+				title="Mis solicitudes"
+			>
+				<Button asChild size="lg">
+					<Link to="/app/requests/new">
 						<Plus aria-hidden="true" size={18} strokeWidth={2} />
 						Nueva solicitud
 					</Link>
-				</header>
+				</Button>
+			</PageHeader>
 
-				<div className="toolbar">
-					<div className="toolbar-group">
-						<label htmlFor="my-requests-status">Estado</label>
-						<OptionSelect
-							id="my-requests-status"
-							onValueChange={setState}
-							options={statusFilterOptions}
-							value={state}
-						/>
-					</div>
-				</div>
-
-				<TableShell>
-					<table className="data-table" style={{ minWidth: 820 }}>
-						<thead>
-							<tr>
-								<th scope="col">Fecha y hora</th>
-								<th scope="col">Práctica</th>
-								<th scope="col">Grupo</th>
-								<th scope="col">Lab.</th>
-								<th scope="col">Estado</th>
-								<th scope="col">Acciones</th>
-							</tr>
-						</thead>
-						<tbody>
-							{visible.map((item) => {
-								const { request, group } = item;
-								const open = openId === request.id;
-								return (
-									<Fragment key={request.id}>
-										<tr
-											className={
-												request.status === "voided" ? "is-void" : undefined
-											}
-										>
-											<td>
-												<strong>
-													{formatSessionDate(request.sessionDate, "short")}
-												</strong>
-												<small>
-													{timeRange(request.startTime, request.endTime)}
-												</small>
-											</td>
-											<td>
-												{request.exerciseNumber} · {request.exerciseName}
-											</td>
-											<td>
-												{group.subjectName} · {groupLabel(group.number)}
-											</td>
-											<td className="whitespace-nowrap">{request.labName}</td>
-											<td>
-												<StatusChip request={request} />
-											</td>
-											<td>
-												<button
-													aria-expanded={open}
-													className="button-secondary button-sm"
-													onClick={() => setOpenId(open ? null : request.id)}
-													type="button"
-												>
-													Ver
-												</button>
-											</td>
-										</tr>
-										{open && (
-											<tr className="detail-row">
-												<td colSpan={6}>
-													<RequestDetails item={item} />
-												</td>
-											</tr>
-										)}
-									</Fragment>
-								);
-							})}
-						</tbody>
-					</table>
-					{visible.length === 0 && (
-						<p className="table-empty">No hay solicitudes para este estado.</p>
-					)}
-				</TableShell>
-
-				<p className="footnote">
-					Las solicitudes enviadas son de solo lectura. Si una solicitud fue
-					anulada, puedes crear otra para la misma fecha.
-				</p>
+			<div className="flex flex-wrap items-center gap-3">
+				<Label htmlFor="my-requests-status">Estado</Label>
+				<OptionSelect
+					id="my-requests-status"
+					onValueChange={setState}
+					options={statusFilterOptions}
+					value={state}
+				/>
 			</div>
-		</main>
+
+			<Table className="min-w-[820px]">
+				<TableHeader>
+					<TableRow>
+						<TableHead>Fecha y hora</TableHead>
+						<TableHead>Práctica</TableHead>
+						<TableHead>Grupo</TableHead>
+						<TableHead>Lab.</TableHead>
+						<TableHead>Estado</TableHead>
+						<TableHead>Acciones</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{visible.map((item) => {
+						const { request, group } = item;
+						const open = openId === request.id;
+						return (
+							<Fragment key={request.id}>
+								<TableRow data-muted={request.status === "voided"}>
+									<TableCell>
+										<strong>
+											{formatSessionDate(request.sessionDate, "short")}
+										</strong>
+										<TableCellNote>
+											{timeRange(request.startTime, request.endTime)}
+										</TableCellNote>
+									</TableCell>
+									<TableCell>
+										{request.exerciseNumber} · {request.exerciseName}
+									</TableCell>
+									<TableCell>
+										{group.subjectName} · {groupLabel(group.number)}
+									</TableCell>
+									<TableCell className="whitespace-nowrap">
+										{request.labName}
+									</TableCell>
+									<TableCell>
+										<StatusChip request={request} />
+									</TableCell>
+									<TableCell>
+										<Button
+											aria-expanded={open}
+											onClick={() => setOpenId(open ? null : request.id)}
+											size="sm"
+											variant="outline"
+										>
+											Ver
+										</Button>
+									</TableCell>
+								</TableRow>
+								{open && (
+									<TableRow>
+										<TableCell
+											className="bg-background font-sans text-sm"
+											colSpan={6}
+										>
+											<RequestDetails item={item} />
+										</TableCell>
+									</TableRow>
+								)}
+							</Fragment>
+						);
+					})}
+					{visible.length === 0 && (
+						<TableEmpty colSpan={6}>
+							No hay solicitudes para este estado.
+						</TableEmpty>
+					)}
+				</TableBody>
+			</Table>
+
+			<Footnote>
+				Las solicitudes enviadas son de solo lectura. Si una solicitud fue
+				anulada, puedes crear otra para la misma fecha.
+			</Footnote>
+		</Page>
 	);
 }

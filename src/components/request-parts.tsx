@@ -1,4 +1,10 @@
 import { CircleCheck, CircleX, Clock } from "lucide-react";
+import {
+	DescriptionItem,
+	DescriptionList,
+} from "#/components/description-list.tsx";
+import { Notice } from "#/components/notice.tsx";
+import { Badge } from "#/components/ui/badge.tsx";
 import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
 import {
 	type PreparationRequestStatusFields,
@@ -9,12 +15,12 @@ import {
 import type { RequestListRow } from "../server/preparation-requests.ts";
 
 const statusStyles = {
-	open: { className: "chip-ok", icon: CircleCheck },
-	accepted: { className: "chip-ok", icon: CircleCheck },
-	pending: { className: "chip-wait", icon: Clock },
-	declined: { className: "chip-void", icon: CircleX },
-	voided: { className: "chip-void", icon: CircleX },
-};
+	open: { variant: "success", icon: CircleCheck },
+	accepted: { variant: "success", icon: CircleCheck },
+	pending: { variant: "warning", icon: Clock },
+	declined: { variant: "destructive", icon: CircleX },
+	voided: { variant: "destructive", icon: CircleX },
+} as const;
 
 export function StatusChip({
 	request,
@@ -23,12 +29,12 @@ export function StatusChip({
 	request: PreparationRequestStatusFields;
 	withIcon?: boolean;
 }) {
-	const { className, icon: Icon } = statusStyles[requestStatusKey(request)];
+	const { variant, icon: Icon } = statusStyles[requestStatusKey(request)];
 	return (
-		<span className={`chip ${className}`}>
+		<Badge variant={variant}>
 			{withIcon && <Icon aria-hidden="true" size={14} strokeWidth={2} />}
 			{requestStatusLabel(request)}
-		</span>
+		</Badge>
 	);
 }
 
@@ -40,33 +46,27 @@ export const statusFilterOptions: Array<[string, string]> = [
 export function RequestDetails({ item }: { item: RequestListRow }) {
 	const { request } = item;
 	return (
-		<div className="stack">
-			<dl className="kv is-two">
-				<div>
-					<dt>Enviada</dt>
-					<dd>{formatDateTime(request.createdAt)}</dd>
-				</div>
-				<div>
-					<dt>Nota para el personal</dt>
-					<dd>{request.professorNote || "Sin nota"}</dd>
-				</div>
-			</dl>
+		<div className="flex flex-col gap-3">
+			<DescriptionList columns={2}>
+				<DescriptionItem term="Enviada">
+					{formatDateTime(request.createdAt)}
+				</DescriptionItem>
+				<DescriptionItem term="Nota para el personal">
+					{request.professorNote || "Sin nota"}
+				</DescriptionItem>
+			</DescriptionList>
 			<MaterialList materials={request.materials} />
 			{request.lateReason && (
-				<p className="notice notice-warning">
-					<span>
-						<strong>Motivo de la excepción:</strong> {request.lateReason}
-					</span>
-				</p>
+				<Notice tone="warning">
+					<strong>Motivo de la excepción:</strong> {request.lateReason}
+				</Notice>
 			)}
 			{request.status === "voided" && (
-				<p className="notice notice-error">
-					<span>
-						Anulada por {voidedByName(item)}
-						{request.voidedAt && ` · ${formatDateTime(request.voidedAt)}`}
-						{request.voidReason && `. Motivo: ${request.voidReason}`}
-					</span>
-				</p>
+				<Notice tone="error">
+					Anulada por {voidedByName(item)}
+					{request.voidedAt && ` · ${formatDateTime(request.voidedAt)}`}
+					{request.voidReason && `. Motivo: ${request.voidReason}`}
+				</Notice>
 			)}
 		</div>
 	);
@@ -107,22 +107,21 @@ function MaterialList({
 		],
 	];
 	return (
-		<dl className="kv is-two">
+		<DescriptionList columns={2}>
 			{sections.map(([heading, entries]) => (
-				<div key={heading}>
-					<dt>{heading}</dt>
+				<DescriptionItem key={heading} term={heading}>
 					{entries.length ? (
-						entries.map((entry) => (
-							<dd className="mono" key={`${heading}-${entry}`}>
-								{entry}
-							</dd>
-						))
+						<ul className="font-mono text-[13px] font-normal tabular-nums">
+							{entries.map((entry) => (
+								<li key={entry}>{entry}</li>
+							))}
+						</ul>
 					) : (
-						<dd>Ninguno</dd>
+						"Ninguno"
 					)}
-				</div>
+				</DescriptionItem>
 			))}
-		</dl>
+		</DescriptionList>
 	);
 }
 

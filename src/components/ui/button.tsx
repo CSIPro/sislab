@@ -4,32 +4,41 @@ import type * as React from "react";
 import { cn } from "#/lib/utils.ts";
 
 const buttonVariants = cva(
-	"inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+	"inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg text-center font-sans font-medium no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/90",
-				destructive:
-					"bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
+				default:
+					"bg-primary text-primary-foreground hover:bg-primary-strong hover:text-primary-foreground",
 				outline:
-					"border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+					"border bg-card text-foreground hover:bg-muted hover:text-foreground",
+				destructive:
+					"border bg-card text-destructive-text hover:bg-muted hover:text-destructive-text",
 				secondary:
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
-				ghost:
-					"hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-				link: "text-primary underline-offset-4 hover:underline",
+				ghost: "text-foreground hover:bg-muted hover:text-foreground",
+				link: "font-bold text-primary-text hover:text-primary-strong",
+				// A selectable card-like button, such as a date. Pair it with aria-pressed.
+				choice:
+					"flex-col items-start gap-0 border bg-card leading-tight text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:font-bold aria-pressed:shadow-[0_0_0_1px_var(--primary)]",
 			},
 			size: {
-				default: "h-9 px-4 py-2 has-[>svg]:px-3",
-				xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-				icon: "size-9",
-				"icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-				"icon-sm": "size-8",
-				"icon-lg": "size-10",
+				default: "min-h-11 px-4 text-[15px]",
+				sm: "min-h-11 px-3.5 text-sm font-bold",
+				lg: "min-h-12 px-[22px] text-base",
+				icon: "size-11",
+				// Sits in running text or a tight row, with no side padding to speak of.
+				inline: "min-h-11 gap-1.5 px-1 text-[15px]",
 			},
 		},
+		compoundVariants: [
+			// Secondary actions keep their compact padding when they stand next to a large primary button.
+			{
+				variant: ["outline", "destructive", "choice"],
+				size: "lg",
+				class: "px-4 text-[15px]",
+			},
+		],
 		defaultVariants: {
 			variant: "default",
 			size: "default",
@@ -42,6 +51,7 @@ function Button({
 	variant = "default",
 	size = "default",
 	asChild = false,
+	type,
 	...props
 }: React.ComponentProps<"button"> &
 	VariantProps<typeof buttonVariants> & {
@@ -51,10 +61,12 @@ function Button({
 
 	return (
 		<Comp
+			className={cn(buttonVariants({ variant, size, className }))}
+			data-size={size}
 			data-slot="button"
 			data-variant={variant}
-			data-size={size}
-			className={cn(buttonVariants({ variant, size, className }))}
+			// A button inside a form submits it unless told otherwise.
+			type={asChild ? type : (type ?? "button")}
 			{...props}
 		/>
 	);

@@ -1,4 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { Button } from "#/components/ui/button.tsx";
+
+const navLink =
+	"px-1 py-3 text-[15px] font-medium text-foreground no-underline hover:text-primary-text";
 
 export default function Header() {
 	const pathname = useRouterState({
@@ -7,25 +11,31 @@ export default function Header() {
 	if (pathname.startsWith("/app")) return null;
 
 	return (
-		<header className="site-header">
-			<div className="site-wrap site-header-inner">
-				<Link className="site-brand" to="/">
-					<img src="/images/logo.svg" alt="" />
-					<strong>SISLAB</strong>
+		<header className="relative z-[5] border-b bg-card">
+			<div className="mx-auto w-full max-w-[1200px] px-8 max-md:px-5 flex min-h-[72px] flex-wrap items-center justify-between gap-4 max-md:py-2.5">
+				<Link
+					className="flex items-center gap-2.5 text-foreground no-underline hover:text-foreground"
+					to="/"
+				>
+					<img alt="" className="size-[30px]" src="/images/logo.svg" />
+					<strong className="text-[22px] tracking-[0.02em]">SISLAB</strong>
 				</Link>
-				<nav aria-label="Secciones de la página" className="site-nav">
-					<a className="site-nav-link" href="/#como-funciona">
+				<nav
+					aria-label="Secciones de la página"
+					className="flex flex-wrap items-center gap-7 max-md:gap-x-3 max-md:gap-y-1"
+				>
+					<a className={navLink} href="/#como-funciona">
 						Cómo funciona
 					</a>
-					<a className="site-nav-link" href="/#para-quien">
+					<a className={navLink} href="/#para-quien">
 						Para quién
 					</a>
-					<a className="site-nav-link" href="/#acerca">
+					<a className={navLink} href="/#acerca">
 						Acerca de
 					</a>
-					<a className="button-secondary" href="/#acceso">
-						Ingresar
-					</a>
+					<Button asChild variant="outline">
+						<a href="/#acceso">Ingresar</a>
+					</Button>
 				</nav>
 			</div>
 		</header>

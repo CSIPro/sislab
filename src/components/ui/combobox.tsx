@@ -9,6 +9,10 @@ import {
 	CommandList,
 } from "#/components/ui/command.tsx";
 import {
+	type FieldVariant,
+	PickerTrigger,
+} from "#/components/ui/picker-trigger.tsx";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -28,10 +32,10 @@ function Combobox({
 	placeholder = "Elige una opción",
 	searchPlaceholder = "Buscar…",
 	emptyText = "Sin resultados.",
-	className,
+	fieldVariant,
 	...props
 }: Omit<
-	React.ComponentProps<"button">,
+	React.ComponentProps<typeof PickerTrigger>,
 	"value" | "defaultValue" | "onChange"
 > & {
 	options: ComboboxOption[];
@@ -43,6 +47,7 @@ function Combobox({
 	placeholder?: string;
 	searchPlaceholder?: string;
 	emptyText?: string;
+	fieldVariant?: FieldVariant;
 }) {
 	const [open, setOpen] = React.useState(false);
 	const [ownValue, setOwnValue] = React.useState(defaultValue);
@@ -52,13 +57,12 @@ function Combobox({
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
+				<PickerTrigger
 					aria-expanded={open}
-					className={cn("picker-trigger", className)}
 					data-placeholder={selected ? undefined : ""}
 					data-slot="combobox-trigger"
+					fieldVariant={fieldVariant}
 					role="combobox"
-					type="button"
 					{...props}
 				>
 					<span className="truncate">{selected?.label ?? placeholder}</span>
@@ -66,7 +70,7 @@ function Combobox({
 						aria-hidden="true"
 						className="size-4 opacity-50"
 					/>
-				</button>
+				</PickerTrigger>
 			</PopoverTrigger>
 			{name && <input name={name} type="hidden" value={value} />}
 			<PopoverContent

@@ -6,10 +6,11 @@ export default function Footer() {
 	});
 	if (pathname.startsWith("/app")) return null;
 	return (
-		<footer className="site-footer" id="acerca">
-			<div className="site-wrap site-footer-inner">
+		<footer className="bg-card" id="acerca">
+			<div className="mx-auto w-full max-w-[1200px] px-8 max-md:px-5 flex flex-wrap items-center gap-6 pt-12 pb-14">
 				<svg
 					aria-hidden="true"
+					className="flex-none text-muted-foreground"
 					fill="none"
 					height="48"
 					stroke="currentColor"
@@ -25,10 +26,10 @@ export default function Footer() {
 					<circle cx="24" cy="40" r="3.5" />
 					<path d="M11 22 22 10.5M26 10.5 37 22M37 26 26 37.5M22 37.5 11 26" />
 				</svg>
-				<p>
+				<p className="max-w-[640px] flex-[1_1_360px] text-pretty text-muted-foreground">
 					SISLAB es un sistema de laboratorios desarrollado por estudiantes de
 					la Universidad de Sonora, miembros del laboratorio{" "}
-					<span className="csipro-name">CSI PRO</span>.
+					<span className="font-bold text-csipro-purple">CSI PRO</span>.
 				</p>
 			</div>
 		</footer>

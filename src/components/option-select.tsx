@@ -6,7 +6,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "#/components/ui/select.tsx";
-import { cn } from "#/lib/utils.ts";
 
 /** A shadcn Select for a fixed list of options. Lists that come from data use the Combobox. */
 export function OptionSelect({
@@ -35,11 +34,7 @@ export function OptionSelect({
 			onValueChange={onValueChange}
 			value={value}
 		>
-			<SelectTrigger
-				aria-label={ariaLabel}
-				className={cn("field-outline shadow-none", className)}
-				id={id}
-			>
+			<SelectTrigger aria-label={ariaLabel} className={className} id={id}>
 				<SelectValue />
 			</SelectTrigger>
 			<SelectContent position="popper">

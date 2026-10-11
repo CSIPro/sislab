@@ -1,9 +1,33 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { OptionSelect } from "../components/option-select.tsx";
-import { TableShell } from "../components/table-shell.tsx";
-import type { QuantityItem, WasteItem } from "../db/schema.ts";
+import { ActiveBadge } from "../components/active-badge.tsx";
+import {
+	type QuantityDraft,
+	QuantityEditor,
+	QuantityList,
+	quantityItems,
+	type WasteDraft,
+	WasteEditor,
+	WasteList,
+	wasteItems,
+} from "../components/materials.tsx";
+import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
+import { Field, FieldLabel } from "../components/ui/field.tsx";
+import { Input } from "../components/ui/input.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
+import type { QuantityItem } from "../db/schema.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
@@ -25,11 +49,6 @@ export const Route = createFileRoute("/app/admin/exercises")({
 	component: LabExercisesPage,
 });
 
-type QuantityDraft = Omit<QuantityItem, "amount"> & {
-	amount: string;
-	key: string;
-};
-type WasteDraft = WasteItem & { key: string };
 type ExerciseDraft = {
 	id: string | null;
 	number: string;
@@ -67,12 +86,6 @@ const draftFrom = (exercise: LabExercise): ExerciseDraft => ({
 	})),
 });
 
-const quantityItems = (items: QuantityDraft[]): QuantityItem[] =>
-	items.map(({ key: _key, ...item }) => ({
-		...item,
-		amount: Number(item.amount),
-	}));
-
 function LabExercisesPage() {
 	const initial = Route.useLoaderData();
 	const [exercises, setExercises] = useState(initial);
@@ -84,9 +97,7 @@ function LabExercisesPage() {
 		initial.length === 0 ? emptyDraft : null,
 	);
 	const [search, setSearch] = useState("");
-	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
-		null,
-	);
+	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
 	const query = searchable(search.trim());
@@ -112,7 +123,7 @@ function LabExercisesPage() {
 			materials: {
 				reagents: quantityItems(draft.reagents),
 				equipment: quantityItems(draft.equipment),
-				waste: draft.waste.map(({ key: _key, ...item }) => item),
+				waste: wasteItems(draft.waste),
 			},
 		};
 		try {
@@ -165,155 +176,121 @@ function LabExercisesPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head">
-					<div className="page-head-copy">
-						<h1 className="page-title">Prácticas</h1>
-						<p className="page-sub">
-							Catálogo de prácticas de laboratorio. Cada grupo puede solicitar
-							cualquiera de las activas.
-						</p>
-					</div>
-					<button
-						className="button-primary"
-						onClick={() => {
-							setDraft(emptyDraft());
-							setNotice(null);
-						}}
-						type="button"
-					>
-						<Plus aria-hidden="true" size={18} strokeWidth={2} />
-						Nueva práctica
-					</button>
-				</header>
+		<Page size="compact">
+			<PageHeader
+				description="Catálogo de prácticas de laboratorio. Cada grupo puede solicitar cualquiera de las activas."
+				title="Prácticas"
+			>
+				<Button
+					onClick={() => {
+						setDraft(emptyDraft());
+						setNotice(null);
+					}}
+					size="lg"
+				>
+					<Plus aria-hidden="true" size={18} strokeWidth={2} />
+					Nueva práctica
+				</Button>
+			</PageHeader>
 
-				<div className="split is-top">
-					<section className="stack-section min-w-0 flex-[1.5_1_520px]">
-						<label className="field-label max-w-[360px]">
-							Buscar
-							<input
-								className="field-outline"
-								onChange={(event) => setSearch(event.target.value)}
-								placeholder="Nombre o número de práctica"
-								type="search"
-								value={search}
-							/>
-						</label>
-						<TableShell>
-							<table className="data-table" style={{ minWidth: 620 }}>
-								<thead>
-									<tr>
-										<th scope="col">N.º</th>
-										<th scope="col">Práctica</th>
-										<th scope="col">Reactivos</th>
-										<th scope="col">Equipo</th>
-										<th scope="col">Residuos</th>
-										<th scope="col">Estado</th>
-									</tr>
-								</thead>
-								<tbody>
-									{visible.map((exercise) => {
-										const isSelected = !draft && exercise.id === selectedId;
-										return (
-											<tr
-												className={
-													[
-														isSelected && "is-selected",
-														!exercise.active && "is-void",
-													]
-														.filter(Boolean)
-														.join(" ") || undefined
-												}
-												key={exercise.id}
+			<div className="flex flex-wrap items-start gap-6">
+				<section className="flex min-w-0 flex-[1.5_1_520px] flex-col gap-4">
+					<Field className="max-w-[360px]">
+						<FieldLabel htmlFor="exercises-search">Buscar</FieldLabel>
+						<Input
+							id="exercises-search"
+							onChange={(event) => setSearch(event.target.value)}
+							placeholder="Nombre o número de práctica"
+							type="search"
+							value={search}
+						/>
+					</Field>
+					<Table className="min-w-[620px]">
+						<TableHeader>
+							<TableRow>
+								<TableHead>N.º</TableHead>
+								<TableHead>Práctica</TableHead>
+								<TableHead>Reactivos</TableHead>
+								<TableHead>Equipo</TableHead>
+								<TableHead>Residuos</TableHead>
+								<TableHead>Estado</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{visible.map((exercise) => {
+								const isSelected = !draft && exercise.id === selectedId;
+								return (
+									<TableRow
+										data-muted={!exercise.active}
+										data-state={isSelected ? "selected" : undefined}
+										key={exercise.id}
+									>
+										<TableCell>{exercise.number}</TableCell>
+										<TableCell>
+											<Button
+												aria-pressed={isSelected}
+												className="min-h-0 w-full justify-start rounded-sm px-0 text-left text-[13px] font-normal whitespace-normal text-inherit hover:bg-transparent hover:text-primary-text aria-pressed:font-bold"
+												onClick={() => select(exercise.id)}
+												variant="ghost"
 											>
-												<td>{exercise.number}</td>
-												<td>
-													<button
-														aria-pressed={isSelected}
-														className="row-button"
-														onClick={() => select(exercise.id)}
-														type="button"
-													>
-														{isSelected ? (
-															<strong>{exercise.name}</strong>
-														) : (
-															exercise.name
-														)}
-													</button>
-												</td>
-												<td>{exercise.materials.reagents.length}</td>
-												<td>{exercise.materials.equipment.length}</td>
-												<td>{exercise.materials.waste.length}</td>
-												<td>
-													<StatusChip active={exercise.active} />
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
+												{exercise.name}
+											</Button>
+										</TableCell>
+										<TableCell>{exercise.materials.reagents.length}</TableCell>
+										<TableCell>{exercise.materials.equipment.length}</TableCell>
+										<TableCell>{exercise.materials.waste.length}</TableCell>
+										<TableCell>
+											<ActiveBadge active={exercise.active} />
+										</TableCell>
+									</TableRow>
+								);
+							})}
 							{visible.length === 0 && (
-								<p className="table-empty">
+								<TableEmpty colSpan={6}>
 									{exercises.length === 0
 										? "Aún no hay prácticas. Agrega la primera para definir los materiales de las solicitudes."
 										: "Ninguna práctica coincide con la búsqueda."}
-								</p>
+								</TableEmpty>
 							)}
-						</TableShell>
-						<p className="footnote">
-							El número es solo una etiqueta y puede repetirse. Las prácticas
-							inactivas siguen visibles en las solicitudes que ya las usaron.
-						</p>
-					</section>
+						</TableBody>
+					</Table>
+					<Footnote>
+						El número es solo una etiqueta y puede repetirse. Las prácticas
+						inactivas siguen visibles en las solicitudes que ya las usaron.
+					</Footnote>
+				</section>
 
-					<section
-						aria-labelledby="exercise-panel-title"
-						className="panel max-w-[460px] flex-[1_1_340px]"
-					>
-						{notice && (
-							<output
-								aria-live="polite"
-								className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
-							>
-								{notice.text}
-							</output>
-						)}
-						{draft ? (
-							<ExerciseForm
-								busy={busy}
-								draft={draft}
-								onCancel={() => setDraft(null)}
-								onChange={setDraft}
-								onSubmit={save}
-							/>
-						) : selected ? (
-							<ExerciseDetail
-								busy={busy}
-								exercise={selected}
-								onEdit={() => {
-									setDraft(draftFrom(selected));
-									setNotice(null);
-								}}
-								onRetire={() => void retire(selected)}
-							/>
-						) : (
-							<p className="empty-state" id="exercise-panel-title">
-								Elige una práctica para ver sus materiales.
-							</p>
-						)}
-					</section>
-				</div>
+				<Card
+					aria-labelledby="exercise-panel-title"
+					className="max-w-[460px] flex-[1_1_340px]"
+				>
+					<ActionNotice notice={notice} />
+					{draft ? (
+						<ExerciseForm
+							busy={busy}
+							draft={draft}
+							onCancel={() => setDraft(null)}
+							onChange={setDraft}
+							onSubmit={save}
+						/>
+					) : selected ? (
+						<ExerciseDetail
+							busy={busy}
+							exercise={selected}
+							onEdit={() => {
+								setDraft(draftFrom(selected));
+								setNotice(null);
+							}}
+							onRetire={() => void retire(selected)}
+						/>
+					) : (
+						<EmptyState id="exercise-panel-title">
+							Elige una práctica para ver sus materiales.
+						</EmptyState>
+					)}
+				</Card>
 			</div>
-		</main>
-	);
-}
-
-function StatusChip({ active }: { active: boolean }) {
-	return (
-		<span className={`chip ${active ? "chip-ok" : "chip-off"}`}>
-			{active ? "Activa" : "Inactiva"}
-		</span>
+		</Page>
 	);
 }
 
@@ -336,86 +313,33 @@ function ExerciseDetail({
 					<span className="text-[13px] text-muted-foreground">
 						Práctica {exercise.number}
 					</span>
-					<h2
-						className="m-0 text-[22px] font-bold text-primary-text"
-						id="exercise-panel-title"
-					>
+					<CardTitle className="text-primary-text" id="exercise-panel-title">
 						{exercise.name}
-					</h2>
+					</CardTitle>
 				</div>
-				<StatusChip active={exercise.active} />
+				<ActiveBadge active={exercise.active} />
 			</div>
 
 			<QuantityList items={reagents} title="Reactivos" />
 			<QuantityList items={equipment} title="Equipo" />
-			<div>
-				<h3 className="detail-title">Residuos esperados</h3>
-				{waste.length === 0 && <p className="request-step-help">Ninguno.</p>}
-				{waste.map((item) => (
-					<div
-						className="material-row is-top"
-						key={`${item.name}-${item.container}-${item.treatment}`}
-					>
-						<span className="material-name">
-							{item.name}
-							<small>
-								{item.container} · {item.treatment}
-							</small>
-						</span>
-					</div>
-				))}
-			</div>
+			<WasteList items={waste} />
 
-			<div className="panel-actions">
-				<button
-					className="button-primary"
-					disabled={busy}
-					onClick={onEdit}
-					type="button"
-				>
+			<CardFooter>
+				<Button disabled={busy} onClick={onEdit} size="lg">
 					Editar práctica
-				</button>
+				</Button>
 				{exercise.active && (
-					<button
-						className="button-secondary"
+					<Button
 						disabled={busy}
 						onClick={onRetire}
-						type="button"
+						size="lg"
+						variant="outline"
 					>
 						Desactivar
-					</button>
+					</Button>
 				)}
-			</div>
+			</CardFooter>
 		</>
-	);
-}
-
-function QuantityList({
-	title,
-	items,
-}: {
-	title: string;
-	items: QuantityItem[];
-}) {
-	return (
-		<div>
-			<h3 className="detail-title">{title}</h3>
-			{items.length === 0 && <p className="request-step-help">Ninguno.</p>}
-			{items.map((item) => (
-				<div
-					className="material-row"
-					key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-				>
-					<span className="material-name">{item.name}</span>
-					<span className="mono">
-						{item.amount} {item.unit}
-					</span>
-					<span className="basis-tag">
-						{item.basis === "team" ? "por equipo" : "por grupo"}
-					</span>
-				</div>
-			))}
-		</div>
 	);
 }
 
@@ -434,14 +358,14 @@ function ExerciseForm({
 }) {
 	return (
 		<form className="flex flex-col gap-[18px]" onSubmit={onSubmit}>
-			<h2 className="m-0 text-xl font-bold" id="exercise-panel-title">
+			<CardTitle className="text-xl" id="exercise-panel-title">
 				{draft.id ? "Editar práctica" : "Nueva práctica"}
-			</h2>
-			<label className="field-label">
-				Número o etiqueta
-				<input
+			</CardTitle>
+			<Field>
+				<FieldLabel htmlFor="exercise-number">Número o etiqueta</FieldLabel>
+				<Input
 					autoComplete="off"
-					className="field-outline"
+					id="exercise-number"
 					maxLength={60}
 					onChange={(event) =>
 						onChange({ ...draft, number: event.target.value })
@@ -450,222 +374,54 @@ function ExerciseForm({
 					required
 					value={draft.number}
 				/>
-			</label>
-			<label className="field-label">
-				Nombre
-				<input
+			</Field>
+			<Field>
+				<FieldLabel htmlFor="exercise-name">Nombre</FieldLabel>
+				<Input
 					autoComplete="off"
-					className="field-outline"
+					id="exercise-name"
 					maxLength={160}
 					onChange={(event) => onChange({ ...draft, name: event.target.value })}
 					placeholder="Por ejemplo, Separación de mezclas"
 					required
 					value={draft.name}
 				/>
-			</label>
+			</Field>
 
-			<QuantityEditor
-				addLabel="Agregar reactivo"
-				items={draft.reagents}
-				kind="reactivo"
-				onChange={(reagents) => onChange({ ...draft, reagents })}
-				title="Reactivos"
-			/>
-			<QuantityEditor
-				addLabel="Agregar equipo"
-				items={draft.equipment}
-				kind="equipo"
-				onChange={(equipment) => onChange({ ...draft, equipment })}
-				title="Equipo"
-			/>
-			<WasteEditor
-				items={draft.waste}
-				onChange={(waste) => onChange({ ...draft, waste })}
-			/>
-
-			<div className="panel-actions">
-				<button className="button-primary" disabled={busy} type="submit">
-					{draft.id ? "Guardar cambios" : "Crear práctica"}
-				</button>
-				<button
-					className="button-secondary"
-					disabled={busy}
-					onClick={onCancel}
-					type="button"
-				>
-					Cancelar
-				</button>
+			<div>
+				<h3 className="text-[15px] font-bold">Reactivos</h3>
+				<QuantityEditor
+					addLabel="Agregar reactivo"
+					items={draft.reagents}
+					kind="reactivo"
+					onChange={(reagents) => onChange({ ...draft, reagents })}
+				/>
 			</div>
+			<div>
+				<h3 className="text-[15px] font-bold">Equipo</h3>
+				<QuantityEditor
+					addLabel="Agregar equipo"
+					items={draft.equipment}
+					kind="equipo"
+					onChange={(equipment) => onChange({ ...draft, equipment })}
+				/>
+			</div>
+			<div>
+				<h3 className="text-[15px] font-bold">Residuos esperados</h3>
+				<WasteEditor
+					items={draft.waste}
+					onChange={(waste) => onChange({ ...draft, waste })}
+				/>
+			</div>
+
+			<CardFooter>
+				<Button disabled={busy} size="lg" type="submit">
+					{draft.id ? "Guardar cambios" : "Crear práctica"}
+				</Button>
+				<Button disabled={busy} onClick={onCancel} size="lg" variant="outline">
+					Cancelar
+				</Button>
+			</CardFooter>
 		</form>
-	);
-}
-
-const basisOptions = [
-	["team", "Por equipo"],
-	["group", "Por grupo"],
-] as const;
-
-function QuantityEditor({
-	title,
-	addLabel,
-	kind,
-	items,
-	onChange,
-}: {
-	title: string;
-	addLabel: string;
-	kind: string;
-	items: QuantityDraft[];
-	onChange: (items: QuantityDraft[]) => void;
-}) {
-	const change = (index: number, patch: Partial<QuantityDraft>) =>
-		onChange(
-			items.map((item, itemIndex) =>
-				itemIndex === index ? { ...item, ...patch } : item,
-			),
-		);
-	return (
-		<div>
-			<h3 className="detail-title">{title}</h3>
-			{items.map((item, index) => (
-				<div className="material-editor" key={item.key}>
-					<input
-						aria-label={`Nombre del ${kind} ${index + 1}`}
-						className="field-outline is-wide"
-						onChange={(event) => change(index, { name: event.target.value })}
-						placeholder="Nombre"
-						required
-						value={item.name}
-					/>
-					<input
-						aria-label={`Cantidad del ${kind} ${index + 1}`}
-						className="field-outline"
-						min="0.000001"
-						onChange={(event) => change(index, { amount: event.target.value })}
-						placeholder="Cantidad"
-						required
-						step="any"
-						type="number"
-						value={item.amount}
-					/>
-					<input
-						aria-label={`Unidad del ${kind} ${index + 1}`}
-						className="field-outline"
-						onChange={(event) => change(index, { unit: event.target.value })}
-						placeholder="g, mL, pza"
-						required
-						value={item.unit}
-					/>
-					<OptionSelect
-						aria-label={`Base del ${kind} ${index + 1}`}
-						onValueChange={(value) =>
-							change(index, { basis: value as QuantityItem["basis"] })
-						}
-						options={basisOptions}
-						value={item.basis}
-					/>
-					<button
-						aria-label={`Quitar ${kind} ${index + 1}`}
-						className="button-secondary button-sm"
-						onClick={() =>
-							onChange(items.filter((_, itemIndex) => itemIndex !== index))
-						}
-						type="button"
-					>
-						Quitar
-					</button>
-				</div>
-			))}
-			<button
-				className="button-text"
-				onClick={() =>
-					onChange([
-						...items,
-						{
-							name: "",
-							amount: "",
-							unit: "",
-							basis: "team",
-							key: crypto.randomUUID(),
-						},
-					])
-				}
-				type="button"
-			>
-				<Plus aria-hidden="true" size={16} strokeWidth={2} />
-				{addLabel}
-			</button>
-		</div>
-	);
-}
-
-const wasteFields = [
-	["name", "Residuo", "Nombre"],
-	["container", "Contenedor del residuo", "Contenedor"],
-	["treatment", "Tratamiento del residuo", "Tratamiento"],
-] as const;
-
-function WasteEditor({
-	items,
-	onChange,
-}: {
-	items: WasteDraft[];
-	onChange: (items: WasteDraft[]) => void;
-}) {
-	return (
-		<div>
-			<h3 className="detail-title">Residuos esperados</h3>
-			{items.map((item, index) => (
-				<div className="material-editor" key={item.key}>
-					{wasteFields.map(([field, label, placeholder]) => (
-						<input
-							aria-label={`${label} ${index + 1}`}
-							className="field-outline"
-							key={field}
-							onChange={(event) =>
-								onChange(
-									items.map((current, itemIndex) =>
-										itemIndex === index
-											? { ...current, [field]: event.target.value }
-											: current,
-									),
-								)
-							}
-							placeholder={placeholder}
-							required
-							value={item[field]}
-						/>
-					))}
-					<button
-						aria-label={`Quitar residuo ${index + 1}`}
-						className="button-secondary button-sm"
-						onClick={() =>
-							onChange(items.filter((_, itemIndex) => itemIndex !== index))
-						}
-						type="button"
-					>
-						Quitar
-					</button>
-				</div>
-			))}
-			<button
-				className="button-text"
-				onClick={() =>
-					onChange([
-						...items,
-						{
-							name: "",
-							container: "",
-							treatment: "",
-							key: crypto.randomUUID(),
-						},
-					])
-				}
-				type="button"
-			>
-				<Plus aria-hidden="true" size={16} strokeWidth={2} />
-				Agregar residuo
-			</button>
-		</div>
 	);
 }

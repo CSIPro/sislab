@@ -3,6 +3,11 @@
 - Never use image generation for this repository. Use existing project assets or create graphics directly in code when needed.
 
 <!-- intent-skills:start -->
+## Styling
+
+- Style with Tailwind utilities only. Do not add component classes to `src/styles.css`.
+- Use the shadcn/ui components in `src/components/ui` for every primitive, including buttons, inputs, checkboxes, selects, the sidebar and scrolling containers. See "Components and styling" in `docs/design-system.md`.
+
 ## Skill Loading
 
 Before editing files for a substantial task:

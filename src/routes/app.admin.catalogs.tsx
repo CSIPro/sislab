@@ -1,5 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { ActiveBadge } from "../components/active-badge.tsx";
+import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { Page, PageHeader } from "../components/page.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardHeader, CardTitle } from "../components/ui/card.tsx";
 import {
 	Dialog,
 	DialogContent,
@@ -8,7 +13,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../components/ui/dialog.tsx";
+import { Field, FieldLabel } from "../components/ui/field.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { cn } from "../lib/utils.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	addCatalogEntryFn,
@@ -77,9 +86,7 @@ function CatalogsPage() {
 		entry: CatalogEntry;
 		name: string;
 	} | null>(null);
-	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
-		null,
-	);
+	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
 	async function refresh(kind: CatalogKind) {
@@ -172,136 +179,122 @@ function CatalogsPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-compact">
-				<header className="page-head-copy">
-					<h1 className="page-title">Catálogos</h1>
-					<p className="page-sub">
-						Las listas que se usan al registrar grupos. Un elemento retirado
-						deja de ofrecerse, pero sigue visible en los grupos y solicitudes
-						que ya lo usan.
-					</p>
-				</header>
+		<Page size="compact">
+			<PageHeader
+				description="Las listas que se usan al registrar grupos. Un elemento retirado deja de ofrecerse, pero sigue visible en los grupos y solicitudes que ya lo usan."
+				title="Catálogos"
+			/>
 
-				{notice && (
-					<output
-						aria-live="polite"
-						className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
-					>
-						{notice.text}
-					</output>
-				)}
+			<ActionNotice notice={notice} />
 
-				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] items-start gap-6">
-					{kinds.map((kind) => {
-						const catalog = catalogs[kind];
-						return (
-							<section
-								aria-labelledby={`catalog-${kind}`}
-								className="panel"
-								key={kind}
+			<div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] items-start gap-6">
+				{kinds.map((kind) => {
+					const catalog = catalogs[kind];
+					return (
+						<Card aria-labelledby={`catalog-${kind}`} key={kind}>
+							<CardHeader className="items-baseline">
+								<CardTitle id={`catalog-${kind}`}>{catalog.title}</CardTitle>
+								<span className="text-[13.5px] text-muted-foreground">
+									{entries[kind].length === 1
+										? "1 elemento"
+										: `${entries[kind].length} elementos`}
+								</span>
+							</CardHeader>
+							<form
+								className="flex items-end gap-2.5"
+								onSubmit={(event) => void add(event, kind)}
 							>
-								<div className="flex items-baseline justify-between gap-3">
-									<h2 className="panel-title" id={`catalog-${kind}`}>
-										{catalog.title}
-									</h2>
-									<span className="text-[13.5px] text-muted-foreground">
-										{entries[kind].length === 1
-											? "1 elemento"
-											: `${entries[kind].length} elementos`}
-									</span>
-								</div>
-								<form
-									className="inline-form"
-									onSubmit={(event) => void add(event, kind)}
-								>
-									<label className="field-label">
+								<Field>
+									<FieldLabel htmlFor={`catalog-${kind}-name`}>
 										{catalog.addLabel}
-										<input
-											className="field"
-											name="name"
-											placeholder={catalog.placeholder}
-											required
-										/>
-									</label>
-									<button
-										className="button-primary"
-										disabled={busy}
-										type="submit"
+									</FieldLabel>
+									<Input
+										id={`catalog-${kind}-name`}
+										name="name"
+										placeholder={catalog.placeholder}
+										required
+										variant="filled"
+									/>
+								</Field>
+								<Button disabled={busy} size="lg" type="submit">
+									Agregar
+								</Button>
+							</form>
+							<ul>
+								{entries[kind].map((entry) => (
+									<li
+										className="flex min-h-[52px] flex-wrap items-center gap-x-2.5 border-t py-1"
+										key={entry.id}
 									>
-										Agregar
-									</button>
-								</form>
-								<ul className="m-0 list-none p-0">
-									{entries[kind].map((entry) => (
-										<li
-											className={`list-row${entry.active ? "" : " is-retired"}`}
-											key={entry.id}
+										<span
+											className={cn(
+												"min-w-0 flex-[1_1_140px] font-medium [overflow-wrap:break-word]",
+												!entry.active && "font-normal text-muted-foreground",
+											)}
 										>
-											<span>{entry.name}</span>
-											<span
-												className={`chip ${entry.active ? "chip-ok" : "chip-off"}`}
-											>
-												{entry.active ? catalog.active : catalog.retired}
-											</span>
-											<button
-												aria-label={`Cambiar el nombre de ${entry.name}`}
-												className="button-text"
-												disabled={busy}
-												onClick={() =>
-													setRenaming({ kind, entry, name: entry.name })
-												}
-												type="button"
-											>
-												Renombrar
-											</button>
-											<button
-												aria-label={`${entry.active ? "Retirar" : "Reactivar"} ${entry.name}`}
-												className="button-text"
-												disabled={busy}
-												onClick={() =>
-													void setActive(kind, entry, !entry.active)
-												}
-												type="button"
-											>
-												{entry.active ? "Retirar" : "Reactivar"}
-											</button>
-										</li>
-									))}
-								</ul>
-							</section>
-						);
-					})}
-				</div>
+											{entry.name}
+										</span>
+										<ActiveBadge
+											active={entry.active}
+											labels={[catalog.active, catalog.retired]}
+										/>
+										<Button
+											aria-label={`Cambiar el nombre de ${entry.name}`}
+											className="text-sm"
+											disabled={busy}
+											onClick={() =>
+												setRenaming({ kind, entry, name: entry.name })
+											}
+											size="inline"
+											variant="link"
+										>
+											Renombrar
+										</Button>
+										<Button
+											aria-label={`${entry.active ? "Retirar" : "Reactivar"} ${entry.name}`}
+											className="text-sm"
+											disabled={busy}
+											onClick={() => void setActive(kind, entry, !entry.active)}
+											size="inline"
+											variant="link"
+										>
+											{entry.active ? "Retirar" : "Reactivar"}
+										</Button>
+									</li>
+								))}
+							</ul>
+						</Card>
+					);
+				})}
+			</div>
 
-				<details className="panel">
+			<Card asChild>
+				<details>
 					<summary className="cursor-pointer font-bold">
 						Cargar varios valores a la vez
 					</summary>
 					<form className="flex flex-col gap-4" onSubmit={importSupplied}>
-						<p className="request-step-help">
+						<p className="text-[14.5px] text-muted-foreground">
 							Escribe un valor por línea. Los que ya existen se omiten.
 						</p>
 						<div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4">
 							{kinds.map((kind) => (
-								<label className="field-label" key={kind}>
-									{catalogs[kind].title}
-									<textarea className="field" name={kind} />
-								</label>
+								<Field key={kind}>
+									<FieldLabel htmlFor={`catalog-import-${kind}`}>
+										{catalogs[kind].title}
+									</FieldLabel>
+									<Textarea id={`catalog-import-${kind}`} name={kind} />
+								</Field>
 							))}
 						</div>
 						<div>
-							<button
-								className="button-secondary"
-								disabled={busy}
-								type="submit"
-							>
+							<Button disabled={busy} type="submit" variant="outline">
 								Cargar valores
-							</button>
+							</Button>
 						</div>
 					</form>
 				</details>
-			</div>
+			</Card>
 
 			<Dialog
 				onOpenChange={(open) => {
@@ -318,10 +311,10 @@ function CatalogsPage() {
 								anterior.
 							</DialogDescription>
 						</DialogHeader>
-						<label className="field-label">
-							Nombre
-							<input
-								className="field"
+						<Field>
+							<FieldLabel htmlFor="catalog-rename">Nombre</FieldLabel>
+							<Input
+								id="catalog-rename"
 								onChange={(event) =>
 									setRenaming(
 										(current) =>
@@ -330,23 +323,24 @@ function CatalogsPage() {
 								}
 								required
 								value={renaming?.name ?? ""}
+								variant="filled"
 							/>
-						</label>
+						</Field>
 						<DialogFooter>
-							<button
-								className="button-secondary button-tall"
+							<Button
 								onClick={() => setRenaming(null)}
-								type="button"
+								size="lg"
+								variant="outline"
 							>
 								Cancelar
-							</button>
-							<button className="button-primary" disabled={busy} type="submit">
+							</Button>
+							<Button disabled={busy} size="lg" type="submit">
 								Guardar nombre
-							</button>
+							</Button>
 						</DialogFooter>
 					</form>
 				</DialogContent>
 			</Dialog>
-		</main>
+		</Page>
 	);
 }

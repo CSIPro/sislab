@@ -1,7 +1,24 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { CalendarDays, ChevronRight, Clock, MapPin, Plus } from "lucide-react";
+import {
+	EmptyState,
+	Page,
+	PageHeader,
+	PeriodPill,
+} from "../components/page.tsx";
 import { StatusChip } from "../components/request-parts.tsx";
-import { TableShell } from "../components/table-shell.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardHeader, CardTitle } from "../components/ui/card.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableCellNote,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
 import {
 	addDays,
 	formatSessionDate,
@@ -71,209 +88,216 @@ function DashboardPage() {
 				: "en los laboratorios";
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner">
-				<header className="page-head">
-					<div className="page-head-copy">
-						<h1 className="page-title">Tablero</h1>
-						<p className="page-sub">
-							{formatSessionDate(today, "full")} · Hola, {user.name}. Esto es lo
-							que viene {scope}.
-						</p>
-					</div>
-					<div className="page-actions">
-						{periodCode && (
-							<span className="period-chip">Período {periodCode}</span>
-						)}
-						{isProfessor && (
-							<Link className="button-primary" to="/app/requests/new">
-								<Plus aria-hidden="true" size={18} strokeWidth={2} />
-								Nueva solicitud
-							</Link>
-						)}
-					</div>
-				</header>
-
+		<Page>
+			<PageHeader
+				description={`${formatSessionDate(today, "full")} · Hola, ${user.name}. Esto es lo que viene ${scope}.`}
+				title="Tablero"
+			>
+				{periodCode && <PeriodPill code={periodCode} />}
 				{isProfessor && (
-					<div className="split">
-						<section
-							aria-labelledby="dashboard-requests-title"
-							className="panel split-main"
-						>
-							<div className="panel-head">
-								<h2 className="panel-title" id="dashboard-requests-title">
-									Mis próximas solicitudes
-								</h2>
-								<Link className="text-link" to="/app/requests/mine">
-									Ver todas
-								</Link>
-							</div>
-							{myRequests.length === 0 ? (
-								<p className="empty-state">
-									No tienes solicitudes próximas.{" "}
-									<Link to="/app/requests/new">Crea tu solicitud</Link>
-								</p>
-							) : (
-								<div className="stack">
-									{myRequests.map((item) => (
-										<UpcomingRequest item={item} key={item.request.id} />
-									))}
-								</div>
-							)}
-						</section>
-
-						<section
-							aria-labelledby="dashboard-groups-title"
-							className="panel split-side"
-						>
-							<div className="panel-head">
-								<h2 className="panel-title" id="dashboard-groups-title">
-									Mis grupos
-								</h2>
-								<Link className="text-link" to="/app/groups/manage">
-									Ver todos
-								</Link>
-							</div>
-							{groups.length === 0 ? (
-								<p className="empty-state">
-									Aún no tienes grupos activos.{" "}
-									<Link to="/app/groups/new">Registra tu primer grupo</Link>
-								</p>
-							) : (
-								<div className="stack">
-									{groups.map((group) => (
-										<Link
-											className="row-card is-stacked"
-											key={group.id}
-											to="/app/groups/manage"
-										>
-											<span className="row-heading">
-												<strong>{group.subjectName}</strong>
-												<span>{groupLabel(group.number)}</span>
-											</span>
-											<span className="icon-line">
-												<CalendarDays
-													aria-hidden="true"
-													size={16}
-													strokeWidth={1.75}
-												/>
-												{weekdays[group.weekday]},{" "}
-												{timeRange(group.startTime, group.endTime)}
-											</span>
-											<span className="icon-line">
-												<MapPin
-													aria-hidden="true"
-													size={16}
-													strokeWidth={1.75}
-												/>
-												Laboratorio {group.labName}
-											</span>
-										</Link>
-									))}
-								</div>
-							)}
-						</section>
-					</div>
+					<Button asChild size="lg">
+						<Link to="/app/requests/new">
+							<Plus aria-hidden="true" size={18} strokeWidth={2} />
+							Nueva solicitud
+						</Link>
+					</Button>
 				)}
+			</PageHeader>
 
-				{isStaff && (
-					<section
-						aria-labelledby="dashboard-all-title"
-						className="stack-section"
+			{isProfessor && (
+				<div className="flex flex-wrap items-stretch gap-6">
+					<Card
+						aria-labelledby="dashboard-requests-title"
+						className="flex-[1.7_1_460px]"
 					>
-						<div className="panel-head">
-							<div>
-								<span className="section-eyebrow">
-									{isAdmin ? "Administración" : "Laboratorio"}
-								</span>
-								<h2 className="panel-title" id="dashboard-all-title">
-									Solicitudes próximas de todos los profesores
-								</h2>
+						<CardHeader>
+							<CardTitle id="dashboard-requests-title">
+								Mis próximas solicitudes
+							</CardTitle>
+							<Button asChild size="inline" variant="link">
+								<Link to="/app/requests/mine">Ver todas</Link>
+							</Button>
+						</CardHeader>
+						{myRequests.length === 0 ? (
+							<EmptyState>
+								No tienes solicitudes próximas.{" "}
+								<Link to="/app/requests/new">Crea tu solicitud</Link>
+							</EmptyState>
+						) : (
+							<div className="flex flex-col gap-3">
+								{myRequests.map((item) => (
+									<UpcomingRequest item={item} key={item.request.id} />
+								))}
 							</div>
-							<Link className="text-link" to="/app/requests/all">
-								Abrir la vista completa
-							</Link>
+						)}
+					</Card>
+
+					<Card
+						aria-labelledby="dashboard-groups-title"
+						className="flex-[1_1_320px] self-start"
+					>
+						<CardHeader>
+							<CardTitle id="dashboard-groups-title">Mis grupos</CardTitle>
+							<Button asChild size="inline" variant="link">
+								<Link to="/app/groups/manage">Ver todos</Link>
+							</Button>
+						</CardHeader>
+						{groups.length === 0 ? (
+							<EmptyState>
+								Aún no tienes grupos activos.{" "}
+								<Link to="/app/groups/new">Registra tu primer grupo</Link>
+							</EmptyState>
+						) : (
+							<div className="flex flex-col gap-3">
+								{groups.map((group) => (
+									<Link
+										className={`${rowCard} flex-col items-stretch gap-2`}
+										key={group.id}
+										to="/app/groups/manage"
+									>
+										<span className="flex items-baseline justify-between gap-2">
+											<strong className="text-primary-text">
+												{group.subjectName}
+											</strong>
+											<span className="text-[12.5px] font-bold whitespace-nowrap">
+												{groupLabel(group.number)}
+											</span>
+										</span>
+										<span className={iconLine}>
+											<CalendarDays
+												aria-hidden="true"
+												size={16}
+												strokeWidth={1.75}
+											/>
+											{weekdays[group.weekday]},{" "}
+											{timeRange(group.startTime, group.endTime)}
+										</span>
+										<span className={iconLine}>
+											<MapPin aria-hidden="true" size={16} strokeWidth={1.75} />
+											Laboratorio {group.labName}
+										</span>
+									</Link>
+								))}
+							</div>
+						)}
+					</Card>
+				</div>
+			)}
+
+			{isStaff && (
+				<section
+					aria-labelledby="dashboard-all-title"
+					className="flex flex-col gap-3.5"
+				>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<span className="text-[13.5px] font-bold text-primary-text">
+								{isAdmin ? "Administración" : "Laboratorio"}
+							</span>
+							<h2 className="text-[22px] font-bold" id="dashboard-all-title">
+								Solicitudes próximas de todos los profesores
+							</h2>
 						</div>
-						<TableShell>
-							<table className="data-table" style={{ minWidth: 920 }}>
-								<thead>
-									<tr>
-										<th scope="col">Fecha y hora</th>
-										<th scope="col">Práctica</th>
-										<th scope="col">Profesor</th>
-										<th scope="col">Grupo</th>
-										<th scope="col">Lab.</th>
-										<th scope="col">Estado</th>
-									</tr>
-								</thead>
-								<tbody>
-									{allRequests.map(({ request, group, professor }) => (
-										<tr key={request.id}>
-											<td>
-												<strong>
-													{formatSessionDate(request.sessionDate, "short")}
-												</strong>
-												<small>
-													{timeRange(request.startTime, request.endTime)}
-												</small>
-											</td>
-											<td>{request.exerciseName}</td>
-											<td>
-												{professor.name} {professor.surname}
-											</td>
-											<td>
-												{group.subjectName} · {groupLabel(group.number)}
-											</td>
-											<td className="whitespace-nowrap">{request.labName}</td>
-											<td>
-												<StatusChip request={request} />
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
+						<Button asChild size="inline" variant="link">
+							<Link to="/app/requests/all">Abrir la vista completa</Link>
+						</Button>
+					</div>
+					<Table className="min-w-[920px]">
+						<TableHeader>
+							<TableRow>
+								<TableHead>Fecha y hora</TableHead>
+								<TableHead>Práctica</TableHead>
+								<TableHead>Profesor</TableHead>
+								<TableHead>Grupo</TableHead>
+								<TableHead>Lab.</TableHead>
+								<TableHead>Estado</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{allRequests.map(({ request, group, professor }) => (
+								<TableRow key={request.id}>
+									<TableCell>
+										<strong>
+											{formatSessionDate(request.sessionDate, "short")}
+										</strong>
+										<TableCellNote>
+											{timeRange(request.startTime, request.endTime)}
+										</TableCellNote>
+									</TableCell>
+									<TableCell>{request.exerciseName}</TableCell>
+									<TableCell>
+										{professor.name} {professor.surname}
+									</TableCell>
+									<TableCell>
+										{group.subjectName} · {groupLabel(group.number)}
+									</TableCell>
+									<TableCell className="whitespace-nowrap">
+										{request.labName}
+									</TableCell>
+									<TableCell>
+										<StatusChip request={request} />
+									</TableCell>
+								</TableRow>
+							))}
 							{allRequests.length === 0 && (
-								<p className="table-empty">
+								<TableEmpty colSpan={6}>
 									No hay solicitudes en los próximos {STAFF_WINDOW_DAYS} días.
-								</p>
+								</TableEmpty>
 							)}
-						</TableShell>
-					</section>
-				)}
-			</div>
-		</main>
+						</TableBody>
+					</Table>
+				</section>
+			)}
+		</Page>
 	);
 }
+
+/** A clickable card for one item in a short list. */
+const rowCard =
+	"flex items-center gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-foreground no-underline hover:border-accent-border hover:bg-accent hover:text-foreground max-md:flex-wrap";
+const iconLine =
+	"inline-flex items-center gap-1.5 text-sm text-muted-foreground";
 
 function UpcomingRequest({ item }: { item: RequestListRow }) {
 	const { request, group } = item;
 	return (
-		<Link className="row-card" to="/app/requests/mine">
-			<span aria-hidden="true" className="date-tile">
-				<span>{formatSessionDate(request.sessionDate, "weekdayShort")}</span>
-				<strong>{Number(request.sessionDate.slice(8))}</strong>
+		<Link className={rowCard} to="/app/requests/mine">
+			<span
+				aria-hidden="true"
+				className="flex h-[60px] w-14 flex-none flex-col items-center justify-center rounded-md bg-secondary leading-[1.1]"
+			>
+				<span className="text-[11.5px] font-bold text-muted-foreground uppercase">
+					{formatSessionDate(request.sessionDate, "weekdayShort")}
+				</span>
+				<strong className="text-2xl">
+					{Number(request.sessionDate.slice(8))}
+				</strong>
 			</span>
-			<span className="row-copy">
+			<span className="flex min-w-0 flex-1 basis-[180px] flex-col gap-0.5">
 				<span className="sr-only">
 					{formatSessionDate(request.sessionDate, "long")}
 				</span>
 				<strong>{request.exerciseName}</strong>
-				<span className="row-group">
+				<span className="text-[13.5px] font-bold text-primary-text">
 					{group.subjectName} · {groupLabel(group.number)}
 				</span>
-				<span className="row-meta">
-					<span>
+				<span className="flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted-foreground">
+					<span className="inline-flex items-center gap-1.5">
 						<Clock aria-hidden="true" size={15} strokeWidth={1.75} />
 						{timeRange(request.startTime, request.endTime)}
 					</span>
-					<span>
+					<span className="inline-flex items-center gap-1.5">
 						<MapPin aria-hidden="true" size={15} strokeWidth={1.75} />
 						{request.labName}
 					</span>
 				</span>
 			</span>
 			<StatusChip request={request} withIcon />
-			<ChevronRight aria-hidden="true" size={18} />
+			<ChevronRight
+				aria-hidden="true"
+				className="flex-none text-muted-foreground max-md:hidden"
+				size={18}
+			/>
 		</Link>
 	);
 }

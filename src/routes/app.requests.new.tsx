@@ -4,12 +4,39 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
-import { CalendarDays, CircleCheck, Clock, Plus } from "lucide-react";
-import { type FormEvent, useState } from "react";
-import { OptionSelect } from "../components/option-select.tsx";
+import { CalendarDays, CircleCheck, Clock } from "lucide-react";
+import { type FormEvent, type ReactNode, useState } from "react";
+import {
+	DescriptionItem,
+	DescriptionList,
+} from "../components/description-list.tsx";
+import {
+	MaterialName,
+	MaterialRow,
+	QuantityDetails,
+	type QuantityDraft,
+	QuantityEditor,
+	quantityItems,
+	type WasteDraft,
+	WasteEditor,
+	wasteItems,
+} from "../components/materials.tsx";
+import { Notice } from "../components/notice.tsx";
+import { EmptyState, Page, PageHeader } from "../components/page.tsx";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardTitle } from "../components/ui/card.tsx";
+import { Checkbox } from "../components/ui/checkbox.tsx";
 import { Combobox } from "../components/ui/combobox.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
-import type { QuantityItem, WasteItem } from "../db/schema.ts";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "../components/ui/field.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group.tsx";
+import { Textarea } from "../components/ui/textarea.tsx";
 import {
 	addDays,
 	formatSessionDate,
@@ -21,6 +48,7 @@ import {
 	upcomingSessionDates,
 } from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { cn } from "../lib/utils.ts";
 import { weekdays } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
@@ -50,23 +78,6 @@ export const Route = createFileRoute("/app/requests/new")({
 	component: NewPreparationRequestPage,
 });
 
-type EditableQuantityItem = QuantityItem & { key: string };
-type EditableWasteItem = WasteItem & { key: string };
-
-const emptyQuantity = (): EditableQuantityItem => ({
-	key: crypto.randomUUID(),
-	name: "",
-	amount: 1,
-	unit: "",
-	basis: "team",
-});
-const emptyWaste = (): EditableWasteItem => ({
-	key: crypto.randomUUID(),
-	name: "",
-	container: "",
-	treatment: "",
-});
-
 function NewPreparationRequestPage() {
 	const { groups, exercises, minimumNoticeDays, today, nowTime } =
 		Route.useLoaderData();
@@ -80,13 +91,9 @@ function NewPreparationRequestPage() {
 	const [exerciseId, setExerciseId] = useState("");
 	const [sessionDate, setSessionDate] = useState("");
 	const [omittedReagents, setOmittedReagents] = useState<string[]>([]);
-	const [addedReagents, setAddedReagents] = useState<EditableQuantityItem[]>(
-		[],
-	);
-	const [addedEquipment, setAddedEquipment] = useState<EditableQuantityItem[]>(
-		[],
-	);
-	const [addedWaste, setAddedWaste] = useState<EditableWasteItem[]>([]);
+	const [addedReagents, setAddedReagents] = useState<QuantityDraft[]>([]);
+	const [addedEquipment, setAddedEquipment] = useState<QuantityDraft[]>([]);
+	const [addedWaste, setAddedWaste] = useState<WasteDraft[]>([]);
 	const [professorNote, setProfessorNote] = useState("");
 	const [lateReason, setLateReason] = useState("");
 	const [message, setMessage] = useState("");
@@ -129,7 +136,7 @@ function NewPreparationRequestPage() {
 			item,
 			omitted: omittedReagents.includes(item.name),
 		})) ?? []),
-		...addedReagents
+		...quantityItems(addedReagents)
 			.filter((item) => item.name.trim())
 			.map((item) => ({ item, omitted: false })),
 	];
@@ -144,9 +151,9 @@ function NewPreparationRequestPage() {
 		setMessage("");
 		const customization: RequestCustomization = {
 			omittedReagents,
-			addedReagents: addedReagents.map(({ key: _key, ...item }) => item),
-			addedEquipment: addedEquipment.map(({ key: _key, ...item }) => item),
-			addedWaste: addedWaste.map(({ key: _key, ...item }) => item),
+			addedReagents: quantityItems(addedReagents),
+			addedEquipment: quantityItems(addedEquipment),
+			addedWaste: wasteItems(addedWaste),
 			professorNote: professorNote || null,
 			lateReason: needsLateReason ? lateReason : null,
 		};
@@ -168,153 +175,149 @@ function NewPreparationRequestPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-narrow">
-				<header className="page-head-copy">
-					<h1 className="page-title">Nueva solicitud</h1>
-					<p className="page-sub">
-						Pide al personal de laboratorio que prepare reactivos, equipo y
-						manejo de residuos para una práctica de uno de tus grupos.
-					</p>
-				</header>
+		<Page size="narrow">
+			<PageHeader
+				description="Pide al personal de laboratorio que prepare reactivos, equipo y manejo de residuos para una práctica de uno de tus grupos."
+				title="Nueva solicitud"
+			/>
 
-				<div className="request-layout">
-					<form className="request-form" onSubmit={submit}>
-						<fieldset className="request-step">
-							<legend className="request-step-title">
-								<span aria-hidden="true" className="step-badge">
-									1
-								</span>
+			<div className="flex flex-wrap items-start gap-7">
+				<Card
+					asChild
+					className="max-w-[640px] flex-[1_1_480px] gap-8 p-7 max-md:p-5"
+				>
+					<form onSubmit={submit}>
+						<Step>
+							<StepTitle id="request-step-group" number={1}>
 								Elige el grupo
-							</legend>
+							</StepTitle>
 							{groups.length === 0 && (
-								<p className="empty-state">
+								<EmptyState>
 									No tienes grupos activos.{" "}
 									<Link to="/app/groups/new">Registra un grupo</Link>
-								</p>
+								</EmptyState>
 							)}
-							{groups.map((group) => (
-								<label className="option-card" key={group.id}>
-									<input
-										checked={groupId === group.id}
-										name="group"
-										onChange={() => {
-											setGroupId(group.id);
-											setSessionDate("");
-										}}
-										type="radio"
-										value={group.id}
-									/>
-									<span>
-										<strong>
-											{group.subjectName} · {groupLabel(group.number)}
-										</strong>
-										<small>
-											{weekdays[group.weekday]},{" "}
-											{timeRange(group.startTime, group.endTime)} ·{" "}
-											{group.labName}
-										</small>
-									</span>
-								</label>
-							))}
-						</fieldset>
+							<RadioGroup
+								aria-labelledby="request-step-group"
+								onValueChange={(value) => {
+									setGroupId(value);
+									setSessionDate("");
+								}}
+								value={groupId}
+							>
+								{groups.map((group) => (
+									<Label
+										className="cursor-pointer gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-[0_0_0_1px_var(--primary)]"
+										key={group.id}
+									>
+										<RadioGroupItem value={group.id} />
+										<span className="flex min-w-0 flex-1 flex-col">
+											<strong>
+												{group.subjectName} · {groupLabel(group.number)}
+											</strong>
+											<span className="text-sm text-muted-foreground">
+												{weekdays[group.weekday]},{" "}
+												{timeRange(group.startTime, group.endTime)} ·{" "}
+												{group.labName}
+											</span>
+										</span>
+									</Label>
+								))}
+							</RadioGroup>
+						</Step>
 
-						<div className="request-step">
-							<h2 className="request-step-title">
-								<span aria-hidden="true" className="step-badge">
-									2
-								</span>
-								Elige la fecha
-							</h2>
+						<Step>
+							<StepTitle number={2}>Elige la fecha</StepTitle>
 							{selectedGroup ? (
 								<>
-									<p className="request-step-help">
+									<StepHelp>
 										Solo se ofrecen los {weekdayPlural(selectedGroup.weekday)},
 										el día de este grupo.
-									</p>
+									</StepHelp>
 									{/* biome-ignore lint/a11y/useSemanticElements: the step heading already names this group of buttons */}
 									<div
 										aria-label="Fechas disponibles"
-										className="date-options"
+										className="flex flex-wrap gap-2.5"
 										role="group"
 									>
 										{dateOptions.map(({ date, late }) => (
-											<button
+											<Button
 												aria-pressed={sessionDate === date}
-												className="date-option"
 												key={date}
 												onClick={() => setSessionDate(date)}
-												type="button"
+												size="lg"
+												variant="choice"
 											>
 												{formatSessionDate(date, "short")}
-												<small>{noticeLabel(late)}</small>
-											</button>
+												<DateNote>{noticeLabel(late)}</DateNote>
+											</Button>
 										))}
 										<DatePicker
-											aria-pressed={customPicked}
-											className="date-option is-custom"
 											footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
 											isDateDisabled={(date) => !pickableDate(date)}
 											max={addDays(today, CALENDAR_REACH_DAYS)}
 											min={today}
 											onValueChange={setSessionDate}
+											trigger={
+												<Button
+													aria-pressed={customPicked}
+													className="flex-row items-center gap-2.5"
+													size="lg"
+													variant="choice"
+												>
+													<CalendarDays
+														aria-hidden="true"
+														size={18}
+														strokeWidth={1.75}
+													/>
+													<span className="flex flex-col items-start">
+														{customPicked
+															? formatSessionDate(sessionDate, "short")
+															: "Elegir otra fecha"}
+														<DateNote>
+															{customPicked
+																? noticeLabel(needsLateReason)
+																: `Solo ${weekdayPlural(selectedGroup.weekday)}`}
+														</DateNote>
+													</span>
+												</Button>
+											}
 											value={customPicked ? sessionDate : ""}
-										>
-											<CalendarDays
-												aria-hidden="true"
-												size={18}
-												strokeWidth={1.75}
-											/>
-											<span>
-												{customPicked
-													? formatSessionDate(sessionDate, "short")
-													: "Elegir otra fecha"}
-												<small>
-													{customPicked
-														? noticeLabel(needsLateReason)
-														: `Solo ${weekdayPlural(selectedGroup.weekday)}`}
-												</small>
-											</span>
-										</DatePicker>
+										/>
 									</div>
 								</>
 							) : (
-								<p className="request-step-help">
-									Elige un grupo para ver sus fechas.
-								</p>
+								<StepHelp>Elige un grupo para ver sus fechas.</StepHelp>
 							)}
 							{needsLateReason && (
-								<label className="field-label">
-									Motivo del aviso corto
-									<textarea
-										className="field"
+								<Field>
+									<FieldLabel htmlFor="request-late-reason">
+										Motivo del aviso corto
+									</FieldLabel>
+									<Textarea
+										id="request-late-reason"
 										maxLength={1000}
 										onChange={(event) => setLateReason(event.target.value)}
 										placeholder="Explica por qué solicitas la preparación con poco tiempo."
 										required
 										value={lateReason}
 									/>
-									<span className="field-hint">
+									<FieldDescription>
 										El personal de laboratorio decidirá si acepta la solicitud.
-									</span>
-								</label>
+									</FieldDescription>
+								</Field>
 							)}
-						</div>
+						</Step>
 
-						<div className="request-step">
-							<h2 className="request-step-title">
-								<span aria-hidden="true" className="step-badge">
-									3
-								</span>
-								Elige la práctica
-							</h2>
-							<div className="field-label">
-								<label htmlFor="request-exercise">
+						<Step>
+							<StepTitle number={3}>Elige la práctica</StepTitle>
+							<Field>
+								<FieldLabel htmlFor="request-exercise">
 									Práctica de laboratorio
-								</label>
+								</FieldLabel>
 								<Combobox
-									className="field"
 									emptyText="Ninguna práctica coincide."
+									fieldVariant="filled"
 									id="request-exercise"
 									onValueChange={(value) => {
 										setExerciseId(value);
@@ -328,49 +331,39 @@ function NewPreparationRequestPage() {
 									searchPlaceholder="Buscar por número o nombre"
 									value={exerciseId}
 								/>
-							</div>
-						</div>
+							</Field>
+						</Step>
 
-						<div className="request-step">
-							<h2 className="request-step-title">
-								<span aria-hidden="true" className="step-badge">
-									4
-								</span>
-								Revisa el material
-							</h2>
-							<p className="request-step-help">
+						<Step>
+							<StepTitle number={4}>Revisa el material</StepTitle>
+							<StepHelp>
 								Desmarca los reactivos que no necesites y quedarán tachados como
 								omitidos. Puedes agregar equipo y residuos.
-							</p>
+							</StepHelp>
 
 							<div>
-								<h3 className="material-title">Reactivos</h3>
+								<MaterialHeading>Reactivos</MaterialHeading>
 								{materials?.reagents.map((item) => {
 									const omitted = omittedReagents.includes(item.name);
 									return (
-										<label
-											className="material-row"
+										<Label
+											className="cursor-pointer gap-3 border-t py-2.5 text-base font-normal"
 											key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
 										>
-											<input
+											<Checkbox
 												checked={!omitted}
-												onChange={() =>
+												onCheckedChange={() =>
 													setOmittedReagents((current) =>
 														omitted
 															? current.filter((name) => name !== item.name)
 															: [...current, item.name],
 													)
 												}
-												type="checkbox"
 											/>
-											<span
-												className={`material-name${omitted ? " is-omitted" : ""}`}
-											>
-												{item.name}
-											</span>
-											{omitted && <span className="basis-tag">Omitido</span>}
-											<Quantity item={item} omitted={omitted} />
-										</label>
+											<MaterialName omitted={omitted}>{item.name}</MaterialName>
+											{omitted && <Badge variant="muted">Omitido</Badge>}
+											<QuantityDetails item={item} omitted={omitted} />
+										</Label>
 									);
 								})}
 								<QuantityEditor
@@ -380,15 +373,14 @@ function NewPreparationRequestPage() {
 									onChange={setAddedReagents}
 								/>
 
-								<h3 className="material-title">Equipo</h3>
+								<MaterialHeading>Equipo</MaterialHeading>
 								{materials?.equipment.map((item) => (
-									<div
-										className="material-row"
+									<MaterialRow
 										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
 									>
-										<span className="material-name">{item.name}</span>
-										<Quantity item={item} />
-									</div>
+										<MaterialName>{item.name}</MaterialName>
+										<QuantityDetails item={item} />
+									</MaterialRow>
 								))}
 								<QuantityEditor
 									addLabel="Agregar equipo"
@@ -397,144 +389,178 @@ function NewPreparationRequestPage() {
 									onChange={setAddedEquipment}
 								/>
 
-								<h3 className="material-title">Residuos esperados</h3>
+								<MaterialHeading>Residuos esperados</MaterialHeading>
 								{materials?.waste.map((item) => (
-									<div
-										className="material-row is-top"
+									<MaterialRow
+										className="items-start"
 										key={`${item.name}-${item.container}-${item.treatment}`}
 									>
-										<span className="material-name">
+										<MaterialName
+											note={`${item.container} · ${item.treatment}`}
+										>
 											{item.name}
-											<small>
-												{item.container} · {item.treatment}
-											</small>
-										</span>
-									</div>
+										</MaterialName>
+									</MaterialRow>
 								))}
 								<WasteEditor items={addedWaste} onChange={setAddedWaste} />
 							</div>
-						</div>
+						</Step>
 
-						<label className="field-label">
-							Nota para el personal (opcional)
-							<textarea
-								className="field"
+						<Field>
+							<FieldLabel htmlFor="request-note">
+								Nota para el personal (opcional)
+							</FieldLabel>
+							<Textarea
+								id="request-note"
 								maxLength={2000}
 								onChange={(event) => setProfessorNote(event.target.value)}
 								placeholder="Por ejemplo: necesito las buretas limpias desde las 16:30."
 								value={professorNote}
 							/>
-						</label>
+						</Field>
 
-						{message && (
-							<p className="notice notice-error" role="alert">
-								{message}
-							</p>
-						)}
+						{message && <Notice tone="error">{message}</Notice>}
 
-						<div className="request-actions">
-							<button className="button-primary" disabled={busy} type="submit">
+						<div className="flex flex-wrap gap-3 pt-1">
+							<Button disabled={busy} size="lg" type="submit">
 								{busy ? "Enviando…" : "Enviar solicitud"}
-							</button>
-							<Link className="button-secondary" to="/app/dashboard">
-								Cancelar
-							</Link>
+							</Button>
+							<Button asChild size="lg" variant="outline">
+								<Link to="/app/dashboard">Cancelar</Link>
+							</Button>
 						</div>
 					</form>
+				</Card>
 
-					<aside
-						aria-labelledby="request-summary-title"
-						className="request-summary"
-					>
-						<section className="panel">
-							<h2 id="request-summary-title">Resumen</h2>
-							<dl className="kv">
-								<div>
-									<dt>Grupo</dt>
-									<dd className="is-strong">
-										{selectedGroup
-											? `${selectedGroup.subjectName} · ${groupLabel(selectedGroup.number)}`
-											: "Elige un grupo"}
-									</dd>
-								</div>
-								<div>
-									<dt>Fecha y hora</dt>
-									<dd>
-										{selectedGroup && sessionDate
-											? `${formatSessionDate(sessionDate, "long")}, ${timeRange(selectedGroup.startTime, selectedGroup.endTime)}`
-											: "Elige una fecha"}
-									</dd>
-								</div>
-								<div>
-									<dt>Laboratorio</dt>
-									<dd>{selectedGroup?.labName ?? "—"}</dd>
-								</div>
-								<div>
-									<dt>Práctica</dt>
-									<dd>
-										{selectedExercise
-											? `${selectedExercise.number} · ${selectedExercise.name}`
-											: "Elige una práctica"}
-									</dd>
-								</div>
-							</dl>
-							{selectedGroup && totals.length > 0 && (
-								<div className="summary-totals">
-									<h3>Cantidades calculadas</h3>
-									<p>
-										{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo.
-									</p>
-									<ul className="mono">
-										{totals.map(({ item, omitted }) => (
-											<li
-												className={omitted ? "is-omitted" : undefined}
-												key={`${item.name}-${item.unit}-${item.basis}`}
-											>
-												<span>{item.name}</span>
-												<strong>
-													{item.amount * (item.basis === "team" ? teams : 1)}{" "}
-													{item.unit}
-												</strong>
-											</li>
-										))}
-									</ul>
-								</div>
-							)}
-						</section>
+				<aside
+					aria-labelledby="request-summary-title"
+					className="flex max-w-[380px] min-w-0 flex-[1_1_300px] flex-col gap-4"
+				>
+					<Card className="gap-4">
+						<CardTitle className="text-xl" id="request-summary-title">
+							Resumen
+						</CardTitle>
+						<DescriptionList>
+							<DescriptionItem emphasis term="Grupo">
+								{selectedGroup
+									? `${selectedGroup.subjectName} · ${groupLabel(selectedGroup.number)}`
+									: "Elige un grupo"}
+							</DescriptionItem>
+							<DescriptionItem term="Fecha y hora">
+								{selectedGroup && sessionDate
+									? `${formatSessionDate(sessionDate, "long")}, ${timeRange(selectedGroup.startTime, selectedGroup.endTime)}`
+									: "Elige una fecha"}
+							</DescriptionItem>
+							<DescriptionItem term="Laboratorio">
+								{selectedGroup?.labName ?? "—"}
+							</DescriptionItem>
+							<DescriptionItem term="Práctica">
+								{selectedExercise
+									? `${selectedExercise.number} · ${selectedExercise.name}`
+									: "Elige una práctica"}
+							</DescriptionItem>
+						</DescriptionList>
+						{selectedGroup && totals.length > 0 && (
+							<div className="flex flex-col gap-2 border-t pt-4">
+								<h3 className="text-[15px] font-bold">Cantidades calculadas</h3>
+								<p className="text-[13.5px] text-muted-foreground">
+									{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo.
+								</p>
+								<ul className="grid gap-1.5 font-mono text-[13px] tabular-nums">
+									{totals.map(({ item, omitted }) => (
+										<li
+											className={cn(
+												"flex justify-between gap-3",
+												omitted &&
+													"text-muted-foreground line-through decoration-[1.5px]",
+											)}
+											key={`${item.name}-${item.unit}-${item.basis}`}
+										>
+											<span>{item.name}</span>
+											<strong>
+												{item.amount * (item.basis === "team" ? teams : 1)}{" "}
+												{item.unit}
+											</strong>
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
+					</Card>
 
-						{sessionDate &&
-							(needsLateReason ? (
-								<section className="notice notice-warning">
-									<Clock aria-hidden="true" size={20} strokeWidth={2} />
-									<p>
-										<strong>
-											Menos de {noticeDays(minimumNoticeDays)} de aviso.
-										</strong>{" "}
-										Explica el motivo. El personal de laboratorio decidirá si
-										acepta la solicitud.
-									</p>
-								</section>
-							) : (
-								<section className="notice notice-accent">
-									<CircleCheck aria-hidden="true" size={20} strokeWidth={2} />
-									<p>
-										<strong>
-											Cumple el aviso mínimo de {noticeDays(minimumNoticeDays)}.
-										</strong>{" "}
-										Si eliges una fecha más cercana, tendrás que explicar el
-										motivo y el personal decidirá si la acepta.
-									</p>
-								</section>
-							))}
+					{sessionDate &&
+						(needsLateReason ? (
+							<Notice icon={Clock} tone="warning">
+								<strong>
+									Menos de {noticeDays(minimumNoticeDays)} de aviso.
+								</strong>{" "}
+								Explica el motivo. El personal de laboratorio decidirá si acepta
+								la solicitud.
+							</Notice>
+						) : (
+							<Notice icon={CircleCheck}>
+								<strong>
+									Cumple el aviso mínimo de {noticeDays(minimumNoticeDays)}.
+								</strong>{" "}
+								Si eliges una fecha más cercana, tendrás que explicar el motivo
+								y el personal decidirá si la acepta.
+							</Notice>
+						))}
 
-						<p className="footnote">
-							Al enviar se guarda una copia de estos datos. Si después cambias
-							la práctica o el grupo, esta solicitud no se modifica.
-						</p>
-					</aside>
-				</div>
+					<p className="text-[13.5px] text-pretty text-muted-foreground">
+						Al enviar se guarda una copia de estos datos. Si después cambias la
+						práctica o el grupo, esta solicitud no se modifica.
+					</p>
+				</aside>
 			</div>
-		</main>
+		</Page>
+	);
+}
+
+function Step({ children }: { children: ReactNode }) {
+	return <div className="flex min-w-0 flex-col gap-3.5">{children}</div>;
+}
+
+function StepTitle({
+	number,
+	id,
+	children,
+}: {
+	number: number;
+	id?: string;
+	children: ReactNode;
+}) {
+	return (
+		<h2 className="flex items-center gap-3 text-[19px] font-bold" id={id}>
+			<span
+				aria-hidden="true"
+				className="flex size-7 flex-none items-center justify-center rounded-full bg-accent text-sm font-bold text-primary-text"
+			>
+				{number}
+			</span>
+			{children}
+		</h2>
+	);
+}
+
+function StepHelp({ children }: { children: ReactNode }) {
+	return <p className="text-[14.5px] text-muted-foreground">{children}</p>;
+}
+
+function MaterialHeading({ children }: { children: ReactNode }) {
+	return (
+		<h3 className="mt-3 mb-1 text-[15px] font-bold text-primary-text">
+			{children}
+		</h3>
+	);
+}
+
+/** The small second line under a date. */
+function DateNote({ children }: { children: ReactNode }) {
+	return (
+		<span className="text-xs font-medium text-muted-foreground">
+			{children}
+		</span>
 	);
 }
 
@@ -549,172 +575,4 @@ function noticeLabel(late: boolean) {
 
 function noticeDays(days: number) {
 	return `${days} ${days === 1 ? "día" : "días"}`;
-}
-
-function Quantity({
-	item,
-	omitted = false,
-}: {
-	item: QuantityItem;
-	omitted?: boolean;
-}) {
-	const strike = omitted ? " is-omitted" : "";
-	return (
-		<>
-			<span className={`mono${strike}`}>
-				{item.amount} {item.unit}
-			</span>
-			<span className={`basis-tag${strike}`}>
-				{item.basis === "team" ? "por equipo" : "por grupo"}
-			</span>
-		</>
-	);
-}
-
-const basisOptions = [
-	["team", "Por equipo"],
-	["group", "Por grupo"],
-] as const;
-
-function QuantityEditor({
-	addLabel,
-	kind,
-	items,
-	onChange,
-}: {
-	addLabel: string;
-	kind: string;
-	items: EditableQuantityItem[];
-	onChange: (items: EditableQuantityItem[]) => void;
-}) {
-	const change = (index: number, patch: Partial<QuantityItem>) =>
-		onChange(
-			items.map((item, itemIndex) =>
-				itemIndex === index ? { ...item, ...patch } : item,
-			),
-		);
-	return (
-		<>
-			{items.map((item, index) => (
-				<div className="material-editor" key={item.key}>
-					<input
-						aria-label={`Nombre del ${kind}`}
-						className="field-outline is-wide"
-						onChange={(event) => change(index, { name: event.target.value })}
-						placeholder="Nombre"
-						required
-						value={item.name}
-					/>
-					<input
-						aria-label={`Cantidad del ${kind}`}
-						className="field-outline"
-						min="0.01"
-						onChange={(event) =>
-							change(index, { amount: Number(event.target.value) })
-						}
-						required
-						step="any"
-						type="number"
-						value={item.amount}
-					/>
-					<input
-						aria-label={`Unidad del ${kind}`}
-						className="field-outline"
-						onChange={(event) => change(index, { unit: event.target.value })}
-						placeholder="Unidad"
-						required
-						value={item.unit}
-					/>
-					<OptionSelect
-						aria-label={`Base del ${kind}`}
-						onValueChange={(value) =>
-							change(index, { basis: value as QuantityItem["basis"] })
-						}
-						options={basisOptions}
-						value={item.basis}
-					/>
-					<button
-						className="button-secondary button-sm"
-						onClick={() =>
-							onChange(items.filter((_, itemIndex) => index !== itemIndex))
-						}
-						type="button"
-					>
-						Quitar
-					</button>
-				</div>
-			))}
-			<div>
-				<button
-					className="button-text"
-					onClick={() => onChange([...items, emptyQuantity()])}
-					type="button"
-				>
-					<Plus aria-hidden="true" size={16} strokeWidth={2} />
-					{addLabel}
-				</button>
-			</div>
-		</>
-	);
-}
-
-const wasteFields = [
-	["name", "Nombre del residuo", "Residuo"],
-	["container", "Contenedor del residuo", "Contenedor"],
-	["treatment", "Tratamiento del residuo", "Tratamiento"],
-] as const;
-
-function WasteEditor({
-	items,
-	onChange,
-}: {
-	items: EditableWasteItem[];
-	onChange: (items: EditableWasteItem[]) => void;
-}) {
-	return (
-		<>
-			{items.map((item, index) => (
-				<div className="material-editor" key={item.key}>
-					{wasteFields.map(([key, label, placeholder]) => (
-						<input
-							aria-label={label}
-							className="field-outline"
-							key={key}
-							onChange={(event) =>
-								onChange(
-									items.map((current, itemIndex) =>
-										itemIndex === index
-											? { ...current, [key]: event.target.value }
-											: current,
-									),
-								)
-							}
-							placeholder={placeholder}
-							required
-							value={item[key]}
-						/>
-					))}
-					<button
-						className="button-secondary button-sm"
-						onClick={() =>
-							onChange(items.filter((_, itemIndex) => index !== itemIndex))
-						}
-						type="button"
-					>
-						Quitar
-					</button>
-				</div>
-			))}
-			<div>
-				<button
-					className="button-text"
-					onClick={() => onChange([...items, emptyWaste()])}
-					type="button"
-				>
-					<Plus aria-hidden="true" size={16} strokeWidth={2} />
-					Agregar residuo
-				</button>
-			</div>
-		</>
-	);
 }

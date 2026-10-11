@@ -1,6 +1,17 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Minus, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { Footnote, Page, PageHeader } from "../components/page.tsx";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "../components/ui/field.tsx";
+import { Input } from "../components/ui/input.tsx";
 import {
 	addDays,
 	formatSessionDate,
@@ -34,9 +45,7 @@ export const Route = createFileRoute("/app/admin/settings")({
 function SettingsPage() {
 	const { minNoticeDays, today } = Route.useLoaderData();
 	const [days, setDays] = useState(minNoticeDays);
-	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
-		null,
-	);
+	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
@@ -63,19 +72,17 @@ function SettingsPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-form">
-				<header className="page-head-copy">
-					<h1 className="page-title">Configuración</h1>
-					<p className="page-sub">
-						Ajustes generales de SISLAB para administración.
-					</p>
-				</header>
+		<Page size="form">
+			<PageHeader
+				description="Ajustes generales de SISLAB para administración."
+				title="Configuración"
+			/>
 
-				<form className="panel is-form" onSubmit={save}>
+			<Card asChild className="gap-7 p-7 max-md:p-5">
+				<form onSubmit={save}>
 					<div className="flex flex-col gap-1.5">
-						<h2 className="panel-title">Aviso mínimo para solicitudes</h2>
-						<p className="m-0 text-pretty text-muted-foreground">
+						<CardTitle>Aviso mínimo para solicitudes</CardTitle>
+						<p className="text-pretty text-muted-foreground">
 							Días de calendario que deben pasar entre el envío de una solicitud
 							de preparación y la fecha de la práctica. Con menos aviso, el
 							profesor debe explicar el motivo y el personal decide si la
@@ -83,20 +90,21 @@ function SettingsPage() {
 						</p>
 					</div>
 
-					<div className="field-label">
-						<label htmlFor="min-notice-days">Días de aviso</label>
-						<div className="stepper">
-							<button
+					<Field className="gap-2">
+						<FieldLabel htmlFor="min-notice-days">Días de aviso</FieldLabel>
+						<div className="flex items-center gap-2.5">
+							<Button
 								aria-label="Restar un día"
-								className="stepper-button"
+								className="size-12"
 								disabled={days <= 0}
 								onClick={() => setDays(Math.max(0, days - 1))}
-								type="button"
+								size="icon"
+								variant="outline"
 							>
 								<Minus aria-hidden="true" size={20} />
-							</button>
-							<input
-								className="field"
+							</Button>
+							<Input
+								className="w-24 px-0 text-center text-xl font-bold"
 								id="min-notice-days"
 								max={MAX_NOTICE_DAYS}
 								min="0"
@@ -112,28 +120,30 @@ function SettingsPage() {
 								step="1"
 								type="number"
 								value={days}
+								variant="filled"
 							/>
-							<button
+							<Button
 								aria-label="Sumar un día"
-								className="stepper-button"
+								className="size-12"
 								disabled={days >= MAX_NOTICE_DAYS}
 								onClick={() => setDays(days + 1)}
-								type="button"
+								size="icon"
+								variant="outline"
 							>
 								<Plus aria-hidden="true" size={20} />
-							</button>
-							<span className="text-[15px] font-normal text-muted-foreground">
+							</Button>
+							<span className="text-[15px] text-muted-foreground">
 								{days === 1 ? "día" : "días"}
 							</span>
 						</div>
-						<span className="field-hint">
+						<FieldDescription>
 							Valor inicial: {dayCount(DEFAULT_NOTICE_DAYS)}. Las fechas usan la
 							zona horaria America/Hermosillo.
-						</span>
-					</div>
+						</FieldDescription>
+					</Field>
 
-					<div className="preview-box">
-						<h3 className="detail-title">
+					<div className="flex flex-col gap-3.5 rounded-lg border bg-background px-5 py-[18px] text-[15px]">
+						<h3 className="font-bold">
 							Cómo se verá hoy,{" "}
 							{formatSessionDate(today, "long").toLocaleLowerCase("es-MX")}
 						</h3>
@@ -149,51 +159,47 @@ function SettingsPage() {
 						</p>
 						<div className="flex flex-col gap-2">
 							{PREVIEW_DAYS_AHEAD.map((ahead) => (
-								<div className="preview-row" key={ahead}>
+								<div
+									className="flex min-h-9 flex-wrap items-center justify-between gap-3 border-t pt-2.5"
+									key={ahead}
+								>
 									<span>
 										{formatSessionDate(addDays(today, ahead), "long")}{" "}
-										<small>· {dayCount(ahead)}</small>
+										<span className="text-muted-foreground">
+											· {dayCount(ahead)}
+										</span>
 									</span>
-									<span
-										className={`chip ${ahead < days ? "chip-wait" : "chip-ok"}`}
-									>
+									<Badge variant={ahead < days ? "warning" : "success"}>
 										{ahead < days ? "Requiere motivo" : "Con aviso suficiente"}
-									</span>
+									</Badge>
 								</div>
 							))}
 						</div>
 					</div>
 
-					{notice && (
-						<output
-							aria-live="polite"
-							className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
-						>
-							{notice.text}
-						</output>
-					)}
+					<ActionNotice notice={notice} />
 
-					<div className="panel-actions">
-						<button className="button-primary" disabled={busy} type="submit">
+					<CardFooter className="pt-6">
+						<Button disabled={busy} size="lg" type="submit">
 							{busy ? "Guardando…" : "Guardar cambios"}
-						</button>
-						<button
-							className="button-secondary"
+						</Button>
+						<Button
 							disabled={busy || days === DEFAULT_NOTICE_DAYS}
 							onClick={() => setDays(DEFAULT_NOTICE_DAYS)}
-							type="button"
+							size="lg"
+							variant="outline"
 						>
 							Restablecer a {dayCount(DEFAULT_NOTICE_DAYS)}
-						</button>
-					</div>
+						</Button>
+					</CardFooter>
 				</form>
+			</Card>
 
-				<p className="footnote">
-					El cambio aplica a las solicitudes nuevas. Las ya enviadas conservan
-					lo que se registró.
-				</p>
-			</div>
-		</main>
+			<Footnote>
+				El cambio aplica a las solicitudes nuevas. Las ya enviadas conservan lo
+				que se registró.
+			</Footnote>
+		</Page>
 	);
 }
 

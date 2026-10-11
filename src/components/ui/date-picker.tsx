@@ -1,13 +1,17 @@
 import { CalendarIcon } from "lucide-react";
 import * as React from "react";
 import { es } from "react-day-picker/locale";
+import { Button } from "#/components/ui/button.tsx";
 import { Calendar } from "#/components/ui/calendar.tsx";
+import {
+	type FieldVariant,
+	PickerTrigger,
+} from "#/components/ui/picker-trigger.tsx";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "#/components/ui/popover.tsx";
-import { cn } from "#/lib/utils.ts";
 
 /** Dates cross this component as YYYY-MM-DD text, the format the server stores. */
 function toDate(value: string) {
@@ -33,13 +37,13 @@ function DatePicker({
 	max,
 	clearable = false,
 	footer,
-	className,
-	children,
+	trigger,
+	fieldVariant,
 	"aria-label": ariaLabel,
 	...props
 }: Omit<
-	React.ComponentProps<"button">,
-	"value" | "defaultValue" | "onChange"
+	React.ComponentProps<typeof PickerTrigger>,
+	"value" | "defaultValue" | "onChange" | "children"
 > & {
 	value?: string;
 	defaultValue?: string;
@@ -55,8 +59,9 @@ function DatePicker({
 	/** Lets the person remove the date. Use it for optional dates. */
 	clearable?: boolean;
 	footer?: React.ReactNode;
-	/** Replaces the default trigger content. */
-	children?: React.ReactNode;
+	/** A Button to open the calendar with, in place of the field-like trigger. */
+	trigger?: React.ReactElement;
+	fieldVariant?: FieldVariant;
 }) {
 	const [open, setOpen] = React.useState(false);
 	const [ownValue, setOwnValue] = React.useState(defaultValue);
@@ -72,28 +77,25 @@ function DatePicker({
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
-				<button
-					// An aria-label replaces the visible text, so it has to carry the date too.
-					aria-label={
-						ariaLabel && selected
-							? `${ariaLabel}: ${labelFormat.format(selected)}`
-							: ariaLabel
-					}
-					className={cn(!children && "picker-trigger", className)}
-					data-placeholder={value ? undefined : ""}
-					data-slot="date-picker-trigger"
-					type="button"
-					{...props}
-				>
-					{children ?? (
-						<>
-							<span className="truncate">
-								{selected ? labelFormat.format(selected) : placeholder}
-							</span>
-							<CalendarIcon aria-hidden="true" className="size-4 opacity-50" />
-						</>
-					)}
-				</button>
+				{trigger ?? (
+					<PickerTrigger
+						// An aria-label replaces the visible text, so it has to carry the date too.
+						aria-label={
+							ariaLabel && selected
+								? `${ariaLabel}: ${labelFormat.format(selected)}`
+								: ariaLabel
+						}
+						data-placeholder={value ? undefined : ""}
+						data-slot="date-picker-trigger"
+						fieldVariant={fieldVariant}
+						{...props}
+					>
+						<span className="truncate">
+							{selected ? labelFormat.format(selected) : placeholder}
+						</span>
+						<CalendarIcon aria-hidden="true" className="size-4 opacity-50" />
+					</PickerTrigger>
+				)}
 			</PopoverTrigger>
 			{name && <input name={name} type="hidden" value={value} />}
 			<PopoverContent align="start" className="w-auto rounded-lg p-0">
@@ -121,13 +123,9 @@ function DatePicker({
 					<div className="flex flex-col items-start gap-2 border-t px-4 py-3 text-[13px] text-muted-foreground">
 						{footer}
 						{clearable && value && (
-							<button
-								className="button-text"
-								onClick={() => choose("")}
-								type="button"
-							>
+							<Button onClick={() => choose("")} size="inline" variant="link">
 								Quitar fecha
-							</button>
+							</Button>
 						)}
 					</div>
 				)}

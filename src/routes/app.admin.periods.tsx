@@ -1,8 +1,27 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleCheck, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { TableShell } from "../components/table-shell.tsx";
+import { Notice, type NoticeState } from "../components/notice.tsx";
+import { Footnote, Page, PageHeader } from "../components/page.tsx";
+import { Badge } from "../components/ui/badge.tsx";
+import { Button } from "../components/ui/button.tsx";
+import { Card, CardTitle } from "../components/ui/card.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "../components/ui/field.tsx";
+import { Input } from "../components/ui/input.tsx";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableEmpty,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "../components/ui/table.tsx";
 import {
 	type AcademicPeriodStatus,
 	academicPeriodStatus,
@@ -27,11 +46,11 @@ export const Route = createFileRoute("/app/admin/periods")({
 	component: AcademicPeriodsPage,
 });
 
-const statusChips: Record<AcademicPeriodStatus, [string, string]> = {
-	current: ["chip-ok", "Actual"],
-	upcoming: ["chip-next", "Próximo"],
-	concluded: ["chip-off", "Concluido"],
-};
+const statusBadges = {
+	current: ["success", "Actual"],
+	upcoming: ["info", "Próximo"],
+	concluded: ["neutral", "Concluido"],
+} as const satisfies Record<AcademicPeriodStatus, readonly [string, string]>;
 
 const emptyForm = { code: "", startsOn: "", endsOn: "" };
 
@@ -40,9 +59,7 @@ function AcademicPeriodsPage() {
 	const [periods, setPeriods] = useState(initial.periods);
 	const [form, setForm] = useState(emptyForm);
 	const [editing, setEditing] = useState(false);
-	const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(
-		null,
-	);
+	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 	const currentCode = currentAcademicPeriodCode();
 	const currentYear = Number(currentCode.split("-")[0]);
@@ -112,180 +129,168 @@ function AcademicPeriodsPage() {
 	}
 
 	return (
-		<main className="app-page">
-			<div className="app-page-inner is-narrow">
-				<header className="page-head">
-					<div className="page-head-copy">
-						<h1 className="page-title">Períodos</h1>
-						<p className="page-sub">
-							Los períodos académicos en los que se registran los grupos. Las
-							fechas oficiales son opcionales.
-						</p>
-					</div>
-					<div className="flex flex-col items-end gap-1.5">
-						<button
-							className="button-secondary button-tall"
-							disabled={busy || allSeeded}
-							onClick={seedPeriods}
-							type="button"
-						>
-							<Plus aria-hidden="true" size={18} strokeWidth={2} />
-							{allSeeded
-								? "Períodos agregados"
-								: `Agregar períodos ${seedYears.join(" y ")}`}
-						</button>
-						<span className="max-w-80 text-right text-[13px] text-muted-foreground">
-							Crea {listed(seedCodes)}. Los que ya existen se omiten.
-						</span>
-					</div>
-				</header>
-
-				{notice && (
-					<output
-						aria-live="polite"
-						className={`notice ${notice.error ? "notice-error" : "notice-accent"}`}
+		<Page size="narrow">
+			<PageHeader
+				description="Los períodos académicos en los que se registran los grupos. Las fechas oficiales son opcionales."
+				title="Períodos"
+			>
+				<div className="flex flex-col items-end gap-1.5">
+					<Button
+						disabled={busy || allSeeded}
+						onClick={seedPeriods}
+						size="lg"
+						variant="outline"
 					>
-						{!notice.error && (
-							<CircleCheck aria-hidden="true" size={20} strokeWidth={2} />
-						)}
-						<p>{notice.text}</p>
-					</output>
-				)}
-
-				<div className="split is-top">
-					<TableShell className="min-w-0 flex-[1.6_1_520px]">
-						<table className="data-table" style={{ minWidth: 560 }}>
-							<thead>
-								<tr>
-									<th scope="col">Código</th>
-									<th scope="col">Inicio</th>
-									<th scope="col">Fin</th>
-									<th scope="col">Grupos</th>
-									<th scope="col">Estado</th>
-									<th scope="col">Acciones</th>
-								</tr>
-							</thead>
-							<tbody>
-								{[...periods].reverse().map((period) => {
-									const [chipClass, label] =
-										statusChips[academicPeriodStatus(period.code, currentCode)];
-									return (
-										<tr key={period.code}>
-											<td>
-												<strong>{period.code}</strong>
-											</td>
-											<td>{officialDate(period.startsOn)}</td>
-											<td>{officialDate(period.endsOn)}</td>
-											<td>{period.groupCount}</td>
-											<td>
-												<span className={`chip ${chipClass}`}>{label}</span>
-											</td>
-											<td>
-												<button
-													aria-label={`Editar ${period.code}`}
-													className="button-secondary button-sm"
-													disabled={busy}
-													onClick={() => {
-														setForm({
-															code: period.code,
-															startsOn: period.startsOn ?? "",
-															endsOn: period.endsOn ?? "",
-														});
-														setEditing(true);
-														setNotice(null);
-													}}
-													type="button"
-												>
-													Editar
-												</button>
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
-						{periods.length === 0 && (
-							<p className="table-empty">Aún no hay períodos.</p>
-						)}
-					</TableShell>
-
-					<section
-						aria-labelledby="period-form-title"
-						className="panel max-w-[400px] flex-[1_1_300px]"
-					>
-						<h2 className="m-0 text-xl font-bold" id="period-form-title">
-							{editing ? `Editar ${form.code}` : "Agregar período"}
-						</h2>
-						<form className="flex flex-col gap-4" onSubmit={save}>
-							{!editing && (
-								<label className="field-label">
-									Código
-									<input
-										className="field-outline"
-										onChange={(event) =>
-											setForm({ ...form, code: event.target.value })
-										}
-										pattern="[0-9]{4}-[12]"
-										placeholder={`${currentYear + 1}-1`}
-										required
-										value={form.code}
-									/>
-									<span className="field-hint">Usa AAAA-1 o AAAA-2.</span>
-								</label>
-							)}
-							<div className="field-label">
-								<label htmlFor="period-starts-on">Inicio (opcional)</label>
-								<DatePicker
-									className="field-outline"
-									clearable
-									id="period-starts-on"
-									onValueChange={(startsOn) => setForm({ ...form, startsOn })}
-									value={form.startsOn}
-								/>
-							</div>
-							<div className="field-label">
-								<label htmlFor="period-ends-on">Fin (opcional)</label>
-								<DatePicker
-									className="field-outline"
-									clearable
-									id="period-ends-on"
-									min={form.startsOn || undefined}
-									onValueChange={(endsOn) => setForm({ ...form, endsOn })}
-									value={form.endsOn}
-								/>
-								<span className="field-hint">
-									Escribe las dos fechas o deja las dos vacías.
-								</span>
-							</div>
-							<div className="flex flex-wrap gap-3">
-								<button
-									className="button-primary"
-									disabled={busy}
-									type="submit"
-								>
-									{editing ? "Guardar período" : "Agregar período"}
-								</button>
-								{editing && (
-									<button
-										className="button-secondary button-tall"
-										disabled={busy}
-										onClick={stopEditing}
-										type="button"
-									>
-										Cancelar
-									</button>
-								)}
-							</div>
-						</form>
-					</section>
+						<Plus aria-hidden="true" size={18} strokeWidth={2} />
+						{allSeeded
+							? "Períodos agregados"
+							: `Agregar períodos ${seedYears.join(" y ")}`}
+					</Button>
+					<span className="max-w-80 text-right text-[13px] text-muted-foreground">
+						Crea {listed(seedCodes)}. Los que ya existen se omiten.
+					</span>
 				</div>
+			</PageHeader>
 
-				<p className="footnote">
-					Los formularios de grupo sugieren el período actual, pero permiten
-					elegir otro. Las fechas del período no limitan las solicitudes.
-				</p>
+			{notice && (
+				<Notice
+					icon={notice.error ? undefined : CircleCheck}
+					tone={notice.error ? "error" : "success"}
+				>
+					{notice.text}
+				</Notice>
+			)}
+
+			<div className="flex flex-wrap items-start gap-6">
+				<Table
+					className="min-w-[560px]"
+					containerClassName="flex-[1.6_1_520px]"
+				>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Código</TableHead>
+							<TableHead>Inicio</TableHead>
+							<TableHead>Fin</TableHead>
+							<TableHead>Grupos</TableHead>
+							<TableHead>Estado</TableHead>
+							<TableHead>Acciones</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{[...periods].reverse().map((period) => {
+							const [variant, label] =
+								statusBadges[academicPeriodStatus(period.code, currentCode)];
+							return (
+								<TableRow key={period.code}>
+									<TableCell>
+										<strong>{period.code}</strong>
+									</TableCell>
+									<TableCell>{officialDate(period.startsOn)}</TableCell>
+									<TableCell>{officialDate(period.endsOn)}</TableCell>
+									<TableCell>{period.groupCount}</TableCell>
+									<TableCell>
+										<Badge variant={variant}>{label}</Badge>
+									</TableCell>
+									<TableCell>
+										<Button
+											aria-label={`Editar ${period.code}`}
+											disabled={busy}
+											onClick={() => {
+												setForm({
+													code: period.code,
+													startsOn: period.startsOn ?? "",
+													endsOn: period.endsOn ?? "",
+												});
+												setEditing(true);
+												setNotice(null);
+											}}
+											size="sm"
+											variant="outline"
+										>
+											Editar
+										</Button>
+									</TableCell>
+								</TableRow>
+							);
+						})}
+						{periods.length === 0 && (
+							<TableEmpty colSpan={6}>Aún no hay períodos.</TableEmpty>
+						)}
+					</TableBody>
+				</Table>
+
+				<Card
+					aria-labelledby="period-form-title"
+					className="max-w-[400px] flex-[1_1_300px]"
+				>
+					<CardTitle className="text-xl" id="period-form-title">
+						{editing ? `Editar ${form.code}` : "Agregar período"}
+					</CardTitle>
+					<form className="flex flex-col gap-4" onSubmit={save}>
+						{!editing && (
+							<Field>
+								<FieldLabel htmlFor="period-code">Código</FieldLabel>
+								<Input
+									id="period-code"
+									onChange={(event) =>
+										setForm({ ...form, code: event.target.value })
+									}
+									pattern="[0-9]{4}-[12]"
+									placeholder={`${currentYear + 1}-1`}
+									required
+									value={form.code}
+								/>
+								<FieldDescription>Usa AAAA-1 o AAAA-2.</FieldDescription>
+							</Field>
+						)}
+						<Field>
+							<FieldLabel htmlFor="period-starts-on">
+								Inicio (opcional)
+							</FieldLabel>
+							<DatePicker
+								clearable
+								id="period-starts-on"
+								onValueChange={(startsOn) => setForm({ ...form, startsOn })}
+								value={form.startsOn}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor="period-ends-on">Fin (opcional)</FieldLabel>
+							<DatePicker
+								clearable
+								id="period-ends-on"
+								min={form.startsOn || undefined}
+								onValueChange={(endsOn) => setForm({ ...form, endsOn })}
+								value={form.endsOn}
+							/>
+							<FieldDescription>
+								Escribe las dos fechas o deja las dos vacías.
+							</FieldDescription>
+						</Field>
+						<div className="flex flex-wrap gap-3">
+							<Button disabled={busy} size="lg" type="submit">
+								{editing ? "Guardar período" : "Agregar período"}
+							</Button>
+							{editing && (
+								<Button
+									disabled={busy}
+									onClick={stopEditing}
+									size="lg"
+									variant="outline"
+								>
+									Cancelar
+								</Button>
+							)}
+						</div>
+					</form>
+				</Card>
 			</div>
-		</main>
+
+			<Footnote>
+				Los formularios de grupo sugieren el período actual, pero permiten
+				elegir otro. Las fechas del período no limitan las solicitudes.
+			</Footnote>
+		</Page>
 	);
 }
 
