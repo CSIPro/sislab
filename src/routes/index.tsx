@@ -1,109 +1,135 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { type FormEvent, useState } from 'react'
-import { getCurrentSessionFn, signInFn } from '../server/auth-functions.ts'
+import { createFileRoute } from "@tanstack/react-router";
+import { CircleCheck, FileCheck, FlaskConical, UsersRound } from "lucide-react";
+import AccessCard from "../components/AccessCard.tsx";
+import { getCurrentSessionFn } from "../server/auth-functions.ts";
 
-export const Route = createFileRoute('/')({
-  loader: () => getCurrentSessionFn(),
-  component: LandingPage,
-})
+export const Route = createFileRoute("/")({
+	loader: () => getCurrentSessionFn(),
+	component: LandingPage,
+});
+
+const points = [
+	"Consulta el día, la hora y el laboratorio de cada uno de tus grupos.",
+	"Pide reactivos, equipo y manejo de residuos para cada ejercicio.",
+	"El personal prepara todo desde un ticket diario.",
+];
+
+const steps = [
+	{
+		icon: UsersRound,
+		title: "Organiza tus grupos",
+		text: "Cada grupo tiene su materia, su día y hora y su laboratorio. Todo queda a la vista en tu tablero.",
+	},
+	{
+		icon: FlaskConical,
+		title: "Solicita la preparación",
+		text: "Elige el ejercicio y la fecha, ajusta reactivos y equipo, e indica los residuos que se generarán.",
+	},
+	{
+		icon: FileCheck,
+		title: "El laboratorio prepara",
+		text: "El personal prepara desde el ticket diario. Tu solicitud conserva exactamente lo que pediste.",
+	},
+];
+
+const roles = [
+	{
+		title: "Profesores",
+		items: [
+			"Tus próximas solicitudes, con el nombre de cada ejercicio.",
+			"Tus grupos con día, horario y laboratorio.",
+			"El detalle de cada solicitud en un clic.",
+		],
+	},
+	{
+		title: "Personal de laboratorio",
+		items: [
+			"Solicitudes del día y de la semana de todos los profesores.",
+			"Ticket diario en PDF para preparar.",
+			"Decisión sobre las solicitudes de último momento.",
+		],
+	},
+	{
+		title: "Administración",
+		items: [
+			"Todo lo del personal de laboratorio.",
+			"Activación de cuentas y gestión de usuarios.",
+			"Periodos, catálogos y ejercicios.",
+		],
+	},
+];
 
 function LandingPage() {
-  const user = Route.useLoaderData()
-  const [message, setMessage] = useState('')
-  const [busy, setBusy] = useState(false)
+	const user = Route.useLoaderData();
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setBusy(true)
-    setMessage('')
-    const form = new FormData(event.currentTarget)
-    try {
-      const result = await signInFn({
-        data: {
-          email: String(form.get('email') ?? ''),
-          password: String(form.get('password') ?? ''),
-        },
-      })
-      if (!result.ok) {
-        setMessage(result.message)
-        return
-      }
-      window.location.assign('/app/dashboard')
-    } catch {
-      setMessage('No se pudo iniciar sesión. Revisa tu conexión e inténtalo de nuevo.')
-    } finally {
-      setBusy(false)
-    }
-  }
+	return (
+		<main className="landing">
+			<section className="site-wrap landing-hero">
+				<div className="landing-copy">
+					<p className="landing-eyebrow">Sistema de Laboratorios</p>
+					<h1>Prepara tu laboratorio sin papeleo.</h1>
+					<p className="landing-lead">
+						SISLAB reúne en un solo lugar tus grupos, el horario de cada
+						laboratorio y las solicitudes de preparación de reactivos y equipo.
+						Es para profesores y personal de laboratorio de la Universidad de
+						Sonora.
+					</p>
+					<ul className="landing-points">
+						{points.map((point) => (
+							<li key={point}>
+								<CircleCheck aria-hidden="true" size={22} strokeWidth={1.75} />
+								<span>{point}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+				<div className="access-stage" id="acceso">
+					<AccessCard user={user} />
+				</div>
+			</section>
 
-  return (
-    <main>
-      <section className="landing-hero px-5 py-14 sm:px-8 sm:py-20">
-        <div className="page-wrap grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <img className="mb-8 h-16 w-auto" src="/images/logo.svg" alt="SISLAB · Sistema de Laboratorios" />
-            <p className="island-kicker mb-3">Sistema de Laboratorios · CSI PRO</p>
-            <h1 className="mb-5 max-w-2xl text-4xl leading-tight font-bold sm:text-6xl">
-              Organiza tus grupos y sus horarios de laboratorio.
-            </h1>
-            <p className="max-w-2xl text-lg leading-8 text-[var(--muted-foreground)]">
-              SISLAB ayuda al profesorado a registrar los grupos y horarios de laboratorio que ya tiene asignados. Las personas administradoras gestionan el acceso y los catálogos que apoyan ese trabajo.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a className="button-primary" href={user ? '/app/dashboard' : '#acceso'}>{user ? 'Ir a mi espacio' : 'Ingresar'}</a>
-              {!user && <Link className="button-secondary" to="/sign-up">Solicitar acceso</Link>}
-            </div>
-            <p className="mt-8 max-w-2xl text-sm text-[var(--muted-foreground)]">
-              Más adelante, SISLAB incorporará solicitudes de preparación para que el personal de laboratorio prepare reactivos y equipo. Esta función aún no está disponible.
-            </p>
-          </div>
+			<section className="site-wrap landing-section" id="como-funciona">
+				<div className="landing-section-head">
+					<h2>Cómo funciona</h2>
+					<p>De la clase al laboratorio en tres pasos.</p>
+				</div>
+				<div className="landing-grid">
+					{steps.map(({ icon: Icon, title, text }, index) => (
+						<article className="step-card" key={title}>
+							<div className="icon-tile">
+								<Icon aria-hidden="true" size={22} strokeWidth={1.75} />
+							</div>
+							<p className="step-number">Paso {index + 1}</p>
+							<h3>{title}</h3>
+							<p>{text}</p>
+						</article>
+					))}
+				</div>
+			</section>
 
-          <section id="acceso" className="access-card" aria-labelledby="access-title">
-            {user ? (
-              <>
-                <p className="island-kicker">Sesión activa</p>
-                <h2 id="access-title" className="mt-2 text-2xl font-bold">Hola, {user.name}</h2>
-                <p className="mt-2 text-[var(--muted-foreground)]">Ya iniciaste sesión en SISLAB.</p>
-                <a className="button-primary mt-6 w-full" href="/app/dashboard">Ir a mi espacio</a>
-              </>
-            ) : (
-              <>
-                <p className="island-kicker">Tu espacio de trabajo</p>
-                <h2 id="access-title" className="mt-2 text-2xl font-bold">Ingresar a SISLAB</h2>
-                <form className="mt-6 grid gap-4" onSubmit={submit}>
-                  <label className="field-label">Correo electrónico
-                    <input className="field-control" name="email" type="email" autoComplete="username" required />
-                  </label>
-                  <label className="field-label">Contraseña
-                    <input className="field-control" name="password" type="password" autoComplete="current-password" required />
-                  </label>
-                  {message && <p className="m-0 text-sm text-destructive" role="alert">{message}</p>}
-                  <button className="button-primary w-full" type="submit" disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
-                </form>
-                <p className="mt-5 text-sm text-[var(--muted-foreground)]">¿Aún no tienes cuenta? <Link className="font-bold text-primary-text underline" to="/sign-up">Solicitar acceso</Link></p>
-              </>
-            )}
-          </section>
-        </div>
-      </section>
-
-      <section id="que-es-sislab" className="page-wrap grid gap-5 px-4 py-14 md:grid-cols-3">
-        <article className="content-card"><h2>Profesorado</h2><p>Registra tus grupos y consulta los horarios de laboratorio que te asignaron.</p></article>
-        <article className="content-card"><h2>Administración</h2><p>Gestiona cuentas, periodos académicos y catálogos de laboratorios, carreras y materias.</p></article>
-        <article className="content-card"><h2>Personal de laboratorio</h2><p>El trabajo con solicitudes de preparación se incorporará en una etapa futura.</p></article>
-      </section>
-
-      <section className="page-wrap px-4 pb-14">
-        <div className="content-card">
-          <p className="island-kicker">Desarrollado por CSI PRO</p>
-          <h2 className="mt-2 text-2xl font-bold">Un proyecto para acompañar el trabajo de los laboratorios docentes.</h2>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-            <li><strong>Kevin Ochoa Guerrero</strong><span className="block text-sm text-[var(--muted-foreground)]">Diseñador UX/UI y Desarrollador Front-end</span></li>
-            <li><strong>Saúl Eduardo Fimbres Ruíz</strong><span className="block text-sm text-[var(--muted-foreground)]">Desarrollador Full Stack</span></li>
-            <li><strong>Saúl Alberto Ramos Laborín</strong><span className="block text-sm text-[var(--muted-foreground)]">Desarrollador Full Stack</span></li>
-          </ul>
-        </div>
-      </section>
-    </main>
-  )
+			<div className="landing-band" id="para-quien">
+				<section className="site-wrap landing-section">
+					<div className="landing-section-head">
+						<h2>Un tablero para cada rol</h2>
+						<p>
+							Si tu cuenta tiene más de un rol, ves las vistas juntas en el
+							mismo tablero.
+						</p>
+					</div>
+					<div className="landing-grid">
+						{roles.map(({ title, items }) => (
+							<article className="role-card" key={title}>
+								<h3>{title}</h3>
+								<ul>
+									{items.map((item) => (
+										<li key={item}>{item}</li>
+									))}
+								</ul>
+							</article>
+						))}
+					</div>
+				</section>
+			</div>
+		</main>
+	);
 }

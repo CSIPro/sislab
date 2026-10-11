@@ -224,256 +224,257 @@ function LabExercisesPage() {
 	}
 
 	return (
-		<main className="dashboard-page">
-			<header className="dashboard-intro">
-				<div>
-					<h1>Ejercicios de laboratorio</h1>
-					<p>
+		<main className="app-page">
+			<div className="app-page-inner is-compact">
+				<header className="page-head-copy">
+					<h1 className="page-title">Ejercicios de laboratorio</h1>
+					<p className="page-sub">
 						Define los materiales que el profesorado puede incluir en nuevas
 						solicitudes.
 					</p>
-				</div>
-			</header>
+				</header>
 
-			<form className="dashboard-panel grid gap-6" onSubmit={save}>
-				<div className="dashboard-panel-heading">
-					<div>
-						<h2>{draft.id ? "Editar ejercicio" : "Nuevo ejercicio"}</h2>
-						<p>El número funciona como etiqueta y puede repetirse.</p>
-					</div>
-					{draft.id && (
-						<button
-							className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold"
-							disabled={busy}
-							onClick={cancelEdit}
-							type="button"
-						>
-							<X aria-hidden="true" size={16} /> Cancelar edición
-						</button>
-					)}
-				</div>
-				<div className="grid gap-4 sm:grid-cols-2">
-					<label className="grid gap-1 text-sm font-semibold">
-						Número o etiqueta
-						<input
-							autoComplete="off"
-							maxLength={60}
-							name="number"
-							onChange={(event) =>
-								setDraft((current) => ({
-									...current,
-									number: event.target.value,
-								}))
-							}
-							placeholder="Ej. 12 o Q-3"
-							required
-							value={draft.number}
-						/>
-					</label>
-					<label className="grid gap-1 text-sm font-semibold">
-						Nombre
-						<input
-							autoComplete="off"
-							maxLength={160}
-							name="name"
-							onChange={(event) =>
-								setDraft((current) => ({
-									...current,
-									name: event.target.value,
-								}))
-							}
-							placeholder="Ej. Separación de mezclas"
-							required
-							value={draft.name}
-						/>
-					</label>
-				</div>
-
-				<MaterialSection
-					title="Reactivos"
-					description="Cantidad por equipo o por grupo."
-					onAdd={() => addQuantity("reagents")}
-				>
-					{draft.materials.reagents.map((item, index) => (
-						<QuantityRow
-							key={item.key}
-							item={item}
-							index={index}
-							kind="reagents"
-							onChange={updateQuantity}
-							onRemove={() => removeItem("reagents", index)}
-						/>
-					))}
-				</MaterialSection>
-				<MaterialSection
-					title="Equipo"
-					description="Cantidad por equipo o por grupo."
-					onAdd={() => addQuantity("equipment")}
-				>
-					{draft.materials.equipment.map((item, index) => (
-						<QuantityRow
-							key={item.key}
-							item={item}
-							index={index}
-							kind="equipment"
-							onChange={updateQuantity}
-							onRemove={() => removeItem("equipment", index)}
-						/>
-					))}
-				</MaterialSection>
-				<MaterialSection
-					title="Residuos"
-					description="Indica el recipiente y el tratamiento esperado."
-					onAdd={addWaste}
-				>
-					{draft.materials.waste.map((item, index) => (
-						<div
-							className="grid gap-3 rounded-lg border border-[var(--border)] p-3 sm:grid-cols-[1fr_1fr_1.4fr_auto]"
-							key={item.key}
-						>
-							<label className="grid gap-1 text-xs font-semibold">
-								Residuo
-								<input
-									aria-label={`Residuo ${index + 1}`}
-									onChange={(event) =>
-										updateWaste(index, "name", event.target.value)
-									}
-									placeholder="Nombre"
-									required
-									value={item.name}
-								/>
-							</label>
-							<label className="grid gap-1 text-xs font-semibold">
-								Recipiente
-								<input
-									aria-label={`Recipiente de residuo ${index + 1}`}
-									onChange={(event) =>
-										updateWaste(index, "container", event.target.value)
-									}
-									placeholder="Ej. Contenedor para orgánicos"
-									required
-									value={item.container}
-								/>
-							</label>
-							<label className="grid gap-1 text-xs font-semibold">
-								Tratamiento
-								<input
-									aria-label={`Tratamiento de residuo ${index + 1}`}
-									onChange={(event) =>
-										updateWaste(index, "treatment", event.target.value)
-									}
-									placeholder="Instrucciones de manejo"
-									required
-									value={item.treatment}
-								/>
-							</label>
-							<RemoveButton
-								label={`Quitar residuo ${index + 1}`}
-								onClick={() => removeItem("waste", index)}
-							/>
+				<form className="panel" onSubmit={save}>
+					<div className="panel-head">
+						<div>
+							<h2 className="panel-title">
+								{draft.id ? "Editar ejercicio" : "Nuevo ejercicio"}
+							</h2>
+							<p className="request-step-help">
+								El número funciona como etiqueta y puede repetirse.
+							</p>
 						</div>
-					))}
-				</MaterialSection>
-
-				<div className="flex flex-wrap items-center gap-3">
-					<button
-						className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-5 py-2.5 font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
-						disabled={busy}
-						type="submit"
-					>
-						<Save aria-hidden="true" size={17} />
-						{draft.id ? "Guardar cambios" : "Crear ejercicio"}
-					</button>
-					{draft.id && (
-						<button
-							className="rounded-lg border border-[var(--border)] px-5 py-2.5 font-semibold"
-							disabled={busy}
-							onClick={cancelEdit}
-							type="button"
-						>
-							Cancelar
-						</button>
-					)}
-				</div>
-				{message && <output className="m-0 text-sm">{message}</output>}
-			</form>
-
-			<section
-				className="dashboard-panel"
-				aria-labelledby="exercise-list-title"
-			>
-				<div className="dashboard-panel-heading">
-					<div>
-						<h2 id="exercise-list-title">Ejercicios registrados</h2>
-						<p>
-							{exercises.filter(({ active }) => active).length} disponibles ·{" "}
-							{exercises.length} en total
-						</p>
-					</div>
-				</div>
-				{exercises.length === 0 ? (
-					<div className="dashboard-empty-state">
-						<p>Aún no hay ejercicios registrados.</p>
-						<p>
-							Agrega el primero para definir los materiales de las solicitudes.
-						</p>
-					</div>
-				) : (
-					<ul className="mt-3 divide-y divide-[var(--border)] p-0">
-						{exercises.map((exercise) => (
-							<li
-								className="flex flex-wrap items-center justify-between gap-4 py-4"
-								key={exercise.id}
+						{draft.id && (
+							<button
+								className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold"
+								disabled={busy}
+								onClick={cancelEdit}
+								type="button"
 							>
-								<div className="grid gap-1">
-									<div className="flex flex-wrap items-center gap-2">
-										<span className="rounded-md bg-[var(--muted)] px-2 py-1 font-mono text-sm font-semibold">
-											{exercise.number}
-										</span>
-										<strong>{exercise.name}</strong>
+								<X aria-hidden="true" size={16} /> Cancelar edición
+							</button>
+						)}
+					</div>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<label className="grid gap-1 text-sm font-semibold">
+							Número o etiqueta
+							<input
+								autoComplete="off"
+								maxLength={60}
+								name="number"
+								onChange={(event) =>
+									setDraft((current) => ({
+										...current,
+										number: event.target.value,
+									}))
+								}
+								placeholder="Ej. 12 o Q-3"
+								required
+								value={draft.number}
+							/>
+						</label>
+						<label className="grid gap-1 text-sm font-semibold">
+							Nombre
+							<input
+								autoComplete="off"
+								maxLength={160}
+								name="name"
+								onChange={(event) =>
+									setDraft((current) => ({
+										...current,
+										name: event.target.value,
+									}))
+								}
+								placeholder="Ej. Separación de mezclas"
+								required
+								value={draft.name}
+							/>
+						</label>
+					</div>
+
+					<MaterialSection
+						title="Reactivos"
+						description="Cantidad por equipo o por grupo."
+						onAdd={() => addQuantity("reagents")}
+					>
+						{draft.materials.reagents.map((item, index) => (
+							<QuantityRow
+								key={item.key}
+								item={item}
+								index={index}
+								kind="reagents"
+								onChange={updateQuantity}
+								onRemove={() => removeItem("reagents", index)}
+							/>
+						))}
+					</MaterialSection>
+					<MaterialSection
+						title="Equipo"
+						description="Cantidad por equipo o por grupo."
+						onAdd={() => addQuantity("equipment")}
+					>
+						{draft.materials.equipment.map((item, index) => (
+							<QuantityRow
+								key={item.key}
+								item={item}
+								index={index}
+								kind="equipment"
+								onChange={updateQuantity}
+								onRemove={() => removeItem("equipment", index)}
+							/>
+						))}
+					</MaterialSection>
+					<MaterialSection
+						title="Residuos"
+						description="Indica el recipiente y el tratamiento esperado."
+						onAdd={addWaste}
+					>
+						{draft.materials.waste.map((item, index) => (
+							<div
+								className="grid gap-3 rounded-lg border border-[var(--border)] p-3 sm:grid-cols-[1fr_1fr_1.4fr_auto]"
+								key={item.key}
+							>
+								<label className="grid gap-1 text-xs font-semibold">
+									Residuo
+									<input
+										aria-label={`Residuo ${index + 1}`}
+										onChange={(event) =>
+											updateWaste(index, "name", event.target.value)
+										}
+										placeholder="Nombre"
+										required
+										value={item.name}
+									/>
+								</label>
+								<label className="grid gap-1 text-xs font-semibold">
+									Recipiente
+									<input
+										aria-label={`Recipiente de residuo ${index + 1}`}
+										onChange={(event) =>
+											updateWaste(index, "container", event.target.value)
+										}
+										placeholder="Ej. Contenedor para orgánicos"
+										required
+										value={item.container}
+									/>
+								</label>
+								<label className="grid gap-1 text-xs font-semibold">
+									Tratamiento
+									<input
+										aria-label={`Tratamiento de residuo ${index + 1}`}
+										onChange={(event) =>
+											updateWaste(index, "treatment", event.target.value)
+										}
+										placeholder="Instrucciones de manejo"
+										required
+										value={item.treatment}
+									/>
+								</label>
+								<RemoveButton
+									label={`Quitar residuo ${index + 1}`}
+									onClick={() => removeItem("waste", index)}
+								/>
+							</div>
+						))}
+					</MaterialSection>
+
+					<div className="flex flex-wrap items-center gap-3">
+						<button
+							className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-5 py-2.5 font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
+							disabled={busy}
+							type="submit"
+						>
+							<Save aria-hidden="true" size={17} />
+							{draft.id ? "Guardar cambios" : "Crear ejercicio"}
+						</button>
+						{draft.id && (
+							<button
+								className="rounded-lg border border-[var(--border)] px-5 py-2.5 font-semibold"
+								disabled={busy}
+								onClick={cancelEdit}
+								type="button"
+							>
+								Cancelar
+							</button>
+						)}
+					</div>
+					{message && <output className="m-0 text-sm">{message}</output>}
+				</form>
+
+				<section className="panel" aria-labelledby="exercise-list-title">
+					<div className="panel-head">
+						<div>
+							<h2 className="panel-title" id="exercise-list-title">
+								Ejercicios registrados
+							</h2>
+							<p className="request-step-help">
+								{exercises.filter(({ active }) => active).length} disponibles ·{" "}
+								{exercises.length} en total
+							</p>
+						</div>
+					</div>
+					{exercises.length === 0 ? (
+						<p className="empty-state">
+							Aún no hay ejercicios registrados. Agrega el primero para definir
+							los materiales de las solicitudes.
+						</p>
+					) : (
+						<ul className="mt-3 divide-y divide-[var(--border)] p-0">
+							{exercises.map((exercise) => (
+								<li
+									className="flex flex-wrap items-center justify-between gap-4 py-4"
+									key={exercise.id}
+								>
+									<div className="grid gap-1">
+										<div className="flex flex-wrap items-center gap-2">
+											<span className="rounded-md bg-[var(--muted)] px-2 py-1 font-mono text-sm font-semibold">
+												{exercise.number}
+											</span>
+											<strong>{exercise.name}</strong>
+											{!exercise.active && (
+												<span className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--muted-foreground)]">
+													Retirado
+												</span>
+											)}
+										</div>
+										<p className="m-0 text-sm text-[var(--muted-foreground)]">
+											{exercise.materials.reagents.length} reactivos ·{" "}
+											{exercise.materials.equipment.length} equipos ·{" "}
+											{exercise.materials.waste.length} residuos
+										</p>
+									</div>
+									<div className="flex items-center gap-2">
+										<button
+											className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold"
+											disabled={busy}
+											onClick={() => edit(exercise)}
+											type="button"
+										>
+											Editar
+										</button>
+										{exercise.active && (
+											<button
+												className="inline-flex items-center gap-1 rounded-lg border border-[var(--destructive)] px-3 py-2 text-sm font-semibold text-[var(--foreground)]"
+												disabled={busy}
+												onClick={() => retire(exercise)}
+												type="button"
+											>
+												<Trash2 aria-hidden="true" size={15} />
+												Retirar
+											</button>
+										)}
 										{!exercise.active && (
-											<span className="rounded-md border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--muted-foreground)]">
-												Retirado
+											<span className="sr-only">
+												Este ejercicio está retirado.
 											</span>
 										)}
 									</div>
-									<p className="m-0 text-sm text-[var(--muted-foreground)]">
-										{exercise.materials.reagents.length} reactivos ·{" "}
-										{exercise.materials.equipment.length} equipos ·{" "}
-										{exercise.materials.waste.length} residuos
-									</p>
-								</div>
-								<div className="flex items-center gap-2">
-									<button
-										className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-semibold"
-										disabled={busy}
-										onClick={() => edit(exercise)}
-										type="button"
-									>
-										Editar
-									</button>
-									{exercise.active && (
-										<button
-											className="inline-flex items-center gap-1 rounded-lg border border-[var(--destructive)] px-3 py-2 text-sm font-semibold text-[var(--foreground)]"
-											disabled={busy}
-											onClick={() => retire(exercise)}
-											type="button"
-										>
-											<Trash2 aria-hidden="true" size={15} />
-											Retirar
-										</button>
-									)}
-									{!exercise.active && (
-										<span className="sr-only">
-											Este ejercicio está retirado.
-										</span>
-									)}
-								</div>
-							</li>
-						))}
-					</ul>
-				)}
-			</section>
+								</li>
+							))}
+						</ul>
+					)}
+				</section>
+			</div>
 		</main>
 	);
 }

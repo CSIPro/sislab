@@ -1,19 +1,25 @@
 import {
 	createFileRoute,
 	Link,
+	type LinkProps,
 	Outlet,
 	redirect,
 	useLocation,
 } from "@tanstack/react-router";
 import {
-	ArrowUpRight,
 	CalendarDays,
+	CirclePlus,
 	ClipboardList,
+	FileText,
 	FlaskConical,
+	House,
 	LayoutDashboard,
 	LogOut,
+	type LucideIcon,
 	Menu,
 	Settings2,
+	Tags,
+	UserCheck,
 	UsersRound,
 	X,
 } from "lucide-react";
@@ -31,8 +37,11 @@ export const Route = createFileRoute("/app")({
 	component: AppLayout,
 });
 
+type NavItem = { to: LinkProps["to"]; label: string; icon: LucideIcon };
+type NavGroup = { caption: string; items: NavItem[] };
+
 function AppLayout() {
-	const { user, periodCode } = Route.useRouteContext();
+	const { user } = Route.useRouteContext();
 	const { pathname } = useLocation();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
@@ -40,7 +49,6 @@ function AppLayout() {
 	const sidebarRef = useRef<HTMLElement>(null);
 	const initials =
 		`${user.name.trim().charAt(0)}${user.surname.trim().charAt(0)}`.toLocaleUpperCase();
-	const pageTitle = routeTitles[pathname] ?? "Tablero";
 
 	useEffect(() => {
 		const media = window.matchMedia("(max-width: 760px)");
@@ -83,6 +91,46 @@ function AppLayout() {
 		.filter(Boolean)
 		.join(" · ");
 
+	const groups: NavGroup[] = [];
+	if (professor) {
+		groups.push(
+			{
+				caption: "Grupos",
+				items: [
+					{ to: "/app/groups/manage", label: "Mis grupos", icon: UsersRound },
+				],
+			},
+			{
+				caption: "Solicitudes",
+				items: [
+					{
+						to: "/app/requests/new",
+						label: "Nueva solicitud",
+						icon: CirclePlus,
+					},
+					{
+						to: "/app/requests/mine",
+						label: "Mis solicitudes",
+						icon: FileText,
+					},
+				],
+			},
+		);
+	}
+	if (staff) {
+		groups.push({
+			caption: admin ? "Administración" : "Laboratorio",
+			items: [
+				{
+					to: "/app/requests/all",
+					label: "Todas las solicitudes",
+					icon: ClipboardList,
+				},
+				...(admin ? adminItems : []),
+			],
+		});
+	}
+
 	return (
 		<div className="app-frame">
 			<aside
@@ -92,7 +140,12 @@ function AppLayout() {
 				aria-hidden={isMobile && !menuOpen}
 				inert={isMobile && !menuOpen}
 			>
-				<Link className="app-brand" to="/app/dashboard" onClick={closeMenu}>
+				<Link
+					aria-label="SISLAB, ir a la página de inicio"
+					className="app-brand"
+					to="/"
+					onClick={closeMenu}
+				>
 					<img src="/images/logo.svg" alt="" />
 					<span>
 						<strong>SISLAB</strong>
@@ -107,165 +160,26 @@ function AppLayout() {
 						to="/app/dashboard"
 						onClick={closeMenu}
 					>
-						<LayoutDashboard aria-hidden="true" size={18} />
+						<LayoutDashboard aria-hidden="true" size={20} strokeWidth={1.75} />
 						Tablero
 					</Link>
-
-					{professor && (
-						<div className="sidebar-group">
-							<p className="sidebar-caption">Grupos</p>
-							<Link
-								aria-current={
-									pathname === "/app/groups/manage" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/groups/manage"
-								onClick={closeMenu}
-							>
-								<UsersRound aria-hidden="true" size={17} />
-								Mis grupos
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/groups/new" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/groups/new"
-								onClick={closeMenu}
-							>
-								<FlaskConical aria-hidden="true" size={17} />
-								Registrar grupo
-							</Link>
-						</div>
-					)}
-
-					{(professor || staff) && (
-						<div className="sidebar-group">
-							<p className="sidebar-caption">Solicitudes</p>
-							{professor && (
+					{groups.map((group) => (
+						<div key={group.caption} className="sidebar-nav">
+							<p className="sidebar-caption">{group.caption}</p>
+							{group.items.map(({ to, label, icon: Icon }) => (
 								<Link
-									aria-current={
-										pathname === "/app/requests/mine" ? "page" : undefined
-									}
-									className="sidebar-link sidebar-link-sub"
-									to="/app/requests/mine"
+									aria-current={pathname === to ? "page" : undefined}
+									className="sidebar-link"
+									key={to}
+									to={to}
 									onClick={closeMenu}
 								>
-									<ClipboardList aria-hidden="true" size={17} />
-									Mis solicitudes
+									<Icon aria-hidden="true" size={20} strokeWidth={1.75} />
+									{label}
 								</Link>
-							)}
-							{professor && (
-								<Link
-									aria-current={
-										pathname === "/app/requests/new" ? "page" : undefined
-									}
-									className="sidebar-link sidebar-link-sub"
-									to="/app/requests/new"
-									onClick={closeMenu}
-								>
-									<FlaskConical aria-hidden="true" size={17} />
-									Nueva solicitud
-								</Link>
-							)}
-							{staff && (
-								<Link
-									aria-current={
-										pathname === "/app/requests/all" ? "page" : undefined
-									}
-									className="sidebar-link sidebar-link-sub"
-									to="/app/requests/all"
-									onClick={closeMenu}
-								>
-									<ClipboardList aria-hidden="true" size={17} />
-									Todas las solicitudes
-								</Link>
-							)}
+							))}
 						</div>
-					)}
-
-					{admin && (
-						<div className="sidebar-group">
-							<p className="sidebar-caption">Administración</p>
-							<Link
-								aria-current={
-									pathname === "/app/admin/accounts" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/accounts"
-								onClick={closeMenu}
-							>
-								<UsersRound aria-hidden="true" size={17} />
-								Accesos pendientes
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/users" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/users"
-								onClick={closeMenu}
-							>
-								<UsersRound aria-hidden="true" size={17} />
-								Usuarios
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/groups" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/groups"
-								onClick={closeMenu}
-							>
-								<FlaskConical aria-hidden="true" size={17} />
-								Grupos
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/exercises" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/exercises"
-								onClick={closeMenu}
-							>
-								<FlaskConical aria-hidden="true" size={17} />
-								Ejercicios de laboratorio
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/periods" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/periods"
-								onClick={closeMenu}
-							>
-								<CalendarDays aria-hidden="true" size={17} />
-								Periodos académicos
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/catalogs" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/catalogs"
-								onClick={closeMenu}
-							>
-								<Settings2 aria-hidden="true" size={17} />
-								Catálogos
-							</Link>
-							<Link
-								aria-current={
-									pathname === "/app/admin/settings" ? "page" : undefined
-								}
-								className="sidebar-link sidebar-link-sub"
-								to="/app/admin/settings"
-								onClick={closeMenu}
-							>
-								<Settings2 aria-hidden="true" size={17} />
-								Configuración
-							</Link>
-						</div>
-					)}
+					))}
 				</nav>
 
 				<div className="sidebar-bottom">
@@ -280,11 +194,16 @@ function AppLayout() {
 							<small>{roleLabel}</small>
 						</span>
 					</div>
-					<Link className="sidebar-footer-link" to="/" onClick={closeMenu}>
-						Ir al sitio público <ArrowUpRight aria-hidden="true" size={15} />
+					<Link
+						className="sidebar-link sidebar-link-sm"
+						to="/"
+						onClick={closeMenu}
+					>
+						<House aria-hidden="true" size={20} strokeWidth={1.75} />
+						Página de inicio
 					</Link>
-					<button className="sidebar-signout" type="button" onClick={signOut}>
-						<LogOut aria-hidden="true" size={17} />
+					<button className="button-secondary" type="button" onClick={signOut}>
+						<LogOut aria-hidden="true" size={18} strokeWidth={1.75} />
 						Cerrar sesión
 					</button>
 				</div>
@@ -300,7 +219,7 @@ function AppLayout() {
 			)}
 
 			<div className="app-content">
-				<header className="app-header">
+				<header className="app-topbar">
 					<button
 						ref={menuButtonRef}
 						className="app-menu-button"
@@ -316,21 +235,7 @@ function AppLayout() {
 							<Menu aria-hidden="true" size={20} />
 						)}
 					</button>
-					<nav aria-label="Ruta de navegación" className="app-breadcrumbs">
-						<Link to="/app/dashboard">Inicio</Link>
-						<span aria-hidden="true">/</span>
-						<strong>{pageTitle}</strong>
-					</nav>
-					<div className="app-header-actions">
-						{periodCode && <span className="app-period">{periodCode}</span>}
-						<span
-							aria-label={`${user.name} ${user.surname}`}
-							className="header-avatar"
-							role="img"
-						>
-							{initials}
-						</span>
-					</div>
+					<strong>SISLAB</strong>
 				</header>
 				<Outlet />
 			</div>
@@ -338,18 +243,12 @@ function AppLayout() {
 	);
 }
 
-const routeTitles: Record<string, string> = {
-	"/app/dashboard": "Tablero",
-	"/app/groups/new": "Registrar grupo",
-	"/app/groups/manage": "Mis grupos",
-	"/app/requests/mine": "Mis solicitudes",
-	"/app/requests/new": "Nueva solicitud",
-	"/app/requests/all": "Todas las solicitudes",
-	"/app/admin/accounts": "Solicitudes de acceso",
-	"/app/admin/users": "Usuarios",
-	"/app/admin/groups": "Grupos",
-	"/app/admin/exercises": "Ejercicios de laboratorio",
-	"/app/admin/periods": "Periodos académicos",
-	"/app/admin/catalogs": "Catálogos",
-	"/app/admin/settings": "Configuración",
-};
+const adminItems: NavItem[] = [
+	{ to: "/app/admin/accounts", label: "Cuentas", icon: UserCheck },
+	{ to: "/app/admin/users", label: "Usuarios", icon: UsersRound },
+	{ to: "/app/admin/groups", label: "Grupos", icon: UsersRound },
+	{ to: "/app/admin/exercises", label: "Ejercicios", icon: FlaskConical },
+	{ to: "/app/admin/periods", label: "Periodos", icon: CalendarDays },
+	{ to: "/app/admin/catalogs", label: "Catálogos", icon: Tags },
+	{ to: "/app/admin/settings", label: "Configuración", icon: Settings2 },
+];

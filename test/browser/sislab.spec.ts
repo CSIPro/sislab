@@ -80,21 +80,22 @@ test.afterAll(async () => {
 
 test('guest landing, access request, and protected-route redirect work in Spanish', async ({ page }) => {
 	await page.goto('/')
-	await expect(page.getByRole('heading', { name: /Organiza tus grupos/ })).toBeVisible()
-	await expect(page.getByText('Kevin Ochoa Guerrero')).toBeVisible()
-	await expect(page.getByText(/solicitudes de preparación.*etapa futura/i)).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Prepara tu laboratorio sin papeleo.' })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Cómo funciona' })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Un tablero para cada rol' })).toBeVisible()
+	await expect(page.getByRole('contentinfo')).toContainText('CSI PRO')
 
 	await page.goto('/app/dashboard')
 	await expect(page).toHaveURL(/\/sign-in$/)
-	await expect(page.getByRole('heading', { name: 'Ingresar a SISLAB' })).toBeVisible()
+	await expect(page.getByRole('tab', { name: 'Ingresar' })).toHaveAttribute('aria-selected', 'true')
 	await expect(page.getByText(professor.email)).toHaveCount(0)
-	await page.getByRole('link', { name: 'Solicitar acceso' }).click()
-	await expect(page).toHaveURL(/\/sign-up$/)
+	await page.waitForLoadState('networkidle')
+	await page.getByRole('tab', { name: 'Crear cuenta' }).click()
 	pendingEmail = `pending-${suffix}@browser.test`
 	pendingPassword = `Pending-${randomUUID()}-Access`
 	await page.getByLabel('Nombre').fill('Browser')
 	await page.getByLabel('Apellidos').fill('Pending')
-	await page.getByLabel('Correo electrónico').fill(pendingEmail)
+	await page.getByLabel('Correo institucional').fill(pendingEmail)
 	await page.getByLabel('Contraseña').fill(pendingPassword)
 	await page.getByRole('button', { name: 'Solicitar acceso' }).click()
 	await expect(page.getByRole('status')).toContainText('Una persona administradora debe verificar')
@@ -102,11 +103,13 @@ test('guest landing, access request, and protected-route redirect work in Spanis
 
 test('professor signs in, sees only permitted destinations, opens the mobile menu, and registers a group', async ({ page }) => {
 	await signIn(page, professor.email)
-	await expect(page.getByRole('heading', { name: `Buen día, ${professor.name}` })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Tablero' })).toBeVisible()
+	await expect(page.getByText(`Hola, ${professor.name}.`)).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Mis próximas solicitudes' })).toBeVisible()
 	await expect(page.getByRole('heading', { name: 'Mis grupos' })).toBeVisible()
-	await expect(page.getByText('Solicitudes próximas', { exact: true })).toHaveCount(0)
-	await expect(page.getByTestId('dashboard-stat-groups')).toContainText('0')
-	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Registrar grupo' })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Solicitudes próximas de todos los profesores' })).toHaveCount(0)
+	await expect(page.getByText('Aún no tienes grupos activos.')).toBeVisible()
+	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Nueva solicitud' })).toBeVisible()
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Tablero' })).toHaveAttribute('aria-current', 'page')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Catálogos' })).toHaveCount(0)
 	for (const [legacy, canonical] of [
@@ -123,11 +126,12 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByText('Sesión activa')).toBeVisible()
 	await expect(page.getByRole('link', { name: 'Ir a mi espacio' }).first()).toBeVisible()
 	await page.goto('/sign-up')
-	await expect(page.getByRole('heading', { name: 'Ya tienes una sesión activa' })).toBeVisible()
-	await expect(page.getByRole('textbox', { name: 'Correo electrónico' })).toHaveCount(0)
+	await expect(page.getByText('Sesión activa')).toBeVisible()
+	await expect(page.getByRole('textbox', { name: 'Correo institucional' })).toHaveCount(0)
 
 	await page.goto('/app/dashboard')
 	await page.setViewportSize({ width: 390, height: 844 })
+	await page.waitForLoadState('networkidle')
 	const menu = page.locator('.app-menu-button')
 	await menu.click()
 	await expect(menu).toHaveAttribute('aria-expanded', 'true')
@@ -137,6 +141,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(menu).toBeFocused()
 
 	await page.goto('/app/groups/new')
+	await page.waitForLoadState('networkidle')
 	await page.getByLabel('Periodo académico').selectOption(periodCode)
 	await page.getByLabel('Laboratorio').selectOption({ label: labName })
 	await page.getByLabel('Carrera').selectOption({ label: careerName })
@@ -149,25 +154,38 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
 	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el periodo ${periodCode}`))).toBeVisible()
 	await page.goto('/app/dashboard')
-	await expect(page.getByTestId('dashboard-stat-groups')).toContainText('1')
-	await expect(page.getByTestId('dashboard-stat-students')).toContainText('20')
 	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
+	await expect(page.getByText('Martes, 10:00–11:00')).toBeVisible()
+
+	await page.goto('/app/groups/manage')
+	await page.waitForLoadState('networkidle')
+	await expect(page.getByRole('heading', { name: 'Tu semana en el laboratorio' })).toBeVisible()
+	await expect(page.getByRole('button', { name: 'Activos · 1' })).toHaveAttribute('aria-pressed', 'true')
+	const groupCard = page.locator('article').filter({ hasText: subjectName })
+	await expect(groupCard).toContainText('Grupo 01')
+	await groupCard.getByRole('button', { name: 'Editar' }).click()
+	await expect(groupCard.getByLabel('Estudiantes')).toHaveValue('20')
+	await groupCard.getByRole('link', { name: 'Solicitar preparación' }).click()
+	await expect(page).toHaveURL(/\/app\/requests\/new\?group=/)
+	await expect(page.getByRole('radio', { name: new RegExp(`${subjectName} · Grupo 01`) })).toBeChecked()
+	await expect(page.getByRole('group', { name: 'Fechas disponibles' }).getByRole('button')).toHaveCount(4)
 })
 
 test('staff and mixed-role navigation follows the account roles', async ({ page }) => {
 	await signIn(page, staff.email)
-	await expect(page.getByRole('heading', { name: 'Preparaciones para laboratorio' })).toBeVisible()
-	await expect(page.locator('[data-testid="dashboard-stat-groups"]')).toHaveCount(0)
+	await expect(page.getByRole('heading', { name: 'Solicitudes próximas de todos los profesores' })).toBeVisible()
+	await expect(page.getByRole('heading', { name: 'Mis grupos' })).toHaveCount(0)
 	const nav = page.getByRole('navigation', { name: 'Navegación principal' })
 	await expect(nav.getByRole('link', { name: 'Tablero' })).toBeVisible()
-	await expect(nav.getByRole('link', { name: 'Registrar grupo' })).toHaveCount(0)
+	await expect(nav.getByRole('link', { name: 'Todas las solicitudes' })).toBeVisible()
+	await expect(nav.getByRole('link', { name: 'Mis grupos' })).toHaveCount(0)
 	await expect(nav.getByRole('link', { name: 'Usuarios' })).toHaveCount(0)
 
 	await page.locator('#app-sidebar').getByRole('button', { name: 'Cerrar sesión' }).click()
 	await page.waitForURL('**/')
 	await signIn(page, mixed.email)
 	const mixedNav = page.getByRole('navigation', { name: 'Navegación principal' })
-	await expect(mixedNav.getByRole('link', { name: 'Registrar grupo' })).toBeVisible()
+	await expect(mixedNav.getByRole('link', { name: 'Mis grupos' })).toBeVisible()
 	await expect(mixedNav.getByRole('link', { name: 'Usuarios' })).toBeVisible()
 })
 
@@ -183,7 +201,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 		await page.goto(legacy)
 		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
 	}
-	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Accesos pendientes' }).click()
+	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Cuentas' }).click()
 	await page.waitForLoadState('networkidle')
 	const request = page.locator('li').filter({ hasText: pendingEmail })
 	await expect(request).toBeVisible()
@@ -192,7 +210,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await page.getByRole('button', { name: 'Cerrar sesión' }).click()
 	await page.waitForURL('**/')
 	await signIn(page, pendingEmail, pendingPassword)
-	await expect(page.getByRole('heading', { name: 'Buen día, Browser' })).toBeVisible()
+	await expect(page.getByText('Hola, Browser.')).toBeVisible()
 })
 
 test('admin edits a professor group and manages periods and catalogs', async ({ page }) => {
@@ -206,7 +224,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(page.getByRole('status')).toContainText('Se actualizó el grupo 1 de Browser.')
 	await expect(group.getByLabel('Estudiantes')).toHaveValue('21')
 
-	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Periodos académicos' }).click()
+	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Periodos', exact: true }).click()
 	await page.waitForLoadState('networkidle')
 	await page.getByLabel('Clave del periodo').fill(createdPeriodCode)
 	await page.getByRole('button', { name: 'Guardar periodo' }).click()
@@ -224,8 +242,9 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 async function signIn(page: import('@playwright/test').Page, email: string, userPassword = password) {
 	await page.goto('/sign-in')
 	await page.waitForLoadState('networkidle')
-	await page.getByLabel('Correo electrónico').fill(email)
+	await page.getByLabel('Correo institucional').fill(email)
 	await page.getByLabel('Contraseña').fill(userPassword)
 	await page.getByRole('button', { name: 'Ingresar' }).click()
 	await expect(page).toHaveURL(/\/app\/dashboard$/)
+	await page.waitForLoadState('networkidle')
 }

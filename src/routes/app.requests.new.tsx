@@ -4,9 +4,19 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
+import { CircleCheck, Clock, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import type { QuantityItem, WasteItem } from "../db/schema.ts";
+import {
+	formatSessionDate,
+	groupLabel,
+	sislabNowTime,
+	sislabToday,
+	timeRange,
+	upcomingSessionDates,
+} from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
+import { weekdays } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	getPreparationRequestOptionsFn,
@@ -14,13 +24,21 @@ import {
 } from "../server/preparation-request-functions.ts";
 import type { RequestCustomization } from "../server/preparation-requests.ts";
 
+const OFFERED_DATES = 4;
+
 export const Route = createFileRoute("/app/requests/new")({
+	validateSearch: (search: Record<string, unknown>): { group?: string } =>
+		typeof search.group === "string" ? { group: search.group } : {},
 	loader: async () => {
 		const user = await getCurrentSessionFn();
 		if (!user) throw redirect({ to: "/sign-in" });
 		if (!user.roles.includes("professor"))
 			throw redirect({ to: "/app/dashboard" });
-		return getPreparationRequestOptionsFn();
+		return {
+			...(await getPreparationRequestOptionsFn()),
+			today: sislabToday(),
+			nowTime: sislabNowTime(),
+		};
 	},
 	component: NewPreparationRequestPage,
 });
@@ -43,10 +61,15 @@ const emptyWaste = (): EditableWasteItem => ({
 });
 
 function NewPreparationRequestPage() {
-	const { groups, exercises, minimumNoticeDays } = Route.useLoaderData();
+	const { groups, exercises, minimumNoticeDays, today, nowTime } =
+		Route.useLoaderData();
+	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const [step, setStep] = useState(0);
-	const [groupId, setGroupId] = useState("");
+	const [groupId, setGroupId] = useState(
+		groups.some((group) => group.id === search.group)
+			? (search.group ?? "")
+			: "",
+	);
 	const [exerciseId, setExerciseId] = useState("");
 	const [sessionDate, setSessionDate] = useState("");
 	const [omittedReagents, setOmittedReagents] = useState<string[]>([]);
@@ -65,47 +88,33 @@ function NewPreparationRequestPage() {
 	const selectedExercise = exercises.find(
 		(exercise) => exercise.id === exerciseId,
 	);
-	const today = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "America/Hermosillo",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(new Date());
-	const daysAhead = sessionDate
-		? Math.floor(
-				(Date.parse(`${sessionDate}T12:00:00Z`) -
-					Date.parse(`${today}T12:00:00Z`)) /
-					86_400_000,
-			)
-		: Infinity;
-	const needsLateReason = daysAhead < minimumNoticeDays;
-	const exerciseMaterials = selectedExercise?.materials;
-
-	function continueFromSession(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		setMessage("");
-		if (
-			!selectedGroup ||
-			!selectedExercise ||
-			!isEligibleDate(
-				selectedGroup.weekday,
-				sessionDate,
+	const dateOptions = selectedGroup
+		? upcomingSessionDates({
+				weekday: selectedGroup.weekday,
 				today,
-				selectedGroup.startTime,
-			)
-		) {
-			setMessage(
-				"Elige un grupo, un ejercicio y una fecha disponible para continuar.",
-			);
-			return;
-		}
-		setMessage("");
-		setStep(1);
-	}
+				nowTime,
+				startTime: selectedGroup.startTime,
+				minimumNoticeDays,
+				count: OFFERED_DATES,
+			})
+		: [];
+	const needsLateReason =
+		dateOptions.find((option) => option.date === sessionDate)?.late ?? false;
+	const materials = selectedExercise?.materials;
+	const teams = selectedGroup?.teams ?? 0;
+	const totals = [
+		...(materials?.reagents.filter(
+			(item) => !omittedReagents.includes(item.name),
+		) ?? []),
+		...addedReagents.filter((item) => item.name.trim()),
+	];
 
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!selectedGroup || !selectedExercise || !sessionDate) return;
+		if (!selectedGroup || !selectedExercise || !sessionDate) {
+			setMessage("Elige un grupo, una fecha y un ejercicio para continuar.");
+			return;
+		}
 		setBusy(true);
 		setMessage("");
 		const customization: RequestCustomization = {
@@ -134,343 +143,100 @@ function NewPreparationRequestPage() {
 	}
 
 	return (
-		<main className="page-wrap px-4 py-10 sm:py-12">
-			<section className="island-shell mx-auto max-w-[600px] rounded-2xl p-5 sm:p-8">
-				<div className="flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<h1 className="display-title text-3xl font-bold text-[var(--foreground)] sm:text-4xl">
-							Nueva solicitud
-						</h1>
-						<p className="mt-2 text-[var(--muted-foreground)]">
-							Indica el grupo, ejercicio y fecha; después revisa los materiales
-							antes de enviar.
-						</p>
-					</div>
-					<Link
-						className="font-semibold text-[var(--primary-text)] underline"
-						to="/app/requests/mine"
-					>
-						Mis solicitudes
-					</Link>
-				</div>
-				<ol
-					aria-label="Pasos de la solicitud"
-					className="my-7 grid grid-cols-3 border-b border-[var(--border)] text-sm font-semibold sm:text-base"
-				>
-					{["Datos de la sesión", "Materiales", "Confirmación"].map(
-						(label, index) => (
-							<li
-								className={`border-b-2 px-1 pb-3 text-center ${step === index ? "border-[var(--primary)] text-[var(--primary-text)]" : "border-transparent text-[var(--muted-foreground)]"}`}
-								key={label}
-							>
-								{index + 1} <span className="hidden sm:inline">{label}</span>
-							</li>
-						),
-					)}
-				</ol>
-				{step === 0 && (
-					<form className="grid gap-5" onSubmit={continueFromSession}>
-						<div className="rounded-xl border border-[var(--border)] p-5 sm:p-6">
-							<h2 className="text-xl font-bold">Datos de la sesión</h2>
-							<div className="mt-5 grid gap-4">
-								<label className="grid gap-1.5 text-sm font-semibold">
-									Grupo
-									<select
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-3 font-normal"
-										onChange={(event) => {
-											setGroupId(event.target.value);
+		<main className="app-page">
+			<div className="app-page-inner is-narrow">
+				<header className="page-head-copy">
+					<h1 className="page-title">Nueva solicitud</h1>
+					<p className="page-sub">
+						Pide al personal de laboratorio que prepare reactivos, equipo y
+						manejo de residuos para un ejercicio de uno de tus grupos.
+					</p>
+				</header>
+
+				<div className="request-layout">
+					<form className="request-form" onSubmit={submit}>
+						<fieldset className="request-step">
+							<legend className="request-step-title">
+								<span aria-hidden="true" className="step-badge">
+									1
+								</span>
+								Elige el grupo
+							</legend>
+							{groups.length === 0 && (
+								<p className="empty-state">
+									No tienes grupos activos.{" "}
+									<Link to="/app/groups/new">Registra un grupo</Link>
+								</p>
+							)}
+							{groups.map((group) => (
+								<label className="option-card" key={group.id}>
+									<input
+										checked={groupId === group.id}
+										name="group"
+										onChange={() => {
+											setGroupId(group.id);
 											setSessionDate("");
 										}}
-										value={groupId}
-									>
-										<option value="">Elige un grupo</option>
-										{groups.map((group) => (
-											<option key={group.id} value={group.id}>
-												Grupo {group.number} · {group.subjectName} ·{" "}
-												{group.teams} equipos
-											</option>
-										))}
-									</select>
-									<span className="text-xs font-normal text-[var(--muted-foreground)]">
-										Solo se muestran grupos activos asignados a tu perfil.
-									</span>
-								</label>
-								<label className="grid gap-1.5 text-sm font-semibold">
-									Ejercicio
-									<select
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-3 font-normal"
-										onChange={(event) => setExerciseId(event.target.value)}
-										value={exerciseId}
-									>
-										<option value="">Elige un ejercicio</option>
-										{exercises.map((exercise) => (
-											<option key={exercise.id} value={exercise.id}>
-												{exercise.number} · {exercise.name}
-											</option>
-										))}
-									</select>
-									<span className="text-xs font-normal text-[var(--muted-foreground)]">
-										Solo se muestran ejercicios activos.
-									</span>
-								</label>
-								<label className="grid gap-1.5 text-sm font-semibold">
-									Fecha de sesión
-									<input
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-3 font-normal"
-										disabled={!selectedGroup}
-										min={
-											selectedGroup
-												? nextEligibleDate(
-														selectedGroup.weekday,
-														today,
-														selectedGroup.startTime,
-													)
-												: today
-										}
-										onChange={(event) => {
-											const value = event.target.value;
-											if (
-												!selectedGroup ||
-												!isEligibleDate(
-													selectedGroup.weekday,
-													value,
-													today,
-													selectedGroup.startTime,
-												)
-											) {
-												setSessionDate("");
-												setMessage(
-													"Elige una fecha futura del día asignado a tu grupo. Hoy solo está disponible antes de que comience la sesión.",
-												);
-												return;
-											}
-											setSessionDate(value);
-											setMessage("");
-										}}
-										step={7}
-										type="date"
-										value={sessionDate}
+										type="radio"
+										value={group.id}
 									/>
-									<span className="text-xs font-normal text-[var(--muted-foreground)]">
-										Elige el día asignado a tu grupo. Hoy solo está disponible
-										antes de que comience la sesión.
+									<span>
+										<strong>
+											{group.subjectName} · {groupLabel(group.number)}
+										</strong>
+										<small>
+											{weekdays[group.weekday]},{" "}
+											{timeRange(group.startTime, group.endTime)} ·{" "}
+											{group.labName}
+										</small>
 									</span>
 								</label>
-								<div className="rounded-lg bg-[var(--info)]/15 p-4 text-sm">
-									<p className="font-semibold text-[var(--info)]">
-										Anticipación mínima
-									</p>
-									<p className="mt-1 font-bold">
-										{minimumNoticeDays}{" "}
-										{minimumNoticeDays === 1 ? "día natural" : "días naturales"}
-									</p>
-								</div>
-							</div>
-							<div className="mt-8 flex justify-end border-t border-[var(--border)] pt-4">
-								<button className="button-primary" type="submit">
-									Siguiente: materiales
-								</button>
-							</div>
-						</div>
-						<aside className="rounded-xl border border-[var(--border)] p-5">
-							<h2 className="text-lg font-bold">Resumen</h2>
-							<div className="my-4 border-t border-[var(--border)]" />
-							<p className="font-bold text-[var(--primary-text)]">
-								{selectedExercise?.name ?? "Elige un ejercicio"}
-							</p>
-							<p className="mt-2 text-sm text-[var(--muted-foreground)]">
-								{selectedGroup
-									? `Grupo ${selectedGroup.number} · ${selectedGroup.labName}`
-									: "Elige un grupo"}
-							</p>
-							<p className="mt-2 text-sm">
-								{selectedGroup
-									? `${selectedGroup.startTime.slice(0, 5)}–${selectedGroup.endTime.slice(0, 5)}`
-									: ""}
-							</p>
-							{needsLateReason && sessionDate && (
-								<div className="mt-6 rounded-lg bg-[var(--warning)]/25 p-4 text-sm">
-									<p className="font-bold">Requiere excepción</p>
-									<p className="mt-2">
-										Esta fecha tiene menos de {minimumNoticeDays} días de
-										anticipación. Al confirmar podrás indicar el motivo.
-									</p>
-								</div>
-							)}
-						</aside>
-					</form>
-				)}
-				{step === 1 && (
-					<form
-						onSubmit={(event) => {
-							event.preventDefault();
-							setStep(2);
-						}}
-					>
-						<div className="rounded-xl border border-[var(--border)] p-5 sm:p-6">
-							<div className="flex flex-wrap justify-between gap-3">
-								<div>
-									<h2 className="text-xl font-bold">Revisa los materiales</h2>
-									<p className="mt-1 text-sm text-[var(--muted-foreground)]">
-										Las cantidades por equipo se calculan con los{" "}
-										{selectedGroup?.teams} equipos de tu grupo.
-									</p>
-								</div>
-								<span className="rounded-lg bg-[var(--secondary)] px-3 py-2 text-sm">
-									{selectedExercise?.number} · {selectedExercise?.name}
+							))}
+						</fieldset>
+
+						<div className="request-step">
+							<h2 className="request-step-title">
+								<span aria-hidden="true" className="step-badge">
+									2
 								</span>
-							</div>
-							<div className="mt-6 grid gap-6 lg:grid-cols-2">
-								<section>
-									<h3 className="font-bold">Reactivos</h3>
-									{exerciseMaterials?.reagents.length ? (
-										<ul className="mt-2 divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
-											{exerciseMaterials.reagents.map((item) => (
-												<li
-													className="flex items-start justify-between gap-3 p-3"
-													key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-												>
-													<span>
-														<strong>{item.name}</strong>
-														<small className="block text-[var(--muted-foreground)]">
-															{item.amount} {item.unit} ·{" "}
-															{item.basis === "team"
-																? "por equipo"
-																: "por grupo"}
-														</small>
-													</span>
-													<label className="flex items-center gap-2 text-sm">
-														<input
-															checked={!omittedReagents.includes(item.name)}
-															onChange={() =>
-																setOmittedReagents((current) =>
-																	current.includes(item.name)
-																		? current.filter(
-																				(name) => name !== item.name,
-																			)
-																		: [...current, item.name],
-																)
-															}
-															type="checkbox"
-														/>
-														Incluir
-													</label>
-												</li>
-											))}
-										</ul>
-									) : (
-										<p className="mt-2 text-sm text-[var(--muted-foreground)]">
-											Este ejercicio no requiere reactivos de catálogo.
-										</p>
-									)}
-									<QuantityEditor
-										items={addedReagents}
-										label="Reactivos adicionales"
-										onChange={setAddedReagents}
-									/>
-								</section>
-								<section>
-									<h3 className="font-bold">Equipo</h3>
-									{exerciseMaterials?.equipment.length ? (
-										<ul className="mt-2 divide-y divide-[var(--border)] rounded-lg border border-[var(--border)]">
-											{exerciseMaterials.equipment.map((item) => (
-												<li
-													className="p-3"
-													key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-												>
-													<strong>{item.name}</strong>
-													<small className="block text-[var(--muted-foreground)]">
-														{item.amount} {item.unit} ·{" "}
-														{item.basis === "team" ? "por equipo" : "por grupo"}
-													</small>
-												</li>
-											))}
-										</ul>
-									) : (
-										<p className="mt-2 text-sm text-[var(--muted-foreground)]">
-											No hay equipo de catálogo.
-										</p>
-									)}
-									<QuantityEditor
-										items={addedEquipment}
-										label="Equipo adicional"
-										onChange={setAddedEquipment}
-									/>
-								</section>
-								<section>
-									<h3 className="font-bold">Residuos esperados</h3>
-									{exerciseMaterials?.waste.map((item) => (
-										<p
-											className="mt-2 rounded-lg border border-[var(--border)] p-3 text-sm"
-											key={`${item.name}-${item.container}-${item.treatment}`}
-										>
-											<strong>{item.name}</strong> · {item.container} ·{" "}
-											{item.treatment}
-										</p>
-									))}
-									<WasteEditor items={addedWaste} onChange={setAddedWaste} />
-								</section>
-								<label className="grid gap-2 text-sm font-semibold">
-									Nota para el personal de laboratorio
-									<textarea
-										className="min-h-28 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 font-normal"
-										maxLength={2000}
-										onChange={(event) => setProfessorNote(event.target.value)}
-										value={professorNote}
-									/>
-								</label>
-							</div>
-							<div className="mt-8 flex justify-between border-t border-[var(--border)] pt-4">
-								<button
-									className="button-secondary"
-									onClick={() => setStep(0)}
-									type="button"
-								>
-									Anterior
-								</button>
-								<button className="button-primary" type="submit">
-									Siguiente: confirmar
-								</button>
-							</div>
-						</div>
-					</form>
-				)}
-				{step === 2 && (
-					<form onSubmit={submit}>
-						<div className="mx-auto max-w-[600px] rounded-xl border border-[var(--border)] p-5 sm:p-6">
-							<h2 className="text-xl font-bold">Confirma tu solicitud</h2>
-							<dl className="mt-5 grid gap-3 sm:grid-cols-2">
-								<Summary
-									label="Ejercicio"
-									value={`${selectedExercise?.number} · ${selectedExercise?.name}`}
-								/>
-								<Summary
-									label="Grupo"
-									value={`Grupo ${selectedGroup?.number} · ${selectedGroup?.subjectName}`}
-								/>
-								<Summary label="Fecha" value={formatDate(sessionDate)} />
-								<Summary
-									label="Laboratorio y horario"
-									value={`${selectedGroup?.labName} · ${selectedGroup?.startTime.slice(0, 5)}–${selectedGroup?.endTime.slice(0, 5)}`}
-								/>
-								<Summary
-									label="Reactivos omitidos"
-									value={
-										omittedReagents.length
-											? omittedReagents.join(", ")
-											: "Ninguno"
-									}
-								/>
-								<Summary
-									label="Materiales añadidos"
-									value={`${addedReagents.length} reactivos, ${addedEquipment.length} equipos, ${addedWaste.length} residuos`}
-								/>
-							</dl>
+								Elige la fecha
+							</h2>
+							{selectedGroup ? (
+								<>
+									<p className="request-step-help">
+										Solo se ofrecen los {weekdayPlural(selectedGroup.weekday)},
+										el día de este grupo.
+									</p>
+									{/* biome-ignore lint/a11y/useSemanticElements: the step heading already names this group of buttons */}
+									<div
+										aria-label="Fechas disponibles"
+										className="date-options"
+										role="group"
+									>
+										{dateOptions.map(({ date, late }) => (
+											<button
+												aria-pressed={sessionDate === date}
+												className="date-option"
+												key={date}
+												onClick={() => setSessionDate(date)}
+												type="button"
+											>
+												{formatSessionDate(date, "short")}
+												<small>{late ? "Último momento" : "Con aviso"}</small>
+											</button>
+										))}
+									</div>
+								</>
+							) : (
+								<p className="request-step-help">
+									Elige un grupo para ver sus fechas.
+								</p>
+							)}
 							{needsLateReason && (
-								<label className="mt-6 grid gap-2 text-sm font-semibold">
-									Motivo de la solicitud con poca anticipación
+								<label className="field-label">
+									Motivo de la solicitud de último momento
 									<textarea
-										className="min-h-24 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 font-normal"
+										className="field"
 										maxLength={1000}
 										onChange={(event) => setLateReason(event.target.value)}
 										required
@@ -478,156 +244,346 @@ function NewPreparationRequestPage() {
 									/>
 								</label>
 							)}
-							<p className="mt-5 rounded-lg bg-[var(--info)]/15 p-4 text-sm">
-								Al enviar, guardaremos una copia de los materiales y el horario.
-								Después podrás consultar la solicitud, pero no editar su
-								contenido.
+						</div>
+
+						<div className="request-step">
+							<h2 className="request-step-title">
+								<span aria-hidden="true" className="step-badge">
+									3
+								</span>
+								Elige el ejercicio
+							</h2>
+							<label className="field-label">
+								Ejercicio de laboratorio
+								<select
+									className="field"
+									onChange={(event) => {
+										setExerciseId(event.target.value);
+										setOmittedReagents([]);
+									}}
+									required
+									value={exerciseId}
+								>
+									<option value="">Elige un ejercicio</option>
+									{exercises.map((exercise) => (
+										<option key={exercise.id} value={exercise.id}>
+											{exercise.number} · {exercise.name}
+										</option>
+									))}
+								</select>
+							</label>
+						</div>
+
+						<div className="request-step">
+							<h2 className="request-step-title">
+								<span aria-hidden="true" className="step-badge">
+									4
+								</span>
+								Revisa el material
+							</h2>
+							<p className="request-step-help">
+								Desmarca los reactivos que no necesites. Puedes agregar equipo y
+								residuos.
 							</p>
-							<div className="mt-8 flex flex-wrap justify-between gap-3 border-t border-[var(--border)] pt-4">
-								<button
-									className="button-secondary"
-									onClick={() => setStep(1)}
-									type="button"
-								>
-									Anterior
-								</button>
-								<button
-									className="button-primary"
-									disabled={busy}
-									type="submit"
-								>
-									{busy ? "Enviando…" : "Enviar solicitud"}
-								</button>
+
+							<div>
+								<h3 className="material-title">Reactivos</h3>
+								{materials?.reagents.map((item) => (
+									<label
+										className="material-row"
+										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
+									>
+										<input
+											checked={!omittedReagents.includes(item.name)}
+											onChange={() =>
+												setOmittedReagents((current) =>
+													current.includes(item.name)
+														? current.filter((name) => name !== item.name)
+														: [...current, item.name],
+												)
+											}
+											type="checkbox"
+										/>
+										<span className="material-name">{item.name}</span>
+										<Quantity item={item} />
+									</label>
+								))}
+								<QuantityEditor
+									addLabel="Agregar reactivo"
+									items={addedReagents}
+									kind="reactivo"
+									onChange={setAddedReagents}
+								/>
+
+								<h3 className="material-title">Equipo</h3>
+								{materials?.equipment.map((item) => (
+									<div
+										className="material-row"
+										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
+									>
+										<span className="material-name">{item.name}</span>
+										<Quantity item={item} />
+									</div>
+								))}
+								<QuantityEditor
+									addLabel="Agregar equipo"
+									items={addedEquipment}
+									kind="equipo"
+									onChange={setAddedEquipment}
+								/>
+
+								<h3 className="material-title">Residuos esperados</h3>
+								{materials?.waste.map((item) => (
+									<div
+										className="material-row is-top"
+										key={`${item.name}-${item.container}-${item.treatment}`}
+									>
+										<span className="material-name">
+											{item.name}
+											<small>
+												{item.container} · {item.treatment}
+											</small>
+										</span>
+									</div>
+								))}
+								<WasteEditor items={addedWaste} onChange={setAddedWaste} />
 							</div>
 						</div>
+
+						<label className="field-label">
+							Nota para el personal (opcional)
+							<textarea
+								className="field"
+								maxLength={2000}
+								onChange={(event) => setProfessorNote(event.target.value)}
+								placeholder="Por ejemplo: necesito las buretas limpias desde las 16:30."
+								value={professorNote}
+							/>
+						</label>
+
+						{message && (
+							<p className="notice notice-error" role="alert">
+								{message}
+							</p>
+						)}
+
+						<div className="request-actions">
+							<button className="button-primary" disabled={busy} type="submit">
+								{busy ? "Enviando…" : "Enviar solicitud"}
+							</button>
+							<Link className="button-secondary" to="/app/dashboard">
+								Cancelar
+							</Link>
+						</div>
 					</form>
-				)}
-				{message && (
-					<p
-						className="mt-4 rounded-lg bg-[var(--destructive)]/10 p-3 text-sm font-semibold"
-						role="alert"
+
+					<aside
+						aria-labelledby="request-summary-title"
+						className="request-summary"
 					>
-						{message}
-					</p>
-				)}
-			</section>
+						<section className="panel">
+							<h2 id="request-summary-title">Resumen</h2>
+							<dl className="kv">
+								<div>
+									<dt>Grupo</dt>
+									<dd className="is-strong">
+										{selectedGroup
+											? `${selectedGroup.subjectName} · ${groupLabel(selectedGroup.number)}`
+											: "Elige un grupo"}
+									</dd>
+								</div>
+								<div>
+									<dt>Fecha y hora</dt>
+									<dd>
+										{selectedGroup && sessionDate
+											? `${formatSessionDate(sessionDate, "long")}, ${timeRange(selectedGroup.startTime, selectedGroup.endTime)}`
+											: "Elige una fecha"}
+									</dd>
+								</div>
+								<div>
+									<dt>Laboratorio</dt>
+									<dd>{selectedGroup?.labName ?? "—"}</dd>
+								</div>
+								<div>
+									<dt>Ejercicio</dt>
+									<dd>
+										{selectedExercise
+											? `${selectedExercise.number} · ${selectedExercise.name}`
+											: "Elige un ejercicio"}
+									</dd>
+								</div>
+							</dl>
+							{selectedGroup && totals.length > 0 && (
+								<div className="summary-totals">
+									<h3>Cantidades calculadas</h3>
+									<p>
+										{teams} {teams === 1 ? "equipo" : "equipos"} en el grupo.
+									</p>
+									<ul className="mono">
+										{totals.map((item) => (
+											<li key={`${item.name}-${item.unit}-${item.basis}`}>
+												<span>{item.name}</span>
+												<strong>
+													{item.amount * (item.basis === "team" ? teams : 1)}{" "}
+													{item.unit}
+												</strong>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</section>
+
+						{sessionDate &&
+							(needsLateReason ? (
+								<section className="notice notice-warning">
+									<Clock aria-hidden="true" size={20} strokeWidth={2} />
+									<p>
+										<strong>
+											Faltan menos de {noticeDays(minimumNoticeDays)} de aviso.
+										</strong>{" "}
+										Explica el motivo y el personal decidirá si acepta la
+										solicitud.
+									</p>
+								</section>
+							) : (
+								<section className="notice notice-accent">
+									<CircleCheck aria-hidden="true" size={20} strokeWidth={2} />
+									<p>
+										<strong>
+											Cumple el aviso mínimo de {noticeDays(minimumNoticeDays)}.
+										</strong>{" "}
+										Si eliges una fecha más cercana, tendrás que explicar el
+										motivo y el personal decidirá si la acepta.
+									</p>
+								</section>
+							))}
+
+						<p className="footnote">
+							Al enviar se guarda una copia de estos datos. Si después cambias
+							el ejercicio o el grupo, esta solicitud no se modifica.
+						</p>
+					</aside>
+				</div>
+			</div>
 		</main>
 	);
 }
 
+function weekdayPlural(weekday: number) {
+	const name = weekdays[weekday].toLocaleLowerCase("es-MX");
+	return name.endsWith("s") ? name : `${name}s`;
+}
+
+function noticeDays(days: number) {
+	return `${days} ${days === 1 ? "día" : "días"}`;
+}
+
+function Quantity({ item }: { item: QuantityItem }) {
+	return (
+		<>
+			<span className="mono">
+				{item.amount} {item.unit}
+			</span>
+			<span className="basis-tag">
+				{item.basis === "team" ? "por equipo" : "por grupo"}
+			</span>
+		</>
+	);
+}
+
 function QuantityEditor({
-	label,
+	addLabel,
+	kind,
 	items,
 	onChange,
 }: {
-	label: string;
+	addLabel: string;
+	kind: string;
 	items: EditableQuantityItem[];
 	onChange: (items: EditableQuantityItem[]) => void;
 }) {
+	const change = (index: number, patch: Partial<QuantityItem>) =>
+		onChange(
+			items.map((item, itemIndex) =>
+				itemIndex === index ? { ...item, ...patch } : item,
+			),
+		);
 	return (
-		<div className="mt-4 rounded-lg bg-[var(--secondary)]/60 p-3">
-			<div className="flex items-center justify-between gap-2">
-				<h4 className="text-sm font-bold">{label}</h4>
-				<button
-					className="button-secondary !min-h-10 !px-3 !py-1"
-					onClick={() => onChange([...items, emptyQuantity()])}
-					type="button"
-				>
-					Agregar
-				</button>
-			</div>
+		<>
 			{items.map((item, index) => (
-				<div className="mt-3 grid gap-2 sm:grid-cols-4" key={item.key}>
+				<div className="material-editor" key={item.key}>
 					<input
-						aria-label={`Nombre ${label}`}
-						className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2 sm:col-span-2"
-						onChange={(event) =>
-							changeQuantity(
-								items,
-								index,
-								{ name: event.target.value },
-								onChange,
-							)
-						}
+						aria-label={`Nombre del ${kind}`}
+						className="field-outline is-wide"
+						onChange={(event) => change(index, { name: event.target.value })}
 						placeholder="Nombre"
+						required
 						value={item.name}
 					/>
 					<input
-						aria-label={`Cantidad ${label}`}
-						className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2"
+						aria-label={`Cantidad del ${kind}`}
+						className="field-outline"
 						min="0.01"
 						onChange={(event) =>
-							changeQuantity(
-								items,
-								index,
-								{ amount: Number(event.target.value) },
-								onChange,
-							)
+							change(index, { amount: Number(event.target.value) })
 						}
+						required
 						step="any"
 						type="number"
 						value={item.amount}
 					/>
-					<div className="flex gap-2">
-						<input
-							aria-label={`Unidad ${label}`}
-							className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2"
-							onChange={(event) =>
-								changeQuantity(
-									items,
-									index,
-									{ unit: event.target.value },
-									onChange,
-								)
-							}
-							placeholder="Unidad"
-							value={item.unit}
-						/>
-						<button
-							aria-label={`Quitar ${label}`}
-							className="button-secondary !min-h-10 !px-3 !py-1"
-							onClick={() =>
-								onChange(items.filter((_, itemIndex) => index !== itemIndex))
-							}
-							type="button"
-						>
-							Quitar
-						</button>
-					</div>
+					<input
+						aria-label={`Unidad del ${kind}`}
+						className="field-outline"
+						onChange={(event) => change(index, { unit: event.target.value })}
+						placeholder="Unidad"
+						required
+						value={item.unit}
+					/>
 					<select
-						aria-label={`Base ${label}`}
-						className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2"
+						aria-label={`Base del ${kind}`}
+						className="field-outline"
 						onChange={(event) =>
-							changeQuantity(
-								items,
-								index,
-								{ basis: event.target.value as QuantityItem["basis"] },
-								onChange,
-							)
+							change(index, {
+								basis: event.target.value as QuantityItem["basis"],
+							})
 						}
 						value={item.basis}
 					>
 						<option value="team">Por equipo</option>
 						<option value="group">Por grupo</option>
 					</select>
+					<button
+						className="button-secondary button-sm"
+						onClick={() =>
+							onChange(items.filter((_, itemIndex) => index !== itemIndex))
+						}
+						type="button"
+					>
+						Quitar
+					</button>
 				</div>
 			))}
-		</div>
+			<div>
+				<button
+					className="button-text"
+					onClick={() => onChange([...items, emptyQuantity()])}
+					type="button"
+				>
+					<Plus aria-hidden="true" size={16} strokeWidth={2} />
+					{addLabel}
+				</button>
+			</div>
+		</>
 	);
 }
 
-function changeQuantity(
-	items: EditableQuantityItem[],
-	index: number,
-	patch: Partial<QuantityItem>,
-	onChange: (items: EditableQuantityItem[]) => void,
-) {
-	onChange(
-		items.map((item, itemIndex) =>
-			itemIndex === index ? { ...item, ...patch } : item,
-		),
-	);
-}
+const wasteFields = [
+	["name", "Nombre del residuo", "Residuo"],
+	["container", "Contenedor del residuo", "Contenedor"],
+	["treatment", "Tratamiento del residuo", "Tratamiento"],
+] as const;
 
 function WasteEditor({
 	items,
@@ -637,29 +593,13 @@ function WasteEditor({
 	onChange: (items: EditableWasteItem[]) => void;
 }) {
 	return (
-		<div className="mt-4 rounded-lg bg-[var(--secondary)]/60 p-3">
-			<div className="flex justify-between gap-2">
-				<h4 className="text-sm font-bold">Residuos adicionales</h4>
-				<button
-					className="button-secondary !min-h-10 !px-3 !py-1"
-					onClick={() => onChange([...items, emptyWaste()])}
-					type="button"
-				>
-					Agregar
-				</button>
-			</div>
+		<>
 			{items.map((item, index) => (
-				<div className="mt-3 grid gap-2 sm:grid-cols-3" key={item.key}>
-					{(["name", "container", "treatment"] as const).map((key) => (
+				<div className="material-editor" key={item.key}>
+					{wasteFields.map(([key, label, placeholder]) => (
 						<input
-							aria-label={
-								key === "name"
-									? "Nombre del residuo"
-									: key === "container"
-										? "Contenedor del residuo"
-										: "Tratamiento del residuo"
-							}
-							className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-2"
+							aria-label={label}
+							className="field-outline"
 							key={key}
 							onChange={(event) =>
 								onChange(
@@ -670,77 +610,32 @@ function WasteEditor({
 									),
 								)
 							}
-							placeholder={
-								key === "name"
-									? "Residuo"
-									: key === "container"
-										? "Contenedor"
-										: "Tratamiento"
-							}
+							placeholder={placeholder}
+							required
 							value={item[key]}
 						/>
 					))}
+					<button
+						className="button-secondary button-sm"
+						onClick={() =>
+							onChange(items.filter((_, itemIndex) => index !== itemIndex))
+						}
+						type="button"
+					>
+						Quitar
+					</button>
 				</div>
 			))}
-		</div>
+			<div>
+				<button
+					className="button-text"
+					onClick={() => onChange([...items, emptyWaste()])}
+					type="button"
+				>
+					<Plus aria-hidden="true" size={16} strokeWidth={2} />
+					Agregar residuo
+				</button>
+			</div>
+		</>
 	);
-}
-
-function Summary({ label, value }: { label: string; value: string }) {
-	return (
-		<div>
-			<dt className="text-sm text-[var(--muted-foreground)]">{label}</dt>
-			<dd className="mt-1 font-semibold">{value}</dd>
-		</div>
-	);
-}
-
-function isEligibleDate(
-	weekday: number,
-	value: string,
-	today: string,
-	startTime: string,
-) {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < today) return false;
-	const date = new Date(`${value}T12:00:00Z`);
-	if (
-		!Number.isFinite(date.getTime()) ||
-		date.toISOString().slice(0, 10) !== value ||
-		date.getUTCDay() !== weekday
-	)
-		return false;
-	if (value !== today) return true;
-	const time = new Intl.DateTimeFormat("en-US", {
-		timeZone: "America/Hermosillo",
-		hour: "2-digit",
-		minute: "2-digit",
-		hourCycle: "h23",
-	}).format(new Date());
-	return time < startTime.slice(0, 5);
-}
-
-function nextEligibleDate(weekday: number, today: string, startTime: string) {
-	const todayDate = new Date(`${today}T12:00:00Z`);
-	const todayIsEligible =
-		todayDate.getUTCDay() === weekday &&
-		new Intl.DateTimeFormat("en-US", {
-			timeZone: "America/Hermosillo",
-			hour: "2-digit",
-			minute: "2-digit",
-			hourCycle: "h23",
-		}).format(new Date()) < startTime.slice(0, 5);
-	const daysUntilWeekday = (weekday - todayDate.getUTCDay() + 7) % 7;
-	const offset =
-		daysUntilWeekday === 0 && !todayIsEligible ? 7 : daysUntilWeekday;
-	todayDate.setUTCDate(todayDate.getUTCDate() + offset);
-	return todayDate.toISOString().slice(0, 10);
-}
-
-function formatDate(value: string) {
-	return value
-		? new Intl.DateTimeFormat("es-MX", {
-				timeZone: "UTC",
-				dateStyle: "long",
-			}).format(new Date(`${value}T12:00:00Z`))
-		: "";
 }

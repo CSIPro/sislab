@@ -1,5 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { groupLabel, timeRange } from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { weekdays } from "../lib/weekdays.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
@@ -15,9 +17,10 @@ export const Route = createFileRoute("/app/groups/manage")({
 	loader: async () => {
 		const user = await getCurrentSessionFn();
 		if (!user) throw redirect({ to: "/sign-in" });
-		if (!user.roles.includes("professor")) throw redirect({ to: "/app/dashboard" });
+		if (!user.roles.includes("professor"))
+			throw redirect({ to: "/app/dashboard" });
 		const [groups, options] = await Promise.all([
-			listMyGroupsFn({ data: { includeInactive: false } }),
+			listMyGroupsFn({ data: { includeInactive: true } }),
 			getProfessorGroupOptionsFn(),
 		]);
 		return { groups, options };
@@ -25,31 +28,46 @@ export const Route = createFileRoute("/app/groups/manage")({
 	component: ManageGroupsPage,
 });
 
+type Group = Awaited<ReturnType<typeof listMyGroupsFn>>[number];
+type GroupOptions = Awaited<ReturnType<typeof getProfessorGroupOptionsFn>>;
+
+// Monday through Friday always show; weekend days only when a group meets then.
+const WORK_WEEK = [1, 2, 3, 4, 5];
+
 function ManageGroupsPage() {
 	const { groups: initialGroups, options } = Route.useLoaderData();
+	const { periodCode } = Route.useRouteContext();
 	const [groups, setGroups] = useState(initialGroups);
 	const [includeInactive, setIncludeInactive] = useState(false);
 	const [message, setMessage] = useState("");
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [openId, setOpenId] = useState<string | null>(null);
+	const activeGroups = groups.filter((group) => group.active);
+	const visibleGroups = includeInactive ? groups : activeGroups;
+	const weekGroups = [...activeGroups].sort((a, b) =>
+		a.startTime.localeCompare(b.startTime),
+	);
+	const weekDays = [0, 1, 2, 3, 4, 5, 6]
+		.filter(
+			(day) =>
+				WORK_WEEK.includes(day) ||
+				weekGroups.some((group) => group.weekday === day),
+		)
+		.sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
 
-	async function showGroups(showInactive: boolean) {
-		setIncludeInactive(showInactive);
-		setGroups(
-			await listMyGroupsFn({ data: { includeInactive: showInactive } }),
-		);
+	async function reload() {
+		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
 	}
 
-	async function save(event: FormEvent<HTMLFormElement>, groupId: string) {
+	async function save(event: FormEvent<HTMLFormElement>, group: Group) {
 		event.preventDefault();
 		const form = new FormData(event.currentTarget);
-		const current = groups.find((group) => group.id === groupId);
-		if (!current) return;
-		setBusyId(groupId);
+		setBusyId(group.id);
 		setMessage("");
 		try {
 			await updateMyGroupFn({
 				data: {
-					groupId,
+					groupId: group.id,
 					input: {
 						periodCode: String(form.get("periodCode") ?? ""),
 						number: Number(form.get("number")),
@@ -64,8 +82,9 @@ function ManageGroupsPage() {
 					},
 				},
 			});
-			setMessage(`Se actualizó el grupo ${current.number}.`);
-			await showGroups(includeInactive);
+			setMessage(`Se actualizó el grupo ${group.number}.`);
+			setOpenId(null);
+			await reload();
 		} catch (error) {
 			setMessage(userFacingError(error, "No se pudo actualizar este grupo."));
 		} finally {
@@ -73,13 +92,14 @@ function ManageGroupsPage() {
 		}
 	}
 
-	async function changeActivity(groupId: string, active: boolean) {
-		setBusyId(groupId);
+	async function changeActivity(group: Group) {
+		setBusyId(group.id);
 		setMessage("");
 		try {
-			if (active) await deactivateMyGroupFn({ data: { groupId } });
-			else await reactivateMyGroupFn({ data: { groupId } });
-			await showGroups(includeInactive);
+			if (group.active)
+				await deactivateMyGroupFn({ data: { groupId: group.id } });
+			else await reactivateMyGroupFn({ data: { groupId: group.id } });
+			await reload();
 		} catch (error) {
 			setMessage(userFacingError(error, "No se pudo cambiar este grupo."));
 		} finally {
@@ -88,174 +108,299 @@ function ManageGroupsPage() {
 	}
 
 	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell mx-auto max-w-5xl rounded-2xl p-6 sm:p-8">
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--foreground)]">
-					Mis grupos
-				</h1>
-				<p className="text-[var(--muted-foreground)]">
-					Consulta y corrige los datos de tus grupos o desactiva los que ya no impartes.
-				</p>
-				<div aria-label="Filtrar grupos" className="group-toolbar mt-5 flex flex-wrap gap-3" role="group">
-					<button
-						aria-pressed={!includeInactive}
-						className={`button-secondary button-sm group-filter${includeInactive ? "" : " is-active"}`}
-						onClick={() => void showGroups(false)}
-						type="button"
-					>
-						Grupos activos
-					</button>
-					<button
-						aria-pressed={includeInactive}
-						className={`button-secondary button-sm group-filter${includeInactive ? " is-active" : ""}`}
-						onClick={() => void showGroups(true)}
-						type="button"
-					>
-						Incluir grupos inactivos
-					</button>
-					<Link className="button-primary button-sm" to="/app/groups/new">
-						Registrar grupo
-					</Link>
-				</div>
-				{message && (
-					<output aria-live="polite" className="mt-4 block" role="status">
-						{message}
-					</output>
-				)}
-				{groups.length === 0 && (
-					<p className="mt-6">
-						{includeInactive ? "No hay grupos para mostrar." : "No hay grupos activos para mostrar."}
-					</p>
-				)}
-				<div className="mt-6 grid gap-5">
-					{groups.map((group) => (
-						<article
-							className="rounded-xl border border-[var(--border)] p-4"
-							key={group.id}
+		<main className="app-page">
+			<div className="app-page-inner">
+				<header className="page-head">
+					<div className="page-head-copy">
+						<h1 className="page-title">Mis grupos</h1>
+						<p className="page-sub">
+							{activeGroups.length}{" "}
+							{activeGroups.length === 1 ? "grupo activo" : "grupos activos"}
+						</p>
+					</div>
+					<div className="page-actions">
+						{periodCode && (
+							<span className="period-chip">Periodo {periodCode}</span>
+						)}
+						<Link className="button-primary" to="/app/groups/new">
+							<Plus aria-hidden="true" size={18} strokeWidth={2} />
+							Nuevo grupo
+						</Link>
+					</div>
+				</header>
+
+				<section aria-labelledby="groups-week-title" className="panel">
+					<h2 className="panel-title" id="groups-week-title">
+						Tu semana en el laboratorio
+					</h2>
+					<div className="week-grid">
+						{weekDays.map((day) => {
+							const dayGroups = weekGroups.filter(
+								(group) => group.weekday === day,
+							);
+							return (
+								<div className="week-day" key={day}>
+									<span>{weekdays[day]}</span>
+									{dayGroups.length === 0 && (
+										<div className="week-slot is-empty">Sin laboratorio</div>
+									)}
+									{dayGroups.map((group) => (
+										<div className="week-slot" key={group.id}>
+											<strong>{group.subjectName}</strong>
+											<span className="row-group">
+												{groupLabel(group.number)}
+											</span>
+											<small>
+												{timeRange(group.startTime, group.endTime)} ·{" "}
+												{group.labName}
+											</small>
+										</div>
+									))}
+								</div>
+							);
+						})}
+					</div>
+				</section>
+
+				<section aria-labelledby="groups-list-title" className="stack-section">
+					<div className="panel-head">
+						<h2 className="panel-title" id="groups-list-title">
+							Todos tus grupos
+						</h2>
+						{/* biome-ignore lint/a11y/useSemanticElements: a fieldset would add a legend the design does not have */}
+						<div
+							aria-label="Filtrar por estado"
+							className="seg-group"
+							role="group"
 						>
-							<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-								<h2 className="text-xl font-semibold">
-									{group.periodCode} · Grupo {group.number}
-								</h2>
-								<div className="flex items-center gap-3">
-									<span>{group.active ? "Activo" : "Inactivo"}</span>
+							<button
+								aria-pressed={!includeInactive}
+								className="seg"
+								onClick={() => setIncludeInactive(false)}
+								type="button"
+							>
+								Activos · {activeGroups.length}
+							</button>
+							<button
+								aria-pressed={includeInactive}
+								className="seg"
+								onClick={() => setIncludeInactive(true)}
+								type="button"
+							>
+								Todos · {groups.length}
+							</button>
+						</div>
+					</div>
+					{message && (
+						<output aria-live="polite" className="notice notice-accent">
+							{message}
+						</output>
+					)}
+					{visibleGroups.length === 0 && (
+						<p className="empty-state">
+							{includeInactive
+								? "No hay grupos para mostrar."
+								: "No hay grupos activos para mostrar."}{" "}
+							<Link to="/app/groups/new">Registra un grupo</Link>
+						</p>
+					)}
+					<div className="card-grid">
+						{visibleGroups.map((group) => (
+							<article
+								className={`group-card${group.active ? "" : " is-inactive"}`}
+								key={group.id}
+							>
+								<header className="group-card-head">
+									<div>
+										<h3>{group.subjectName}</h3>
+										<p>
+											{group.careerName}
+											{group.periodCode !== periodCode &&
+												` · Periodo ${group.periodCode}`}
+										</p>
+									</div>
+									<div className="group-card-tags">
+										<span>{groupLabel(group.number)}</span>
+										<span
+											className={`chip ${group.active ? "chip-ok" : "chip-off"}`}
+										>
+											{group.active ? "Activo" : "Inactivo"}
+										</span>
+									</div>
+								</header>
+								<dl className="kv is-two">
+									<div>
+										<dt>Día y hora</dt>
+										<dd>
+											{weekdays[group.weekday]},{" "}
+											{timeRange(group.startTime, group.endTime)}
+										</dd>
+									</div>
+									<div>
+										<dt>Laboratorio</dt>
+										<dd>{group.labName}</dd>
+									</div>
+									<div>
+										<dt>Estudiantes</dt>
+										<dd>{group.students}</dd>
+									</div>
+									<div>
+										<dt>Equipos</dt>
+										<dd>{group.teams}</dd>
+									</div>
+								</dl>
+								<footer className="group-card-foot">
+									{group.active && (
+										<Link
+											className="button-secondary"
+											search={{ group: group.id }}
+											to="/app/requests/new"
+										>
+											Solicitar preparación
+										</Link>
+									)}
 									<button
-										className="font-semibold underline"
-										disabled={busyId === group.id}
-										onClick={() => void changeActivity(group.id, group.active)}
+										aria-expanded={openId === group.id}
+										className="button-secondary"
+										onClick={() =>
+											setOpenId(openId === group.id ? null : group.id)
+										}
 										type="button"
 									>
-										{group.active ? "Desactivar" : "Reactivar"}
+										{group.active ? "Editar" : "Ver detalle"}
 									</button>
-								</div>
-							</div>
-							<form
-								className="grid gap-4 sm:grid-cols-2"
-								onSubmit={(event) => void save(event, group.id)}
-							>
-								<label className="grid gap-1 text-sm font-medium">
-									Periodo académico
-									<select
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-										defaultValue={group.periodCode}
-										name="periodCode"
-										required
-									>
-										{!options.periods.some(
-											({ code }) => code === group.periodCode,
-										) && (
-											<option value={group.periodCode}>
-												{group.periodCode}
-											</option>
-										)}
-										{options.periods.map(({ code }) => (
-											<option key={code} value={code}>
-												{code}
-											</option>
-										))}
-									</select>
-								</label>
-								<Field
-					label="Número de grupo"
-									name="number"
-									type="number"
-									min="1"
-									value={group.number}
-								/>
-								<CatalogSelect
-					label="Laboratorio"
-									name="labId"
-									current={{ id: group.labId, name: group.labName }}
-									entries={options.labs}
-								/>
-								<CatalogSelect
-									label="Carrera"
-									name="careerId"
-									current={{ id: group.careerId, name: group.careerName }}
-									entries={options.careers}
-								/>
-								<CatalogSelect
-									label="Materia"
-									name="subjectId"
-									current={{ id: group.subjectId, name: group.subjectName }}
-									entries={options.subjects}
-								/>
-								<Field
-									label="Estudiantes"
-									name="students"
-									type="number"
-									min="1"
-									max="60"
-									value={group.students}
-								/>
-								<Field
-									label="Equipos"
-									name="teams"
-									type="number"
-									min="1"
-									value={group.teams}
-								/>
-								<label className="grid gap-1 text-sm font-medium">
-									Día de la semana
-									<select
-										className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
-										defaultValue={group.weekday}
-										name="weekday"
-									>
-										{weekdays.map((day, index) => (
-											<option key={day} value={index}>
-												{day}
-											</option>
-										))}
-									</select>
-								</label>
-								<Field
-									label="Hora de inicio"
-									name="startTime"
-									type="time"
-									value={group.startTime.slice(0, 5)}
-								/>
-								<Field
-									label="Hora de término"
-									name="endTime"
-									type="time"
-									value={group.endTime.slice(0, 5)}
-								/>
-								<div className="sm:col-span-2">
-									<button
-										className="rounded-lg bg-[var(--primary)] px-5 py-2.5 font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
-										disabled={busyId === group.id}
-										type="submit"
-									>
-										{busyId === group.id ? "Guardando…" : "Guardar cambios"}
-									</button>
-								</div>
-							</form>
-						</article>
-					))}
-				</div>
-			</section>
+								</footer>
+								{openId === group.id && (
+									<GroupForm
+										busy={busyId === group.id}
+										group={group}
+										onChangeActivity={() => void changeActivity(group)}
+										onSubmit={(event) => void save(event, group)}
+										options={options}
+									/>
+								)}
+							</article>
+						))}
+					</div>
+				</section>
+			</div>
 		</main>
+	);
+}
+
+function GroupForm({
+	group,
+	options,
+	busy,
+	onSubmit,
+	onChangeActivity,
+}: {
+	group: Group;
+	options: GroupOptions;
+	busy: boolean;
+	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+	onChangeActivity: () => void;
+}) {
+	return (
+		<form className="group-form" onSubmit={onSubmit}>
+			<label className="field-label">
+				Periodo académico
+				<select
+					className="field-outline"
+					defaultValue={group.periodCode}
+					name="periodCode"
+					required
+				>
+					{!options.periods.some(({ code }) => code === group.periodCode) && (
+						<option value={group.periodCode}>{group.periodCode}</option>
+					)}
+					{options.periods.map(({ code }) => (
+						<option key={code} value={code}>
+							{code}
+						</option>
+					))}
+				</select>
+			</label>
+			<Field
+				label="Número de grupo"
+				min="1"
+				name="number"
+				type="number"
+				value={group.number}
+			/>
+			<CatalogSelect
+				current={{ id: group.labId, name: group.labName }}
+				entries={options.labs}
+				label="Laboratorio"
+				name="labId"
+			/>
+			<CatalogSelect
+				current={{ id: group.careerId, name: group.careerName }}
+				entries={options.careers}
+				label="Carrera"
+				name="careerId"
+			/>
+			<CatalogSelect
+				current={{ id: group.subjectId, name: group.subjectName }}
+				entries={options.subjects}
+				label="Materia"
+				name="subjectId"
+			/>
+			<Field
+				label="Estudiantes"
+				max="60"
+				min="1"
+				name="students"
+				type="number"
+				value={group.students}
+			/>
+			<Field
+				label="Equipos"
+				min="1"
+				name="teams"
+				type="number"
+				value={group.teams}
+			/>
+			<label className="field-label">
+				Día de la semana
+				<select
+					className="field-outline"
+					defaultValue={group.weekday}
+					name="weekday"
+				>
+					{weekdays.map((day, index) => (
+						<option key={day} value={index}>
+							{day}
+						</option>
+					))}
+				</select>
+			</label>
+			<Field
+				label="Hora de inicio"
+				name="startTime"
+				type="time"
+				value={group.startTime.slice(0, 5)}
+			/>
+			<Field
+				label="Hora de término"
+				name="endTime"
+				type="time"
+				value={group.endTime.slice(0, 5)}
+			/>
+			<div className="group-form-actions">
+				<button className="button-primary" disabled={busy} type="submit">
+					{busy ? "Guardando…" : "Guardar cambios"}
+				</button>
+				<button
+					className={`button-secondary${group.active ? " button-danger" : ""}`}
+					disabled={busy}
+					onClick={onChangeActivity}
+					type="button"
+				>
+					{group.active ? "Desactivar" : "Reactivar"}
+				</button>
+			</div>
+		</form>
 	);
 }
 
@@ -275,16 +420,16 @@ function Field({
 	max?: string;
 }) {
 	return (
-		<label className="grid gap-1 text-sm font-medium">
+		<label className="field-label">
 			{label}
 			<input
-				className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+				className="field-outline"
 				defaultValue={value}
 				max={max}
 				min={min}
 				name={name}
-				type={type}
 				required
+				type={type}
 			/>
 		</label>
 	);
@@ -302,10 +447,10 @@ function CatalogSelect({
 	entries: Array<{ id: string; name: string }>;
 }) {
 	return (
-		<label className="grid gap-1 text-sm font-medium">
+		<label className="field-label">
 			{label}
 			<select
-				className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2"
+				className="field-outline"
 				defaultValue={current.id}
 				name={name}
 				required

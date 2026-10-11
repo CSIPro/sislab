@@ -18,6 +18,7 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
+    "test:unit": "tsx --test src/lib/*.test.ts",
     "test:integration": "tsx --test src/server/*.integration.test.ts test/*.integration.test.ts",
     "test:browser": "playwright test",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts"

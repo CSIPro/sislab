@@ -1,10 +1,25 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
+import { Fragment, useState } from "react";
+import {
+	RequestDetails,
+	StatusChip,
+	statusFilterOptions,
+	voidedByName,
+} from "../components/request-parts.tsx";
 import {
 	canDecideLateException,
 	requestStatusKey,
-	requestStatusLabel,
 } from "../lib/preparation-request-status.ts";
+import {
+	addDays,
+	formatDateSpan,
+	formatSessionDate,
+	groupLabel,
+	sislabToday,
+	timeRange,
+	weekRange,
+} from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
@@ -14,14 +29,8 @@ import {
 	voidPreparationRequestFn,
 } from "../server/preparation-request-functions.ts";
 import type { RequestListRow } from "../server/preparation-requests.ts";
-import { MaterialList, Status } from "./app.requests.mine.tsx";
 
-const initialDate = new Intl.DateTimeFormat("en-CA", {
-	timeZone: "America/Hermosillo",
-	year: "numeric",
-	month: "2-digit",
-	day: "2-digit",
-}).format(new Date());
+type Range = "day" | "week";
 
 export const Route = createFileRoute("/app/requests/all")({
 	loader: async () => {
@@ -29,9 +38,10 @@ export const Route = createFileRoute("/app/requests/all")({
 		if (!user) throw redirect({ to: "/sign-in" });
 		if (!user.roles.includes("staff") && !user.roles.includes("admin"))
 			throw redirect({ to: "/app/dashboard" });
-		const { from, through } = dateRange(initialDate, "day");
+		const today = sislabToday();
+		const { from, through } = dateRange(today, "week");
 		return {
-			user,
+			today,
 			requests: await listAllPreparationRequestsFn({
 				data: { fromDate: from, throughDate: through },
 			}),
@@ -39,84 +49,97 @@ export const Route = createFileRoute("/app/requests/all")({
 	},
 	component: AllPreparationRequestsPage,
 	errorComponent: ({ reset }) => (
-		<main className="page-wrap px-4 py-10 sm:py-12">
-			<section className="island-shell mx-auto max-w-6xl rounded-2xl p-5 sm:p-8">
-				<h1 className="display-title text-3xl font-bold text-[var(--foreground)] sm:text-4xl">
-					No se pudieron cargar las solicitudes
-				</h1>
-				<p className="mt-2 text-[var(--muted-foreground)]">
-					Inténtalo de nuevo. Si el problema continúa, contacta al
-					administrador.
-				</p>
-				<button className="button-primary mt-5" onClick={reset} type="button">
-					Intentar de nuevo
-				</button>
-			</section>
+		<main className="app-page">
+			<div className="app-page-inner is-compact">
+				<header className="page-head-copy">
+					<h1 className="page-title">No se pudieron cargar las solicitudes</h1>
+					<p className="page-sub">
+						Inténtalo de nuevo. Si el problema continúa, contacta al
+						administrador.
+					</p>
+				</header>
+				<div>
+					<button className="button-primary" onClick={reset} type="button">
+						Intentar de nuevo
+					</button>
+				</div>
+			</div>
 		</main>
 	),
 });
 
 function AllPreparationRequestsPage() {
 	const initial = Route.useLoaderData();
+	const { periodCode } = Route.useRouteContext();
 	const [requests, setRequests] = useState(initial.requests);
-	const [date, setDate] = useState(initialDate);
-	const [range, setRange] = useState<"day" | "week">("day");
+	const [date, setDate] = useState(initial.today);
+	const [range, setRange] = useState<Range>("week");
+	const [labFilter, setLabFilter] = useState("all");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [message, setMessage] = useState("");
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const labs = [
+		...new Set(requests.map(({ request }) => request.labName)),
+	].sort((a, b) => a.localeCompare(b, "es-MX"));
 	const filtered = requests.filter(
 		({ request }) =>
-			statusFilter === "all" || requestStatusKey(request) === statusFilter,
+			(labFilter === "all" || request.labName === labFilter) &&
+			(statusFilter === "all" || requestStatusKey(request) === statusFilter),
 	);
+	const pending = requests.filter(({ request }) =>
+		canDecideLateException(request),
+	).length;
+	const selected = dateRange(date, range);
+	const rangeLabel = range === "day" ? "Día" : "Semana";
 
-	async function refresh(nextDate = date, nextRange = range) {
-		const selected = dateRange(nextDate, nextRange);
-		setRequests(
-			await listAllPreparationRequestsFn({
-				data: { fromDate: selected.from, throughDate: selected.through },
-			}),
+	async function show(nextDate: string, nextRange: Range) {
+		setDate(nextDate);
+		setRange(nextRange);
+		setMessage("");
+		const next = dateRange(nextDate, nextRange);
+		try {
+			setRequests(
+				await listAllPreparationRequestsFn({
+					data: { fromDate: next.from, throughDate: next.through },
+				}),
+			);
+		} catch (error) {
+			setMessage(
+				userFacingError(error, "No se pudieron cargar las solicitudes."),
+			);
+		}
+	}
+
+	async function act(
+		requestId: string,
+		fallback: string,
+		action: () => Promise<unknown>,
+	) {
+		setBusyId(requestId);
+		setMessage("");
+		try {
+			await action();
+			await show(date, range);
+		} catch (error) {
+			setMessage(
+				userFacingError(
+					error,
+					error instanceof Error ? error.message : fallback,
+				),
+			);
+		} finally {
+			setBusyId(null);
+		}
+	}
+
+	const decide = (requestId: string, decision: "accepted" | "declined") =>
+		act(requestId, "No se pudo guardar la decisión.", () =>
+			decideLateExceptionFn({ data: { requestId, decision } }),
 		);
-	}
-
-	async function decide(requestId: string, decision: "accepted" | "declined") {
-		setBusyId(requestId);
-		setMessage("");
-		try {
-			await decideLateExceptionFn({ data: { requestId, decision } });
-			await refresh();
-		} catch (error) {
-			setMessage(
-				userFacingError(
-					error,
-					error instanceof Error
-						? error.message
-						: "No se pudo guardar la decisión.",
-				),
-			);
-		} finally {
-			setBusyId(null);
-		}
-	}
-
-	async function voidRequest(requestId: string, reason: string) {
-		setBusyId(requestId);
-		setMessage("");
-		try {
-			await voidPreparationRequestFn({ data: { requestId, reason } });
-			await refresh();
-		} catch (error) {
-			setMessage(
-				userFacingError(
-					error,
-					error instanceof Error
-						? error.message
-						: "No se pudo anular la solicitud.",
-				),
-			);
-		} finally {
-			setBusyId(null);
-		}
-	}
+	const voidRequest = (requestId: string, reason: string) =>
+		act(requestId, "No se pudo anular la solicitud.", () =>
+			voidPreparationRequestFn({ data: { requestId, reason } }),
+		);
 
 	async function printTicket() {
 		const printWindow = window.open("about:blank", "_blank");
@@ -144,15 +167,16 @@ function AllPreparationRequestsPage() {
 	}
 
 	return (
-		<main className="page-wrap px-4 py-10 sm:py-12">
-			<section className="island-shell mx-auto max-w-6xl rounded-2xl p-5 sm:p-8">
-				<header className="flex flex-wrap items-start justify-between gap-4">
-					<div>
-						<h1 className="display-title text-3xl font-bold text-[var(--foreground)] sm:text-4xl">
-							Todas las solicitudes
-						</h1>
-						<p className="mt-2 text-[var(--muted-foreground)]">
-							Consulta solicitudes por día o semana y prepara el ticket diario.
+		<main className="app-page">
+			<div className="app-page-inner is-compact">
+				<header className="page-head">
+					<div className="page-head-copy">
+						<h1 className="page-title">Todas las solicitudes</h1>
+						<p className="page-sub">
+							{range === "day"
+								? formatSessionDate(date, "full")
+								: `Semana del ${formatDateSpan(selected.from, selected.through)}`}
+							{periodCode && ` · Periodo ${periodCode}`}
 						</p>
 					</div>
 					<button
@@ -160,96 +184,135 @@ function AllPreparationRequestsPage() {
 						onClick={printTicket}
 						type="button"
 					>
-						Generar ticket PDF
+						<Download aria-hidden="true" size={18} strokeWidth={2} />
+						Ticket del{" "}
+						{formatSessionDate(date, "weekdayDay").toLocaleLowerCase("es-MX")}{" "}
+						(PDF)
 					</button>
 				</header>
-				<div className="mt-7 flex flex-wrap items-end gap-4 rounded-xl border border-[var(--border)] p-4">
-					<fieldset>
-						<legend className="mb-1 text-sm font-semibold">Ver</legend>
-						<div className="flex rounded-lg bg-[var(--secondary)] p-1">
+
+				{pending > 0 && (
+					<output className="notice notice-warning">
+						<Clock aria-hidden="true" size={20} strokeWidth={2} />
+						<p>
+							<strong>
+								{pending}{" "}
+								{pending === 1
+									? "excepción por decidir."
+									: "excepciones por decidir."}
+							</strong>{" "}
+							{pending === 1
+								? "Mientras no la aceptes, queda fuera del ticket del día."
+								: "Mientras no las aceptes, quedan fuera del ticket del día."}
+						</p>
+					</output>
+				)}
+
+				<div className="toolbar">
+					<div className="toolbar-group">
+						{/* biome-ignore lint/a11y/useSemanticElements: a fieldset would add a legend the design does not have */}
+						<div aria-label="Vista" className="seg-group" role="group">
 							<button
 								aria-pressed={range === "day"}
-								className={`button-secondary !min-h-10 !px-3 !py-1 ${range === "day" ? "!border-transparent !bg-[var(--primary)] !text-[var(--primary-foreground)]" : ""}`}
-								onClick={() => {
-									setRange("day");
-									void refresh(date, "day");
-								}}
+								className="seg"
+								onClick={() => void show(date, "day")}
 								type="button"
 							>
 								Día
 							</button>
 							<button
 								aria-pressed={range === "week"}
-								className={`button-secondary !min-h-10 !px-3 !py-1 ${range === "week" ? "!border-transparent !bg-[var(--primary)] !text-[var(--primary-foreground)]" : ""}`}
-								onClick={() => {
-									setRange("week");
-									void refresh(date, "week");
-								}}
+								className="seg"
+								onClick={() => void show(date, "week")}
 								type="button"
 							>
 								Semana
 							</button>
 						</div>
-					</fieldset>
-					<label className="grid gap-1 text-sm font-semibold">
-						Fecha
+						<button
+							aria-label={`${rangeLabel} anterior`}
+							className="button-secondary button-sm button-icon"
+							onClick={() =>
+								void show(addDays(date, range === "day" ? -1 : -7), range)
+							}
+							type="button"
+						>
+							<ChevronLeft aria-hidden="true" size={18} />
+						</button>
+						<button
+							aria-label={`${rangeLabel} siguiente`}
+							className="button-secondary button-sm button-icon"
+							onClick={() =>
+								void show(addDays(date, range === "day" ? 1 : 7), range)
+							}
+							type="button"
+						>
+							<ChevronRight aria-hidden="true" size={18} />
+						</button>
 						<input
-							className="rounded-lg bg-[var(--secondary)] px-3 py-2 font-normal"
+							aria-label="Fecha"
+							className="field-outline"
 							onChange={(event) => {
-								setDate(event.target.value);
-								if (event.target.value) void refresh(event.target.value);
+								if (event.target.value) void show(event.target.value, range);
 							}}
 							type="date"
 							value={date}
 						/>
-					</label>
-					<label className="grid gap-1 text-sm font-semibold">
-						Estado
+					</div>
+					<div className="toolbar-group">
+						<label htmlFor="all-requests-lab">Laboratorio</label>
 						<select
-							className="min-w-48 rounded-lg bg-[var(--secondary)] px-3 py-2 font-normal"
+							className="field-outline"
+							id="all-requests-lab"
+							onChange={(event) => setLabFilter(event.target.value)}
+							value={labFilter}
+						>
+							<option value="all">Todos</option>
+							{labFilter !== "all" && !labs.includes(labFilter) && (
+								<option value={labFilter}>{labFilter}</option>
+							)}
+							{labs.map((lab) => (
+								<option key={lab} value={lab}>
+									{lab}
+								</option>
+							))}
+						</select>
+						<label htmlFor="all-requests-status">Estado</label>
+						<select
+							className="field-outline"
+							id="all-requests-status"
 							onChange={(event) => setStatusFilter(event.target.value)}
 							value={statusFilter}
 						>
-							<option value="all">Todos los estados</option>
-							<option value="open">Abierta</option>
-							<option value="pending">Pendiente de excepción</option>
-							<option value="accepted">Excepción aceptada</option>
-							<option value="declined">Excepción rechazada</option>
-							<option value="voided">Anulada</option>
+							{statusFilterOptions.map(([value, label]) => (
+								<option key={value} value={value}>
+									{label}
+								</option>
+							))}
 						</select>
-					</label>
-					<span className="ml-auto pb-2 text-sm text-[var(--muted-foreground)]">
-						{filtered.length}{" "}
-						{filtered.length === 1 ? "solicitud" : "solicitudes"}
-					</span>
+					</div>
 				</div>
+
 				{message && (
-					<p
-						className="mt-4 rounded-lg bg-[var(--destructive)]/10 p-3 text-sm font-semibold"
-						role="alert"
-					>
+					<p className="notice notice-error" role="alert">
 						{message}
 					</p>
 				)}
-				<div className="mt-5 overflow-x-auto rounded-xl border border-[var(--border)]">
-					<table className="w-full min-w-[980px] text-left text-sm tabular-nums">
-						<thead className="bg-[var(--secondary)] font-mono text-xs">
+
+				<div className="table-shell">
+					<table className="data-table" style={{ minWidth: 1080 }}>
+						<thead>
 							<tr>
-								{[
-									"Fecha y hora",
-									"Ejercicio y grupo",
-									"Docente",
-									"Laboratorio",
-									"Estado",
-									"Acción",
-								].map((heading) => (
-									<th className="px-4 py-3" key={heading}>
-										{heading}
-									</th>
-								))}
+								<th scope="col">Fecha y hora</th>
+								<th scope="col">Ejercicio</th>
+								<th scope="col">Profesor</th>
+								<th scope="col">Grupo</th>
+								<th scope="col">Lab.</th>
+								<th scope="col">Estado</th>
+								<th scope="col">Acciones</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-[var(--border)]">
+						<tbody>
 							{filtered.map((item) => (
 								<StaffRequestRow
 									busy={busyId === item.request.id}
@@ -262,16 +325,16 @@ function AllPreparationRequestsPage() {
 						</tbody>
 					</table>
 					{filtered.length === 0 && (
-						<p className="p-8 text-center text-[var(--muted-foreground)]">
-							No hay solicitudes en este periodo.
-						</p>
+						<p className="table-empty">No hay solicitudes en este periodo.</p>
 					)}
 				</div>
-				<p className="mt-5 rounded-xl bg-[var(--info)]/15 p-4 text-sm text-[var(--foreground)]">
-					Las solicitudes abiertas y las excepciones aceptadas aparecen en el
-					ticket. Las pendientes, rechazadas y anuladas quedan fuera.
+
+				<p className="footnote">
+					El ticket incluye las solicitudes ordinarias y las excepciones
+					aceptadas del día. Las excepciones sin decisión, las rechazadas y las
+					anuladas no aparecen.
 				</p>
-			</section>
+			</div>
 		</main>
 	);
 }
@@ -289,147 +352,132 @@ function StaffRequestRow({
 }) {
 	const { request, group, professor } = item;
 	const [reason, setReason] = useState("");
-	const [showVoidForm, setShowVoidForm] = useState(false);
+	const [panel, setPanel] = useState<"details" | "void" | null>(null);
+	const voided = request.status === "voided";
+	const toggle = (next: "details" | "void") =>
+		setPanel((current) => (current === next ? null : next));
 	return (
-		<tr className="align-top">
-			<td className="whitespace-nowrap px-4 py-5 font-mono">
-				{request.sessionDate.slice(5).replace("-", ".")} ·{" "}
-				{request.startTime.slice(0, 5)}
-			</td>
-			<td className="px-4 py-5">
-				<strong className="text-[var(--primary-text)]">
-					{request.exerciseName} · Grupo {group.number}
-				</strong>
-				<details className="mt-2">
-					<summary className="cursor-pointer text-xs font-semibold text-[var(--primary-text)]">
-						Ver detalle
-					</summary>
-					<RequestDetails item={item} />
-				</details>
-			</td>
-			<td className="px-4 py-5">
-				{professor.name} {professor.surname}
-			</td>
-			<td className="px-4 py-5">{request.labName}</td>
-			<td className="px-4 py-5">
-				<Status status={requestStatusLabel(request)} />
-			</td>
-			<td className="px-4 py-5">
-				<div className="flex min-w-48 flex-wrap gap-2">
-					{canDecideLateException(request) && (
-						<>
-							<button
-								className="button-primary !min-h-10 !px-3 !py-1 disabled:opacity-50"
-								disabled={busy}
-								onClick={() => onDecide(request.id, "accepted")}
-								type="button"
-							>
-								Aceptar
-							</button>
-							<button
-								className="button-secondary !min-h-10 !px-3 !py-1 disabled:opacity-50"
-								disabled={busy}
-								onClick={() => onDecide(request.id, "declined")}
-								type="button"
-							>
-								Rechazar
-							</button>
-						</>
+		<Fragment>
+			<tr className={voided ? "is-void" : undefined}>
+				<td>
+					<strong>{formatSessionDate(request.sessionDate, "short")}</strong>
+					<small>{timeRange(request.startTime, request.endTime)}</small>
+				</td>
+				<td>
+					{request.exerciseName}
+					{voided ? (
+						<small className="cell-note">
+							Anulada por {voidedByName(item)}
+							{request.voidedAt &&
+								`, ${formatSessionDate(sislabToday(new Date(request.voidedAt)), "dayMonth")}`}
+							.
+						</small>
+					) : (
+						request.lateReason && (
+							<small className="cell-note">Motivo: {request.lateReason}</small>
+						)
 					)}
-					{request.status !== "voided" && (
+				</td>
+				<td>
+					{professor.name} {professor.surname}
+				</td>
+				<td>
+					{group.subjectName} · {groupLabel(group.number)}
+				</td>
+				<td className="whitespace-nowrap">{request.labName}</td>
+				<td>
+					<StatusChip request={request} />
+				</td>
+				<td>
+					<div className="row-actions">
+						{canDecideLateException(request) && (
+							<>
+								<button
+									className="button-primary button-sm"
+									disabled={busy}
+									onClick={() => onDecide(request.id, "accepted")}
+									type="button"
+								>
+									Aceptar
+								</button>
+								<button
+									className="button-secondary button-sm"
+									disabled={busy}
+									onClick={() => onDecide(request.id, "declined")}
+									type="button"
+								>
+									Rechazar
+								</button>
+							</>
+						)}
 						<button
-							className="text-xs font-semibold text-[var(--destructive)] underline"
-							disabled={busy}
-							onClick={() => setShowVoidForm((open) => !open)}
+							aria-expanded={panel === "details"}
+							className="button-secondary button-sm"
+							onClick={() => toggle("details")}
 							type="button"
 						>
-							Anular solicitud
+							Ver
 						</button>
-					)}
-				</div>
-				{request.status === "voided" && (
-					<p className="mt-2 max-w-60 text-xs">
-						Motivo: {request.voidReason}
-						<br />
-						{item.voidedBy &&
-							`Anulada por ${item.voidedBy.name} ${item.voidedBy.surname} · `}
-						{request.voidedAt && formatDateTime(request.voidedAt)}
-					</p>
-				)}
-				{showVoidForm && (
-					<form
-						className="mt-3 grid min-w-56 gap-2"
-						onSubmit={(event) => {
-							event.preventDefault();
-							onVoid(request.id, reason);
-						}}
-					>
-						<label className="grid gap-1 text-xs font-semibold">
-							Motivo requerido
-							<textarea
-								className="min-h-20 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 font-normal"
-								onChange={(event) => setReason(event.target.value)}
-								required
-								value={reason}
-							/>
-						</label>
-						<button
-							className="w-fit button-primary !min-h-10 !px-3 !py-1 !bg-[var(--destructive)] !text-[var(--destructive-foreground)] disabled:opacity-50"
-							disabled={busy || !reason.trim()}
-							type="submit"
+						{!voided && (
+							<button
+								aria-expanded={panel === "void"}
+								className="button-secondary button-sm button-danger"
+								disabled={busy}
+								onClick={() => toggle("void")}
+								type="button"
+							>
+								Anular
+							</button>
+						)}
+					</div>
+				</td>
+			</tr>
+			{panel === "details" && (
+				<tr className="detail-row">
+					<td colSpan={7}>
+						<RequestDetails item={item} />
+					</td>
+				</tr>
+			)}
+			{panel === "void" && !voided && (
+				<tr className="detail-row">
+					<td colSpan={7}>
+						<form
+							className="stack"
+							onSubmit={(event) => {
+								event.preventDefault();
+								onVoid(request.id, reason);
+							}}
+							style={{ maxWidth: 600 }}
 						>
-							Confirmar anulación
-						</button>
-					</form>
-				)}
-			</td>
-		</tr>
+							<label className="field-label">
+								Motivo de la anulación
+								<textarea
+									className="field"
+									onChange={(event) => setReason(event.target.value)}
+									required
+									value={reason}
+								/>
+							</label>
+							<div>
+								<button
+									className="button-secondary button-sm button-danger"
+									disabled={busy || !reason.trim()}
+									type="submit"
+								>
+									Confirmar anulación
+								</button>
+							</div>
+						</form>
+					</td>
+				</tr>
+			)}
+		</Fragment>
 	);
 }
 
-function RequestDetails({ item }: { item: RequestListRow }) {
-	const { request } = item;
-	return (
-		<div className="mt-2 max-w-[min(80vw,38rem)] rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
-			<dl className="grid gap-3 sm:grid-cols-2">
-				<div>
-					<dt className="text-xs text-[var(--muted-foreground)]">Enviada</dt>
-					<dd>{formatDateTime(request.createdAt)}</dd>
-				</div>
-				<div>
-					<dt className="text-xs text-[var(--muted-foreground)]">
-						Nota del docente
-					</dt>
-					<dd>{request.professorNote || "Sin nota"}</dd>
-				</div>
-			</dl>
-			<MaterialList materials={request.materials} />
-			{request.lateReason && (
-				<p className="mt-3 rounded-lg bg-[var(--secondary)] p-3 text-sm">
-					<strong>Motivo de excepción:</strong> {request.lateReason}
-				</p>
-			)}
-			{request.status === "voided" && (
-				<p className="mt-3 rounded-lg bg-[var(--destructive)]/10 p-3 text-sm">
-					<strong>Motivo de anulación:</strong> {request.voidReason}
-					<br />
-					{item.voidedBy &&
-						`Anulada por ${item.voidedBy.name} ${item.voidedBy.surname} · `}
-					{request.voidedAt && formatDateTime(request.voidedAt)}
-				</p>
-			)}
-		</div>
-	);
-}
-
-function dateRange(value: string, range: "day" | "week") {
-	const date = new Date(`${value}T12:00:00Z`);
-	if (range === "day") return { from: value, through: value };
-	const offset = (date.getUTCDay() + 6) % 7;
-	date.setUTCDate(date.getUTCDate() - offset);
-	const from = date.toISOString().slice(0, 10);
-	date.setUTCDate(date.getUTCDate() + 6);
-	return { from, through: date.toISOString().slice(0, 10) };
+function dateRange(value: string, range: Range) {
+	return range === "day" ? { from: value, through: value } : weekRange(value);
 }
 
 function buildTicketHtml(rows: RequestListRow[], date: string) {
@@ -522,11 +570,4 @@ function formatDate(value: string) {
 		timeZone: "UTC",
 		dateStyle: "long",
 	}).format(new Date(`${value}T12:00:00Z`));
-}
-function formatDateTime(value: Date) {
-	return new Intl.DateTimeFormat("es-MX", {
-		timeZone: "America/Hermosillo",
-		dateStyle: "medium",
-		timeStyle: "short",
-	}).format(new Date(value));
 }

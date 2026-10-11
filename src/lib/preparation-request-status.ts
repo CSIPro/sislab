@@ -22,21 +22,19 @@ export function requestStatusKey(
 	return "open";
 }
 
+export const requestStatusLabels: Record<PreparationRequestStatusKey, string> =
+	{
+		open: "Registrada",
+		pending: "Excepción pendiente",
+		accepted: "Excepción aceptada",
+		declined: "Excepción rechazada",
+		voided: "Anulada",
+	};
+
 export function requestStatusLabel(
 	request: PreparationRequestStatusFields,
 ): string {
-	switch (requestStatusKey(request)) {
-		case "voided":
-			return "Anulada";
-		case "accepted":
-			return "Excepción aceptada";
-		case "declined":
-			return "Excepción rechazada";
-		case "pending":
-			return "Pendiente de excepción";
-		case "open":
-			return "Abierta";
-	}
+	return requestStatusLabels[requestStatusKey(request)];
 }
 
 export function canDecideLateException(
