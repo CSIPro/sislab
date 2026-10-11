@@ -252,6 +252,7 @@ function AdminLinksPanel() {
 			<div className="dashboard-shortcut-list">
 				<Link to="/app/admin/users">Usuarios <ArrowRight aria-hidden="true" size={16} /></Link>
 				<Link to="/app/admin/groups">Grupos <ArrowRight aria-hidden="true" size={16} /></Link>
+				<Link to="/app/admin/exercises">Ejercicios de laboratorio <ArrowRight aria-hidden="true" size={16} /></Link>
 				<Link to="/app/admin/periods">Periodos académicos <ArrowRight aria-hidden="true" size={16} /></Link>
 				<Link to="/app/admin/catalogs">Catálogos <ArrowRight aria-hidden="true" size={16} /></Link>
 			</div>

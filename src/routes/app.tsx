@@ -116,6 +116,9 @@ function AppLayout() {
 								<Link aria-current={pathname === "/app/admin/groups" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/groups" onClick={closeMenu}>
 									<FlaskConical aria-hidden="true" size={17} />Grupos
 								</Link>
+								<Link aria-current={pathname === "/app/admin/exercises" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/exercises" onClick={closeMenu}>
+									<FlaskConical aria-hidden="true" size={17} />Ejercicios de laboratorio
+								</Link>
 								<Link aria-current={pathname === "/app/admin/periods" ? "page" : undefined} className="sidebar-link sidebar-link-sub" to="/app/admin/periods" onClick={closeMenu}>
 									<CalendarDays aria-hidden="true" size={17} />Periodos académicos
 								</Link>
@@ -175,6 +178,7 @@ const routeTitles: Record<string, string> = {
 	"/app/admin/accounts": "Solicitudes de acceso",
 	"/app/admin/users": "Usuarios",
 	"/app/admin/groups": "Grupos",
+	"/app/admin/exercises": "Ejercicios de laboratorio",
 	"/app/admin/periods": "Periodos académicos",
 	"/app/admin/catalogs": "Catálogos",
 };
