@@ -144,7 +144,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 		run(
 			active
 				? "No se pudo reactivar este elemento."
-				: "No se pudo retirar este elemento.",
+				: "No se pudo desactivar este elemento.",
 			async () => {
 				const change = active ? reactivateCatalogEntryFn : retireCatalogEntryFn;
 				await change({ data: { kind, id: entry.id } });
@@ -163,7 +163,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 				</Link>
 			</Button>
 			<PageHeader
-				description={`${catalog.description} Un elemento retirado deja de ofrecerse, pero sigue visible en los grupos y solicitudes que ya lo usan.`}
+				description={`${catalog.description} Un elemento desactivado deja de ofrecerse, pero sigue visible en los grupos y solicitudes que ya lo usan.`}
 				title={catalog.title}
 			>
 				<Button
@@ -345,7 +345,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 									size="lg"
 									variant="outline"
 								>
-									{selected.active ? "Retirar" : "Reactivar"}
+									{selected.active ? "Desactivar" : "Reactivar"}
 								</Button>
 							</CardFooter>
 						</>

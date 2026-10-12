@@ -30,7 +30,7 @@ function CatalogsPage() {
 	return (
 		<Page size="compact">
 			<PageHeader
-				description="Las listas que se usan al registrar grupos. Elige una para agregar, renombrar o retirar sus elementos."
+				description="Las listas que se usan al registrar grupos. Elige una para agregar, renombrar o desactivar sus elementos."
 				title="Catálogos"
 			/>
 
