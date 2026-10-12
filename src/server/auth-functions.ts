@@ -46,6 +46,7 @@ export const getCurrentSessionFn = createServerFn({ method: 'GET' }).handler(asy
 })
 
 function sessionCookie(token: string, maxAge: number): string {
+	// Scoped to the app's base path so the legacy SISLAB on the same host never receives the token.
 	const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
-	return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`
+	return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=${import.meta.env.BASE_URL}; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`
 }

@@ -9,6 +9,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "#/components/ui/tabs.tsx";
+import { withBase } from "#/lib/base-path.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { signUpFn } from "../server/account-functions.ts";
 import { signInFn } from "../server/auth-functions.ts";
@@ -34,10 +35,10 @@ export default function AccessCard({
 			<a
 				aria-label="SISLAB, Sistema de Laboratorios, inicio"
 				className="flex flex-col items-center gap-0.5 text-xs text-muted-foreground no-underline hover:text-muted-foreground"
-				href="/"
+				href={withBase("/")}
 			>
 				<span className="flex items-center gap-2.5 text-4xl leading-none font-bold tracking-[0.02em] text-sislab-green">
-					<img alt="" className="size-10" src="/images/logo.svg" />
+					<img alt="" className="size-10" src={withBase("/images/logo.svg")} />
 					SISLAB
 				</span>
 				Sistema de Laboratorios
@@ -52,7 +53,7 @@ export default function AccessCard({
 						Ya iniciaste sesión en SISLAB.
 					</p>
 					<Button asChild size="lg">
-						<a href="/app/dashboard">Ir a mi espacio</a>
+						<a href={withBase("/app/dashboard")}>Ir a mi espacio</a>
 					</Button>
 				</div>
 			) : (
@@ -100,7 +101,7 @@ function SignInForm() {
 				setMessage(result.message);
 				return;
 			}
-			window.location.assign("/app/dashboard");
+			window.location.assign(withBase("/app/dashboard"));
 		} catch {
 			setMessage(
 				"No se pudo iniciar sesión. Revisa tu conexión e inténtalo de nuevo.",

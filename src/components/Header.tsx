@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ThemeIcon } from "#/components/theme-toggle.tsx";
 import { Button } from "#/components/ui/button.tsx";
+import { withBase } from "#/lib/base-path.ts";
 import { toggleTheme } from "#/lib/theme.ts";
 
 const navLink =
@@ -19,20 +20,24 @@ export default function Header() {
 					className="flex items-center gap-2.5 text-foreground no-underline hover:text-foreground"
 					to="/"
 				>
-					<img alt="" className="size-[30px]" src="/images/logo.svg" />
+					<img
+						alt=""
+						className="size-[30px]"
+						src={withBase("/images/logo.svg")}
+					/>
 					<strong className="text-[22px] tracking-[0.02em]">SISLAB</strong>
 				</Link>
 				<nav
 					aria-label="Secciones de la página"
 					className="flex flex-wrap items-center gap-7 max-md:gap-x-3 max-md:gap-y-1"
 				>
-					<a className={navLink} href="/#como-funciona">
+					<a className={navLink} href={withBase("/#como-funciona")}>
 						Cómo funciona
 					</a>
-					<a className={navLink} href="/#para-quien">
+					<a className={navLink} href={withBase("/#para-quien")}>
 						Para quién
 					</a>
-					<a className={navLink} href="/#acerca">
+					<a className={navLink} href={withBase("/#acerca")}>
 						Acerca de
 					</a>
 					<Button
@@ -46,7 +51,7 @@ export default function Header() {
 						<ThemeIcon />
 					</Button>
 					<Button asChild variant="outline">
-						<a href="/#acceso">Ingresar</a>
+						<a href={withBase("/#acceso")}>Ingresar</a>
 					</Button>
 				</nav>
 			</div>

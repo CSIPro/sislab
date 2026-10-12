@@ -4,6 +4,8 @@ import { Pool } from 'pg'
 import { sislabToday } from '../../src/lib/session-dates.ts'
 import { hashPassword } from '../../src/server/auth.server.ts'
 
+// The app is served under Vite's `base`, set in vite.config.ts.
+const base = '/v2'
 const suffix = randomUUID()
 const password = `E2e-${randomUUID()}-Sislab`
 const admin = { email: `admin-${suffix}@browser.test`, name: 'Browser', surname: 'Admin' }
@@ -80,13 +82,13 @@ test.afterAll(async () => {
 })
 
 test('guest landing, access request, and protected-route redirect work in Spanish', async ({ page }) => {
-	await page.goto('/')
+	await page.goto(`${base}/`)
 	await expect(page.getByRole('heading', { name: 'Prepara tu laboratorio sin papeleo.' })).toBeVisible()
 	await expect(page.getByRole('heading', { name: 'Cómo funciona' })).toBeVisible()
 	await expect(page.getByRole('heading', { name: 'Un tablero para cada rol' })).toBeVisible()
 	await expect(page.getByRole('contentinfo')).toContainText('CSI PRO')
 
-	await page.goto('/app/dashboard')
+	await page.goto(`${base}/app/dashboard`)
 	await expect(page).toHaveURL(/\/sign-in$/)
 	await expect(page.getByRole('tab', { name: 'Ingresar' })).toHaveAttribute('aria-selected', 'true')
 	await expect(page.getByText(professor.email)).toHaveCount(0)
@@ -119,18 +121,18 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 		['/groups/manage', '/app/groups/manage'],
 		['/about', '/'],
 	] as const) {
-		await page.goto(legacy)
-		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
+		await page.goto(`${base}${legacy}`)
+		await expect.poll(() => new URL(page.url()).pathname).toBe(`${base}${canonical}`)
 	}
 
-	await page.goto('/')
+	await page.goto(`${base}/`)
 	await expect(page.getByText('Sesión activa')).toBeVisible()
 	await expect(page.getByRole('link', { name: 'Ir a mi espacio' }).first()).toBeVisible()
-	await page.goto('/sign-up')
+	await page.goto(`${base}/sign-up`)
 	await expect(page.getByText('Sesión activa')).toBeVisible()
 	await expect(page.getByRole('textbox', { name: 'Correo electrónico' })).toHaveCount(0)
 
-	await page.goto('/app/dashboard')
+	await page.goto(`${base}/app/dashboard`)
 	await page.setViewportSize({ width: 390, height: 844 })
 	await page.waitForLoadState('networkidle')
 	const menu = page.locator('[data-slot="sidebar-trigger"]')
@@ -141,7 +143,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(menu).toHaveAttribute('aria-expanded', 'false')
 	await expect(menu).toBeFocused()
 
-	await page.goto('/app/groups/new')
+	await page.goto(`${base}/app/groups/new`)
 	await page.waitForLoadState('networkidle')
 	await pick(page, 'Período académico', new RegExp(`^${periodCode}`))
 	await pick(page, 'Laboratorio', labName)
@@ -154,11 +156,11 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await page.getByLabel('Hora de término').fill('11:00')
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
 	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el período ${periodCode}`))).toBeVisible()
-	await page.goto('/app/dashboard')
+	await page.goto(`${base}/app/dashboard`)
 	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
 	await expect(page.getByText('Martes, 10:00–11:00')).toBeVisible()
 
-	await page.goto('/app/groups/manage')
+	await page.goto(`${base}/app/groups/manage`)
 	await page.waitForLoadState('networkidle')
 	await expect(page.getByRole('heading', { name: 'Tu semana en el laboratorio' })).toBeVisible()
 	await expect(page.getByRole('radio', { name: 'Activos · 1' })).toBeChecked()
@@ -254,8 +256,8 @@ test('admin activates a requested account and can sign in as that account', asyn
 		['/admin/periods', '/app/admin/periods'],
 		['/admin/catalogs', '/app/admin/catalogs'],
 	] as const) {
-		await page.goto(legacy)
-		await expect.poll(() => new URL(page.url()).pathname).toBe(canonical)
+		await page.goto(`${base}${legacy}`)
+		await expect.poll(() => new URL(page.url()).pathname).toBe(`${base}${canonical}`)
 	}
 	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Cuentas' }).click()
 	await page.waitForLoadState('networkidle')
@@ -274,7 +276,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 test('admin edits a professor group and manages periods and catalogs', async ({ page }) => {
 	await signIn(page, admin.email)
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Grupos', exact: true })).toHaveCount(0)
-	await page.goto('/app/admin/groups')
+	await page.goto(`${base}/app/admin/groups`)
 	await page.waitForLoadState('networkidle')
 	const group = page.locator('article').filter({ hasText: `${periodCode} · Grupo 1` })
 	await expect(group).toBeVisible()
@@ -331,7 +333,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await page.getByRole('button', { name: 'Reactivar', exact: true }).click()
 	await expect(addedLab).toContainText('Activo')
 
-	await page.goto('/app/admin/exercises')
+	await page.goto(`${base}/app/admin/exercises`)
 	await page.waitForLoadState('networkidle')
 	await page.getByRole('button', { name: 'Nueva práctica' }).click()
 	const exerciseDialog = page.getByRole('dialog', { name: 'Nueva práctica' })
@@ -341,7 +343,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await exerciseDialog.getByRole('button', { name: 'Cancelar' }).click()
 	await expect(exerciseDialog).toHaveCount(0)
 
-	await page.goto('/app/admin/users')
+	await page.goto(`${base}/app/admin/users`)
 	await page.waitForLoadState('networkidle')
 	await page.getByLabel('Buscar').fill(professor.email)
 	await page.getByRole('button', { name: new RegExp(professor.email) }).click()
@@ -362,7 +364,7 @@ async function pick(page: import('@playwright/test').Page, label: string, option
 }
 
 async function signIn(page: import('@playwright/test').Page, email: string, userPassword = password) {
-	await page.goto('/sign-in')
+	await page.goto(`${base}/sign-in`)
 	await page.waitForLoadState('networkidle')
 	await page.getByLabel('Correo electrónico').fill(email)
 	await page.getByLabel('Contraseña').fill(userPassword)

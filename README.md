@@ -33,7 +33,7 @@ pnpm admin:bootstrap
 
 The command has no HTTP endpoint, requires a password of at least 12
 characters, and refuses to run once an admin role exists. No password or
-bootstrap secret is stored in the repository. Use `/sign-in` to authenticate;
+bootstrap secret is stored in the repository. Use `/v2/sign-in` to authenticate;
 sessions are stored as token hashes and expire after 12 hours.
 
 ## Legacy catalog seed

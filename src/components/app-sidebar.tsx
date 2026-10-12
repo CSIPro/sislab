@@ -35,6 +35,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "#/components/ui/sidebar.tsx";
+import { withBase } from "#/lib/base-path.ts";
 import { toggleTheme } from "#/lib/theme.ts";
 import type { AuthUser } from "#/server/auth.server.ts";
 
@@ -131,7 +132,7 @@ export function AppSidebar({
 					onClick={closeMobile}
 					to="/"
 				>
-					<img alt="" className="size-8" src="/images/logo.svg" />
+					<img alt="" className="size-8" src={withBase("/images/logo.svg")} />
 					<span className="grid min-w-0">
 						<strong className="text-[21px] leading-[1.1] tracking-[0.02em]">
 							SISLAB

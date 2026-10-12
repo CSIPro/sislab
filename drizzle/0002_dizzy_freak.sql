@@ -1,5 +1,12 @@
-ALTER TYPE "public"."request_status" ADD VALUE 'voided';--> statement-breakpoint
+-- The migrator runs all pending migrations in one transaction, and PostgreSQL rejects a value
+-- added with ALTER TYPE ... ADD VALUE when the same transaction uses it. Recreating the type avoids that.
 DROP INDEX "requests_active_group_date_unique";--> statement-breakpoint
+ALTER TYPE "public"."request_status" RENAME TO "request_status_old";--> statement-breakpoint
+CREATE TYPE "public"."request_status" AS ENUM('open', 'reviewed', 'fulfilled', 'cancelled', 'voided');--> statement-breakpoint
+ALTER TABLE "preparation_requests" ALTER COLUMN "status" DROP DEFAULT;--> statement-breakpoint
+ALTER TABLE "preparation_requests" ALTER COLUMN "status" SET DATA TYPE "public"."request_status" USING "status"::text::"public"."request_status";--> statement-breakpoint
+ALTER TABLE "preparation_requests" ALTER COLUMN "status" SET DEFAULT 'open';--> statement-breakpoint
+DROP TYPE "public"."request_status_old";--> statement-breakpoint
 ALTER TABLE "preparation_requests" ADD COLUMN "exercise_number" text;--> statement-breakpoint
 ALTER TABLE "preparation_requests" ADD COLUMN "exercise_name" text;--> statement-breakpoint
 ALTER TABLE "preparation_requests" ADD COLUMN "late_declined_by" uuid;--> statement-breakpoint

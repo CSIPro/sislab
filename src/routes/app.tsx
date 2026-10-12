@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 import { AppSidebar, MobileTopBar } from "../components/app-sidebar.tsx";
 import { SidebarProvider } from "../components/ui/sidebar.tsx";
+import { withBase } from "../lib/base-path.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn, signOutFn } from "../server/auth-functions.ts";
 
@@ -20,7 +21,7 @@ function AppLayout() {
 
 	async function signOut() {
 		await signOutFn();
-		window.location.assign("/");
+		window.location.assign(withBase("/"));
 	}
 
 	return (
