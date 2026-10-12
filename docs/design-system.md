@@ -21,6 +21,7 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - `csipro-purple` is only for the name "CSI PRO" in running text.
 - Charts use `chart-1`…`chart-5` in order. The suggested colours #6d9dc5, #ffe066 and #ed217c live here, not in UI states.
 - Dark theme: the green stays the same, and surfaces step `background` → `card` → `muted`.
+- The theme switch is an icon button in the landing header and a "Tema oscuro" / "Tema claro" row in the sidebar footer. `toggleTheme` in `src/lib/theme.ts` flips the `dark` class on `<html>` and saves the choice under `sislab-theme`. With nothing saved, the system setting decides. Use `ThemeIcon` and `ThemeLabel` from `components/theme-toggle.tsx` for any other switch.
 
 ## Typography
 

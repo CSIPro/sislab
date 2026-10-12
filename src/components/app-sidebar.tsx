@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { PersonAvatar } from "#/components/person-avatar.tsx";
+import { ThemeIcon, ThemeLabel } from "#/components/theme-toggle.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import { ScrollArea } from "#/components/ui/scroll-area.tsx";
 import {
@@ -34,6 +35,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "#/components/ui/sidebar.tsx";
+import { toggleTheme } from "#/lib/theme.ts";
 import type { AuthUser } from "#/server/auth.server.ts";
 
 type NavItem = { to: LinkProps["to"]; label: string; icon: LucideIcon };
@@ -201,7 +203,7 @@ export function AppSidebar({
 						</small>
 					</span>
 				</div>
-				<SidebarMenu>
+				<SidebarMenu className="gap-2">
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							asChild
@@ -211,6 +213,15 @@ export function AppSidebar({
 								<House aria-hidden="true" strokeWidth={1.75} />
 								<span>Página de inicio</span>
 							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							className={`${menuButton} text-[14.5px]`}
+							onClick={toggleTheme}
+						>
+							<ThemeIcon />
+							<ThemeLabel />
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>

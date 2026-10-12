@@ -1,5 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { ThemeIcon } from "#/components/theme-toggle.tsx";
 import { Button } from "#/components/ui/button.tsx";
+import { toggleTheme } from "#/lib/theme.ts";
 
 const navLink =
 	"px-1 py-3 text-[15px] font-medium text-foreground no-underline hover:text-primary-text";
@@ -33,6 +35,16 @@ export default function Header() {
 					<a className={navLink} href="/#acerca">
 						Acerca de
 					</a>
+					<Button
+						aria-label="Cambiar entre tema claro y oscuro"
+						className="[&>svg]:size-5"
+						onClick={toggleTheme}
+						size="icon"
+						title="Cambiar tema"
+						variant="outline"
+					>
+						<ThemeIcon />
+					</Button>
 					<Button asChild variant="outline">
 						<a href="/#acceso">Ingresar</a>
 					</Button>
