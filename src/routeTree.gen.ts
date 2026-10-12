@@ -26,7 +26,6 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as GroupsManageRouteImport } from './routes/groups.manage'
 import { Route as GroupsNewRouteImport } from './routes/groups.new'
 import { Route as AppAdminAccountsRouteImport } from './routes/app.admin.accounts'
-import { Route as AppAdminCatalogsRouteImport } from './routes/app.admin.catalogs'
 import { Route as AppAdminExercisesRouteImport } from './routes/app.admin.exercises'
 import { Route as AppAdminGroupsRouteImport } from './routes/app.admin.groups'
 import { Route as AppAdminPeriodsRouteImport } from './routes/app.admin.periods'
@@ -37,6 +36,8 @@ import { Route as AppGroupsNewRouteImport } from './routes/app.groups.new'
 import { Route as AppRequestsAllRouteImport } from './routes/app.requests.all'
 import { Route as AppRequestsMineRouteImport } from './routes/app.requests.mine'
 import { Route as AppRequestsNewRouteImport } from './routes/app.requests.new'
+import { Route as AppAdminCatalogsIndexRouteImport } from './routes/app.admin.catalogs.index'
+import { Route as AppAdminCatalogsKindRouteImport } from './routes/app.admin.catalogs.$kind'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -123,11 +124,6 @@ const AppAdminAccountsRoute = AppAdminAccountsRouteImport.update({
   path: '/admin/accounts',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAdminCatalogsRoute = AppAdminCatalogsRouteImport.update({
-  id: '/admin/catalogs',
-  path: '/admin/catalogs',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppAdminExercisesRoute = AppAdminExercisesRouteImport.update({
   id: '/admin/exercises',
   path: '/admin/exercises',
@@ -178,6 +174,16 @@ const AppRequestsNewRoute = AppRequestsNewRouteImport.update({
   path: '/requests/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminCatalogsIndexRoute = AppAdminCatalogsIndexRouteImport.update({
+  id: '/admin/catalogs/',
+  path: '/admin/catalogs/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminCatalogsKindRoute = AppAdminCatalogsKindRouteImport.update({
+  id: '/admin/catalogs/$kind',
+  path: '/admin/catalogs/$kind',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -197,7 +203,6 @@ export interface FileRoutesByFullPath {
   '/groups/new': typeof GroupsNewRoute
   '/app/': typeof AppIndexRoute
   '/app/admin/accounts': typeof AppAdminAccountsRoute
-  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/exercises': typeof AppAdminExercisesRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
@@ -208,6 +213,8 @@ export interface FileRoutesByFullPath {
   '/app/requests/all': typeof AppRequestsAllRoute
   '/app/requests/mine': typeof AppRequestsMineRoute
   '/app/requests/new': typeof AppRequestsNewRoute
+  '/app/admin/catalogs/$kind': typeof AppAdminCatalogsKindRoute
+  '/app/admin/catalogs/': typeof AppAdminCatalogsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -226,7 +233,6 @@ export interface FileRoutesByTo {
   '/groups/new': typeof GroupsNewRoute
   '/app': typeof AppIndexRoute
   '/app/admin/accounts': typeof AppAdminAccountsRoute
-  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/exercises': typeof AppAdminExercisesRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
@@ -237,6 +243,8 @@ export interface FileRoutesByTo {
   '/app/requests/all': typeof AppRequestsAllRoute
   '/app/requests/mine': typeof AppRequestsMineRoute
   '/app/requests/new': typeof AppRequestsNewRoute
+  '/app/admin/catalogs/$kind': typeof AppAdminCatalogsKindRoute
+  '/app/admin/catalogs': typeof AppAdminCatalogsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -257,7 +265,6 @@ export interface FileRoutesById {
   '/groups/new': typeof GroupsNewRoute
   '/app/': typeof AppIndexRoute
   '/app/admin/accounts': typeof AppAdminAccountsRoute
-  '/app/admin/catalogs': typeof AppAdminCatalogsRoute
   '/app/admin/exercises': typeof AppAdminExercisesRoute
   '/app/admin/groups': typeof AppAdminGroupsRoute
   '/app/admin/periods': typeof AppAdminPeriodsRoute
@@ -268,6 +275,8 @@ export interface FileRoutesById {
   '/app/requests/all': typeof AppRequestsAllRoute
   '/app/requests/mine': typeof AppRequestsMineRoute
   '/app/requests/new': typeof AppRequestsNewRoute
+  '/app/admin/catalogs/$kind': typeof AppAdminCatalogsKindRoute
+  '/app/admin/catalogs/': typeof AppAdminCatalogsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -289,7 +298,6 @@ export interface FileRouteTypes {
     | '/groups/new'
     | '/app/'
     | '/app/admin/accounts'
-    | '/app/admin/catalogs'
     | '/app/admin/exercises'
     | '/app/admin/groups'
     | '/app/admin/periods'
@@ -300,6 +308,8 @@ export interface FileRouteTypes {
     | '/app/requests/all'
     | '/app/requests/mine'
     | '/app/requests/new'
+    | '/app/admin/catalogs/$kind'
+    | '/app/admin/catalogs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -318,7 +328,6 @@ export interface FileRouteTypes {
     | '/groups/new'
     | '/app'
     | '/app/admin/accounts'
-    | '/app/admin/catalogs'
     | '/app/admin/exercises'
     | '/app/admin/groups'
     | '/app/admin/periods'
@@ -329,6 +338,8 @@ export interface FileRouteTypes {
     | '/app/requests/all'
     | '/app/requests/mine'
     | '/app/requests/new'
+    | '/app/admin/catalogs/$kind'
+    | '/app/admin/catalogs'
   id:
     | '__root__'
     | '/'
@@ -348,7 +359,6 @@ export interface FileRouteTypes {
     | '/groups/new'
     | '/app/'
     | '/app/admin/accounts'
-    | '/app/admin/catalogs'
     | '/app/admin/exercises'
     | '/app/admin/groups'
     | '/app/admin/periods'
@@ -359,6 +369,8 @@ export interface FileRouteTypes {
     | '/app/requests/all'
     | '/app/requests/mine'
     | '/app/requests/new'
+    | '/app/admin/catalogs/$kind'
+    | '/app/admin/catalogs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -499,13 +511,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminAccountsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/admin/catalogs': {
-      id: '/app/admin/catalogs'
-      path: '/admin/catalogs'
-      fullPath: '/app/admin/catalogs'
-      preLoaderRoute: typeof AppAdminCatalogsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/admin/exercises': {
       id: '/app/admin/exercises'
       path: '/admin/exercises'
@@ -576,6 +581,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRequestsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin/catalogs/': {
+      id: '/app/admin/catalogs/'
+      path: '/admin/catalogs'
+      fullPath: '/app/admin/catalogs/'
+      preLoaderRoute: typeof AppAdminCatalogsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/admin/catalogs/$kind': {
+      id: '/app/admin/catalogs/$kind'
+      path: '/admin/catalogs/$kind'
+      fullPath: '/app/admin/catalogs/$kind'
+      preLoaderRoute: typeof AppAdminCatalogsKindRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -583,7 +602,6 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAdminAccountsRoute: typeof AppAdminAccountsRoute
-  AppAdminCatalogsRoute: typeof AppAdminCatalogsRoute
   AppAdminExercisesRoute: typeof AppAdminExercisesRoute
   AppAdminGroupsRoute: typeof AppAdminGroupsRoute
   AppAdminPeriodsRoute: typeof AppAdminPeriodsRoute
@@ -594,13 +612,14 @@ interface AppRouteChildren {
   AppRequestsAllRoute: typeof AppRequestsAllRoute
   AppRequestsMineRoute: typeof AppRequestsMineRoute
   AppRequestsNewRoute: typeof AppRequestsNewRoute
+  AppAdminCatalogsKindRoute: typeof AppAdminCatalogsKindRoute
+  AppAdminCatalogsIndexRoute: typeof AppAdminCatalogsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppIndexRoute: AppIndexRoute,
   AppAdminAccountsRoute: AppAdminAccountsRoute,
-  AppAdminCatalogsRoute: AppAdminCatalogsRoute,
   AppAdminExercisesRoute: AppAdminExercisesRoute,
   AppAdminGroupsRoute: AppAdminGroupsRoute,
   AppAdminPeriodsRoute: AppAdminPeriodsRoute,
@@ -611,6 +630,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppRequestsAllRoute: AppRequestsAllRoute,
   AppRequestsMineRoute: AppRequestsMineRoute,
   AppRequestsNewRoute: AppRequestsNewRoute,
+  AppAdminCatalogsKindRoute: AppAdminCatalogsKindRoute,
+  AppAdminCatalogsIndexRoute: AppAdminCatalogsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

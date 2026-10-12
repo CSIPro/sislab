@@ -153,24 +153,34 @@ export function AppSidebar({
 								)}
 								<SidebarGroupContent>
 									<SidebarMenu className="gap-0.5">
-										{group.items.map(({ to, label, icon: Icon }) => (
-											<SidebarMenuItem key={to}>
-												<SidebarMenuButton
-													asChild
-													className={menuButton}
-													isActive={pathname === to}
-												>
-													<Link
-														aria-current={pathname === to ? "page" : undefined}
-														onClick={closeMobile}
-														to={to}
+										{group.items.map(({ to, label, icon: Icon }) => {
+											// A page under this one, such as a single catalog, keeps it marked.
+											const isCurrent = pathname === to;
+											const isActive =
+												isCurrent || pathname.startsWith(`${to}/`);
+											return (
+												<SidebarMenuItem key={to}>
+													<SidebarMenuButton
+														asChild
+														className={menuButton}
+														isActive={isActive}
 													>
-														<Icon aria-hidden="true" strokeWidth={1.75} />
-														<span>{label}</span>
-													</Link>
-												</SidebarMenuButton>
-											</SidebarMenuItem>
-										))}
+														<Link
+															// Without an exact match the Link calls itself the current page on sub-paths.
+															activeOptions={{ exact: true }}
+															aria-current={
+																isCurrent ? "page" : isActive || undefined
+															}
+															onClick={closeMobile}
+															to={to}
+														>
+															<Icon aria-hidden="true" strokeWidth={1.75} />
+															<span>{label}</span>
+														</Link>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											);
+										})}
 									</SidebarMenu>
 								</SidebarGroupContent>
 							</SidebarGroup>
