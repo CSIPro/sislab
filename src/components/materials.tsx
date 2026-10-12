@@ -1,8 +1,10 @@
 import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
+import { ChemicalInput } from "#/components/chemical-input.tsx";
 import { OptionSelect } from "#/components/option-select.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
+import { FieldDescription } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
 	Tooltip,
@@ -223,7 +225,16 @@ export function WasteRow({ item }: { item: WasteItem }) {
 }
 
 const editorRow =
-	"grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] gap-2 border-t py-2.5";
+	"grid grid-cols-[repeat(auto-fit,minmax(min(120px,100%),1fr))] items-start gap-2 border-t py-2.5";
+
+/** How to type a formula, shown once above the rows that accept one. */
+function NotationHint() {
+	return (
+		<FieldDescription className="pb-2">
+			Escribe H_2O para H₂O y Fe^3+ para Fe³⁺.
+		</FieldDescription>
+	);
+}
 
 function AddButton({
 	onClick,
@@ -245,11 +256,14 @@ function AddButton({
 /** Editable rows for reagents or equipment, with a button that adds one more. */
 export function QuantityEditor({
 	addLabel,
+	chemical = false,
 	kind,
 	items,
 	onChange,
 }: {
 	addLabel: string;
+	/** Whether the names may hold formulas, as reagent names do. */
+	chemical?: boolean;
 	/** "reactivo" or "equipo", used in each field's accessible name. */
 	kind: string;
 	items: QuantityDraft[];
@@ -261,18 +275,29 @@ export function QuantityEditor({
 				itemIndex === index ? { ...item, ...patch } : item,
 			),
 		);
+	const nameField = (index: number, item: QuantityDraft) => ({
+		"aria-label": `Nombre del ${kind} ${index + 1}`,
+		className: "col-span-2",
+		placeholder: "Nombre",
+		required: true,
+		value: item.name,
+	});
 	return (
 		<>
+			{chemical && items.length > 0 && <NotationHint />}
 			{items.map((item, index) => (
 				<div className={editorRow} key={item.key}>
-					<Input
-						aria-label={`Nombre del ${kind} ${index + 1}`}
-						className="col-span-2"
-						onChange={(event) => change(index, { name: event.target.value })}
-						placeholder="Nombre"
-						required
-						value={item.name}
-					/>
+					{chemical ? (
+						<ChemicalInput
+							{...nameField(index, item)}
+							onValueChange={(name) => change(index, { name })}
+						/>
+					) : (
+						<Input
+							{...nameField(index, item)}
+							onChange={(event) => change(index, { name: event.target.value })}
+						/>
+					)}
 					<Input
 						aria-label={`Cantidad del ${kind} ${index + 1}`}
 						min="0.000001"
@@ -334,17 +359,18 @@ export function WasteEditor({
 }) {
 	return (
 		<>
+			{items.length > 0 && <NotationHint />}
 			{items.map((item, index) => (
 				<div className={editorRow} key={item.key}>
 					{wasteFields.map(([field, label, placeholder]) => (
-						<Input
+						<ChemicalInput
 							aria-label={`${label} ${index + 1}`}
 							key={field}
-							onChange={(event) =>
+							onValueChange={(value) =>
 								onChange(
 									items.map((current, itemIndex) =>
 										itemIndex === index
-											? { ...current, [field]: event.target.value }
+											? { ...current, [field]: value }
 											: current,
 									),
 								)

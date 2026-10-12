@@ -383,6 +383,7 @@ function ExerciseForm({
 				<h3 className="text-[15px] font-bold">Reactivos</h3>
 				<QuantityEditor
 					addLabel="Agregar reactivo"
+					chemical
 					items={draft.reagents}
 					kind="reactivo"
 					onChange={(reagents) => onChange({ ...draft, reagents })}

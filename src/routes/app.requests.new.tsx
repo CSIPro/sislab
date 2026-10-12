@@ -371,6 +371,7 @@ function NewPreparationRequestPage() {
 								})}
 								<QuantityEditor
 									addLabel="Agregar reactivo"
+									chemical
 									items={addedReagents}
 									kind="reactivo"
 									onChange={setAddedReagents}

@@ -20,14 +20,15 @@ import {
 } from "../lib/daily-ticket.ts";
 import { Button } from "./ui/button.tsx";
 
+// Fira Mono has the subscripts and superscripts of chemical formulas, which the legacy Inconsolata lacks.
 Font.register({
-	family: "Inconsolata",
+	family: "Fira Mono",
 	fonts: [
 		{
-			src: "https://fonts.gstatic.com/s/inconsolata/v37/QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp4U8WR32kg.ttf",
+			src: "https://fonts.gstatic.com/s/firamono/v16/N0bX2SlFPv1weGeLZDtQIQ.ttf",
 		},
 		{
-			src: "https://fonts.gstatic.com/s/inconsolata/v37/QldgNThLqRwH-OJ1UHjlKENVzkWGVkL3GZQmAwLYxYWI2qfdm7Lpp2I7WR32kg.ttf",
+			src: "https://fonts.gstatic.com/s/firamono/v16/N0bS2SlFPv1weGeLZDtondv3mQ.ttf",
 			fontWeight: 700,
 		},
 	],
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
 
 	ticket: {
 		width: "80mm",
-		fontFamily: "Inconsolata",
+		fontFamily: "Fira Mono",
 		fontSize: 10,
 		display: "flex",
 		flexDirection: "column",
@@ -61,6 +62,8 @@ const styles = StyleSheet.create({
 	},
 
 	subtitle: {
+		// Fira Mono is wider than the legacy font. At 10pt this line would wrap mid-word.
+		fontSize: 8.5,
 		fontWeight: "bold",
 	},
 

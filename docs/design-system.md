@@ -28,7 +28,7 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - Headings: `h1` for page titles, `h2` for sections, `h3` for card titles (often bold in `primary-text`), `h5` for dialog titles, `h6` for the app bar.
 - Copy: `body` (16/1.5), with `body-sm` for checkbox labels and helper text. Buttons use `button` (19.2px, medium); the compact login button uses `button-sm`.
 - **Fira Mono** for table cells that hold data (`table-cell`), with `font-variant-numeric: tabular-nums` on the table. A table of people, such as Usuarios, sets `font-sans` on its cells and keeps Nunito, because names and emails read badly in a monospace face.
-- **Inconsolata** only for the printed 80mm ticket (`ticket-title`, `ticket-body`).
+- **Fira Mono** also sets the printed 80mm ticket (`ticket-title`, `ticket-body`). The legacy ticket used Inconsolata, which has no subscript or superscript glyphs for formulas such as H₂SO₄.
 - Roboto appears only on the old teacher dashboard (MaestroDashBoard.scss). Do not carry it over.
 
 ## Shape and layout
@@ -46,6 +46,7 @@ Every primitive is a shadcn/ui component from `src/components/ui`. Do not write 
 
 - **Button** (`ui/button.tsx`). `default` is the green primary action, `outline` the neutral one, `destructive` an outlined action with red text, `link` a text action in `primary-text`, and `choice` a selectable card such as a date (pair it with `aria-pressed`). Sizes: `default` is 44px, `lg` is 48px for a form's main actions, `sm` is the bold 14px table action, `icon` is 44px square, `inline` has almost no side padding. A link that looks like a button is `<Button asChild><Link …/></Button>`.
 - **Input and Textarea**. `variant="outline"` is the 44px outlined field. `variant="filled"` is the 48px grey field used on the access card and for textareas.
+- **ChemicalInput** (`components/chemical-input.tsx`) is the Input for a name that may hold a formula, such as a reagent or a waste item. It turns `H_2O` into H₂O and `Fe^3+` into Fe³⁺ while the person types, and offers the corrected name when they leave the field with `H2SO4`. The name is stored as plain Unicode text.
 - **Field** (`ui/field.tsx`). Wrap each control in `Field` with a `FieldLabel` and, when needed, a `FieldDescription`. Group related checkboxes in `FieldSet` with a `FieldLegend`.
 - **Checkbox, RadioGroup, ToggleGroup, Tabs**. A two-way switch such as Día/Semana is a `ToggleGroup` with `type="single"` and `variant="outline"`.
 - **Dates** use `DatePicker` (`ui/date-picker.tsx`), a Popover with the shadcn Calendar in Spanish. It reads and writes `YYYY-MM-DD` text. Pass `isDateDisabled` to block dates, `clearable` for optional dates, and `trigger` to open it from your own Button. `markedDates` puts a dot under the dates you list, `markedLabel` says what the dot means to screen readers, and `onMonthChange` tells you which month to load marks for.
@@ -81,6 +82,6 @@ Read from a local checkout of CSIPro/legacy-sislab at `main@a046f7a`.
 - **Added for shadcn** (not in the legacy code): `primary-foreground` → ink instead of white, `primary-text`, `success`, `warning`, `info-foreground`, `chart-*`, all dark-theme values and the dark value of `csipro-purple`.
 - **Suggested colours:** #363537 became `sislab-ink`. #6d9dc5 is the dark `info` and `chart-2`. #ffe066 is `warning` and `chart-3`. #ed217c is only `chart-4`, because the code already has its own error red (#ff3a20).
 - **Skipped one-off colours:** #39c9b5 (loader), #03a9f4 and #ececec (teacher dashboard), #888888/#666666 (old login form).
-- **Fonts:** Nunito, Fira Mono and Inconsolata come from Google Fonts, so there are no font files. The PDF also registers Open Sans 600 and an Inconsolata bold from third-party URLs, which were not carried over.
+- **Fonts:** Nunito and Fira Mono come from Google Fonts, so there are no font files. The PDF also registers Open Sans 600 and an Inconsolata bold from third-party URLs, which were not carried over.
 - **Assets not copied:** `microsoft-logo.png` (third-party), `public/logo192.png`/`logo512.png` (Create React App defaults) and `logoLogin.svg` (the same mark as `sislab-mark.svg`).
 - **Components:** the legacy MUI library is replaced by the shadcn/ui components in `src/components/ui`, themed to this system. See "Components and styling".
