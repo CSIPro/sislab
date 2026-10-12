@@ -7,6 +7,7 @@ import {
 import { ArrowLeft, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
+import { FormDialog } from "../components/form-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -52,7 +53,7 @@ export const Route = createFileRoute("/app/admin/catalogs/$kind")({
 	component: CatalogRoute,
 });
 
-/** The panel shows a name form or the bulk form in place of the detail. */
+/** The form open in the dialog: one name, or the bulk list. */
 type Draft =
 	| { mode: "entry"; id: string | null; name: string }
 	| { mode: "import"; text: string };
@@ -73,9 +74,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 	const [selectedId, setSelectedId] = useState(
 		(entries.find(({ active }) => active) ?? entries[0])?.id ?? null,
 	);
-	const [draft, setDraft] = useState<Draft | null>(
-		entries.length === 0 ? emptyDraft : null,
-	);
+	const [draft, setDraft] = useState<Draft | null>(null);
 	const [search, setSearch] = useState("");
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
@@ -86,14 +85,13 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 	);
 	const selected = entries.find(({ id }) => id === selectedId) ?? null;
 
-	function open(next: Draft) {
+	function open(next: Draft | null) {
 		setDraft(next);
 		setNotice(null);
 	}
 
 	function select(entryId: string) {
 		setSelectedId(entryId);
-		setDraft(null);
 		setNotice(null);
 	}
 
@@ -167,13 +165,14 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 				title={catalog.title}
 			>
 				<Button
+					disabled={busy}
 					onClick={() => open({ mode: "import", text: "" })}
 					size="lg"
 					variant="outline"
 				>
 					Cargar varios
 				</Button>
-				<Button onClick={() => open(emptyDraft())} size="lg">
+				<Button disabled={busy} onClick={() => open(emptyDraft())} size="lg">
 					<Plus aria-hidden="true" size={18} strokeWidth={2} />
 					{catalog.newLabel}
 				</Button>
@@ -200,7 +199,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 						</TableHeader>
 						<TableBody>
 							{visible.map((entry) => {
-								const isSelected = !draft && entry.id === selectedId;
+								const isSelected = entry.id === selectedId;
 								return (
 									<TableRow
 										data-muted={!entry.active}
@@ -245,68 +244,8 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 					aria-labelledby="catalog-panel-title"
 					className="max-w-[460px] flex-[1_1_340px]"
 				>
-					<ActionNotice notice={notice} />
-					{draft ? (
-						<form className="flex flex-col gap-[18px]" onSubmit={save}>
-							<CardTitle className="text-xl" id="catalog-panel-title">
-								{draft.mode === "import"
-									? "Cargar varios valores"
-									: draft.id
-										? "Cambiar nombre"
-										: catalog.newLabel}
-							</CardTitle>
-							{draft.mode === "import" ? (
-								<Field>
-									<FieldLabel htmlFor="catalog-import">
-										{catalog.title}
-									</FieldLabel>
-									<Textarea
-										id="catalog-import"
-										onChange={(event) =>
-											setDraft({ mode: "import", text: event.target.value })
-										}
-										required
-										rows={8}
-										value={draft.text}
-									/>
-									<FieldDescription>
-										Escribe un valor por línea. Los que ya existen se omiten.
-									</FieldDescription>
-								</Field>
-							) : (
-								<Field>
-									<FieldLabel htmlFor="catalog-name">Nombre</FieldLabel>
-									<Input
-										autoComplete="off"
-										id="catalog-name"
-										onChange={(event) =>
-											setDraft({ ...draft, name: event.target.value })
-										}
-										placeholder={catalog.placeholder}
-										required
-										value={draft.name}
-									/>
-								</Field>
-							)}
-							<CardFooter>
-								<Button disabled={busy} size="lg" type="submit">
-									{draft.mode === "import"
-										? "Cargar valores"
-										: draft.id
-											? "Guardar nombre"
-											: `Crear ${catalog.noun}`}
-								</Button>
-								<Button
-									disabled={busy}
-									onClick={() => setDraft(null)}
-									size="lg"
-									variant="outline"
-								>
-									Cancelar
-								</Button>
-							</CardFooter>
-						</form>
-					) : selected ? (
+					{!draft && <ActionNotice notice={notice} />}
+					{selected ? (
 						<>
 							<div className="flex items-start justify-between gap-3">
 								<div className="flex min-w-0 flex-col">
@@ -351,11 +290,66 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 						</>
 					) : (
 						<EmptyState id="catalog-panel-title">
-							{catalog.chooseText}
+							{entries.length === 0 ? catalog.emptyText : catalog.chooseText}
 						</EmptyState>
 					)}
 				</Card>
 			</div>
+
+			{draft && (
+				<FormDialog
+					busy={busy}
+					notice={notice}
+					onClose={() => open(null)}
+					onSubmit={save}
+					submitLabel={
+						draft.mode === "import"
+							? "Cargar valores"
+							: draft.id
+								? "Guardar nombre"
+								: `Crear ${catalog.noun}`
+					}
+					title={
+						draft.mode === "import"
+							? "Cargar varios valores"
+							: draft.id
+								? "Cambiar nombre"
+								: catalog.newLabel
+					}
+				>
+					{draft.mode === "import" ? (
+						<Field>
+							<FieldLabel htmlFor="catalog-import">{catalog.title}</FieldLabel>
+							<Textarea
+								id="catalog-import"
+								onChange={(event) =>
+									setDraft({ mode: "import", text: event.target.value })
+								}
+								required
+								rows={8}
+								value={draft.text}
+							/>
+							<FieldDescription>
+								Escribe un valor por línea. Los que ya existen se omiten.
+							</FieldDescription>
+						</Field>
+					) : (
+						<Field>
+							<FieldLabel htmlFor="catalog-name">Nombre</FieldLabel>
+							<Input
+								autoComplete="off"
+								id="catalog-name"
+								onChange={(event) =>
+									setDraft({ ...draft, name: event.target.value })
+								}
+								placeholder={catalog.placeholder}
+								required
+								value={draft.name}
+							/>
+						</Field>
+					)}
+				</FormDialog>
+			)}
 		</Page>
 	);
 }

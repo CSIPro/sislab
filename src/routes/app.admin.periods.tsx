@@ -1,11 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleCheck, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import {
+	DescriptionItem,
+	DescriptionList,
+} from "../components/description-list.tsx";
+import { FormDialog } from "../components/form-dialog.tsx";
 import { Notice, type NoticeState } from "../components/notice.tsx";
-import { Footnote, Page, PageHeader } from "../components/page.tsx";
+import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
-import { Card, CardTitle } from "../components/ui/card.tsx";
+import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import { DatePicker } from "../components/ui/date-picker.tsx";
 import {
 	Field,
@@ -34,6 +39,7 @@ import {
 	listAcademicPeriodsWithGroupCountsFn,
 	saveAcademicPeriodFn,
 } from "../server/academic-period-functions.ts";
+import type { AcademicPeriod } from "../server/academic-periods.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 
 export const Route = createFileRoute("/app/admin/periods")({
@@ -52,22 +58,39 @@ const statusBadges = {
 	concluded: ["neutral", "Concluido"],
 } as const satisfies Record<AcademicPeriodStatus, readonly [string, string]>;
 
-const emptyForm = { code: "", startsOn: "", endsOn: "" };
+type PeriodDraft = {
+	/** False while adding a period, when the code can still be typed. */
+	editing: boolean;
+	code: string;
+	startsOn: string;
+	endsOn: string;
+};
 
 function AcademicPeriodsPage() {
 	const initial = Route.useLoaderData();
 	const [periods, setPeriods] = useState(initial.periods);
-	const [form, setForm] = useState(emptyForm);
-	const [editing, setEditing] = useState(false);
+	const currentCode = currentAcademicPeriodCode();
+	const [selectedCode, setSelectedCode] = useState(
+		(
+			initial.periods.find(({ code }) => code === currentCode) ??
+			initial.periods.at(-1)
+		)?.code ?? null,
+	);
+	const [draft, setDraft] = useState<PeriodDraft | null>(null);
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
-	const currentCode = currentAcademicPeriodCode();
 	const currentYear = Number(currentCode.split("-")[0]);
 	const seedYears = [currentYear, currentYear + 1];
 	const seedCodes = seedYears.flatMap((year) => regularPeriodCodes(year));
 	const allSeeded = seedCodes.every((code) =>
 		periods.some((period) => period.code === code),
 	);
+	const selected = periods.find(({ code }) => code === selectedCode) ?? null;
+
+	function open(next: PeriodDraft | null) {
+		setDraft(next);
+		setNotice(null);
+	}
 
 	async function seedPeriods() {
 		setBusy(true);
@@ -99,19 +122,20 @@ function AcademicPeriodsPage() {
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (!draft) return;
 		setBusy(true);
 		setNotice(null);
 		try {
 			const saved = await saveAcademicPeriodFn({
 				data: {
-					code: form.code,
-					startsOn: form.startsOn || null,
-					endsOn: form.endsOn || null,
+					code: draft.code,
+					startsOn: draft.startsOn || null,
+					endsOn: draft.endsOn || null,
 				},
 			});
 			setPeriods(await listAcademicPeriodsWithGroupCountsFn());
-			setForm(emptyForm);
-			setEditing(false);
+			setSelectedCode(saved.code);
+			setDraft(null);
 			setNotice({ text: `Se guardó el período ${saved.code}.`, error: false });
 		} catch (error) {
 			setNotice({
@@ -123,36 +147,43 @@ function AcademicPeriodsPage() {
 		}
 	}
 
-	function stopEditing() {
-		setForm(emptyForm);
-		setEditing(false);
-	}
-
 	return (
 		<Page size="narrow">
 			<PageHeader
 				description="Los períodos académicos en los que se registran los grupos. Las fechas oficiales son opcionales."
 				title="Períodos"
 			>
-				<div className="flex flex-col items-end gap-1.5">
+				<div className="flex flex-wrap items-start gap-3">
+					<div className="flex w-min flex-col gap-1.5">
+						<Button
+							className="whitespace-nowrap"
+							disabled={busy || allSeeded}
+							onClick={seedPeriods}
+							size="lg"
+							variant="outline"
+						>
+							{allSeeded
+								? "Períodos agregados"
+								: `Agregar períodos ${seedYears.join(" y ")}`}
+						</Button>
+						<span className="text-[13px] text-muted-foreground">
+							Crea {listed(seedCodes)}. Los que ya existen se omiten.
+						</span>
+					</div>
 					<Button
-						disabled={busy || allSeeded}
-						onClick={seedPeriods}
+						disabled={busy}
+						onClick={() =>
+							open({ editing: false, code: "", startsOn: "", endsOn: "" })
+						}
 						size="lg"
-						variant="outline"
 					>
 						<Plus aria-hidden="true" size={18} strokeWidth={2} />
-						{allSeeded
-							? "Períodos agregados"
-							: `Agregar períodos ${seedYears.join(" y ")}`}
+						Agregar período
 					</Button>
-					<span className="max-w-80 text-right text-[13px] text-muted-foreground">
-						Crea {listed(seedCodes)}. Los que ya existen se omiten.
-					</span>
 				</div>
 			</PageHeader>
 
-			{notice && (
+			{!draft && notice && (
 				<Notice
 					icon={notice.error ? undefined : CircleCheck}
 					tone={notice.error ? "error" : "success"}
@@ -163,7 +194,7 @@ function AcademicPeriodsPage() {
 
 			<div className="flex flex-wrap items-start gap-6">
 				<Table
-					className="min-w-[560px]"
+					className="min-w-[480px]"
 					containerClassName="flex-[1.6_1_520px]"
 				>
 					<TableHeader>
@@ -173,17 +204,30 @@ function AcademicPeriodsPage() {
 							<TableHead>Fin</TableHead>
 							<TableHead>Grupos</TableHead>
 							<TableHead>Estado</TableHead>
-							<TableHead>Acciones</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{[...periods].reverse().map((period) => {
 							const [variant, label] =
 								statusBadges[academicPeriodStatus(period.code, currentCode)];
+							const isSelected = period.code === selectedCode;
 							return (
-								<TableRow key={period.code}>
+								<TableRow
+									data-state={isSelected ? "selected" : undefined}
+									key={period.code}
+								>
 									<TableCell>
-										<strong>{period.code}</strong>
+										<Button
+											aria-pressed={isSelected}
+											className="min-h-0 w-full justify-start rounded-sm px-0 text-left text-[13px] font-bold text-inherit hover:bg-transparent hover:text-primary-text"
+											onClick={() => {
+												setSelectedCode(period.code);
+												setNotice(null);
+											}}
+											variant="ghost"
+										>
+											{period.code}
+										</Button>
 									</TableCell>
 									<TableCell>{officialDate(period.startsOn)}</TableCell>
 									<TableCell>{officialDate(period.endsOn)}</TableCell>
@@ -191,98 +235,40 @@ function AcademicPeriodsPage() {
 									<TableCell>
 										<Badge variant={variant}>{label}</Badge>
 									</TableCell>
-									<TableCell>
-										<Button
-											aria-label={`Editar ${period.code}`}
-											disabled={busy}
-											onClick={() => {
-												setForm({
-													code: period.code,
-													startsOn: period.startsOn ?? "",
-													endsOn: period.endsOn ?? "",
-												});
-												setEditing(true);
-												setNotice(null);
-											}}
-											size="sm"
-											variant="outline"
-										>
-											Editar
-										</Button>
-									</TableCell>
 								</TableRow>
 							);
 						})}
 						{periods.length === 0 && (
-							<TableEmpty colSpan={6}>Aún no hay períodos.</TableEmpty>
+							<TableEmpty colSpan={5}>Aún no hay períodos.</TableEmpty>
 						)}
 					</TableBody>
 				</Table>
 
 				<Card
-					aria-labelledby="period-form-title"
+					aria-labelledby="period-panel-title"
 					className="max-w-[400px] flex-[1_1_300px]"
 				>
-					<CardTitle className="text-xl" id="period-form-title">
-						{editing ? `Editar ${form.code}` : "Agregar período"}
-					</CardTitle>
-					<form className="flex flex-col gap-4" onSubmit={save}>
-						{!editing && (
-							<Field>
-								<FieldLabel htmlFor="period-code">Código</FieldLabel>
-								<Input
-									id="period-code"
-									onChange={(event) =>
-										setForm({ ...form, code: event.target.value })
-									}
-									pattern="[0-9]{4}-[12]"
-									placeholder={`${currentYear + 1}-1`}
-									required
-									value={form.code}
-								/>
-								<FieldDescription>Usa AAAA-1 o AAAA-2.</FieldDescription>
-							</Field>
-						)}
-						<Field>
-							<FieldLabel htmlFor="period-starts-on">
-								Inicio (opcional)
-							</FieldLabel>
-							<DatePicker
-								clearable
-								id="period-starts-on"
-								onValueChange={(startsOn) => setForm({ ...form, startsOn })}
-								value={form.startsOn}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="period-ends-on">Fin (opcional)</FieldLabel>
-							<DatePicker
-								clearable
-								id="period-ends-on"
-								min={form.startsOn || undefined}
-								onValueChange={(endsOn) => setForm({ ...form, endsOn })}
-								value={form.endsOn}
-							/>
-							<FieldDescription>
-								Escribe las dos fechas o deja las dos vacías.
-							</FieldDescription>
-						</Field>
-						<div className="flex flex-wrap gap-3">
-							<Button disabled={busy} size="lg" type="submit">
-								{editing ? "Guardar período" : "Agregar período"}
-							</Button>
-							{editing && (
-								<Button
-									disabled={busy}
-									onClick={stopEditing}
-									size="lg"
-									variant="outline"
-								>
-									Cancelar
-								</Button>
-							)}
-						</div>
-					</form>
+					{selected ? (
+						<PeriodDetail
+							busy={busy}
+							onEdit={() =>
+								open({
+									editing: true,
+									code: selected.code,
+									startsOn: selected.startsOn ?? "",
+									endsOn: selected.endsOn ?? "",
+								})
+							}
+							period={selected}
+							status={academicPeriodStatus(selected.code, currentCode)}
+						/>
+					) : (
+						<EmptyState id="period-panel-title">
+							{periods.length === 0
+								? "Aún no hay períodos. Agrega el primero con Agregar período."
+								: "Elige un período para ver su detalle."}
+						</EmptyState>
+					)}
 				</Card>
 			</div>
 
@@ -290,7 +276,100 @@ function AcademicPeriodsPage() {
 				Los formularios de grupo sugieren el período actual, pero permiten
 				elegir otro. Las fechas del período no limitan las solicitudes.
 			</Footnote>
+
+			{draft && (
+				<FormDialog
+					busy={busy}
+					notice={notice}
+					onClose={() => open(null)}
+					onSubmit={save}
+					submitLabel={draft.editing ? "Guardar período" : "Agregar período"}
+					title={draft.editing ? `Editar ${draft.code}` : "Agregar período"}
+				>
+					{!draft.editing && (
+						<Field>
+							<FieldLabel htmlFor="period-code">Código</FieldLabel>
+							<Input
+								id="period-code"
+								onChange={(event) =>
+									setDraft({ ...draft, code: event.target.value })
+								}
+								pattern="[0-9]{4}-[12]"
+								placeholder={`${currentYear + 1}-1`}
+								required
+								value={draft.code}
+							/>
+							<FieldDescription>Usa AAAA-1 o AAAA-2.</FieldDescription>
+						</Field>
+					)}
+					<Field>
+						<FieldLabel htmlFor="period-starts-on">
+							Inicio (opcional)
+						</FieldLabel>
+						<DatePicker
+							clearable
+							id="period-starts-on"
+							onValueChange={(startsOn) => setDraft({ ...draft, startsOn })}
+							value={draft.startsOn}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="period-ends-on">Fin (opcional)</FieldLabel>
+						<DatePicker
+							clearable
+							id="period-ends-on"
+							min={draft.startsOn || undefined}
+							onValueChange={(endsOn) => setDraft({ ...draft, endsOn })}
+							value={draft.endsOn}
+						/>
+						<FieldDescription>
+							Escribe las dos fechas o deja las dos vacías.
+						</FieldDescription>
+					</Field>
+				</FormDialog>
+			)}
 		</Page>
+	);
+}
+
+function PeriodDetail({
+	period,
+	status,
+	busy,
+	onEdit,
+}: {
+	period: AcademicPeriod & { groupCount: number };
+	status: AcademicPeriodStatus;
+	busy: boolean;
+	onEdit: () => void;
+}) {
+	const [variant, label] = statusBadges[status];
+	return (
+		<>
+			<div className="flex items-start justify-between gap-3">
+				<div className="flex flex-col">
+					<span className="text-[13px] text-muted-foreground">Período</span>
+					<CardTitle className="text-primary-text" id="period-panel-title">
+						{period.code}
+					</CardTitle>
+				</div>
+				<Badge variant={variant}>{label}</Badge>
+			</div>
+			<DescriptionList columns={2}>
+				<DescriptionItem term="Inicio">
+					{officialDate(period.startsOn)}
+				</DescriptionItem>
+				<DescriptionItem term="Fin">
+					{officialDate(period.endsOn)}
+				</DescriptionItem>
+				<DescriptionItem term="Grupos">{period.groupCount}</DescriptionItem>
+			</DescriptionList>
+			<CardFooter>
+				<Button disabled={busy} onClick={onEdit} size="lg">
+					Editar período
+				</Button>
+			</CardFooter>
+		</>
 	);
 }
 

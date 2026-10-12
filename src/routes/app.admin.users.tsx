@@ -1,6 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
+import {
+	DescriptionItem,
+	DescriptionList,
+} from "../components/description-list.tsx";
+import { FormDialog } from "../components/form-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { Page, PageHeader } from "../components/page.tsx";
@@ -52,14 +57,18 @@ const roleFilterOptions = [
 	...allRoles.map((role) => [role, roleLabels[role]] as const),
 ] as const;
 
+/** The form open in the dialog for the selected account. */
+type Draft =
+	| { mode: "roles"; roles: UserRole[] }
+	| { mode: "password"; password: string };
+
 function UserAccessPage() {
 	const initial = Route.useLoaderData();
 	const [users, setUsers] = useState(initial.users);
 	const [selectedId, setSelectedId] = useState(initial.users[0]?.id ?? null);
-	const [roleDrafts, setRoleDrafts] = useState<Record<string, UserRole[]>>({});
+	const [draft, setDraft] = useState<Draft | null>(null);
 	const [search, setSearch] = useState("");
 	const [roleFilter, setRoleFilter] = useState("all");
-	const [password, setPassword] = useState("");
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
@@ -70,13 +79,14 @@ function UserAccessPage() {
 			searchable(`${user.name} ${user.surname} ${user.email}`).includes(query),
 	);
 	const selected = users.find(({ id }) => id === selectedId) ?? null;
-	const draftRoles = selected
-		? (roleDrafts[selected.id] ?? selected.roles)
-		: [];
+
+	function open(next: Draft | null) {
+		setDraft(next);
+		setNotice(null);
+	}
 
 	function select(userId: string) {
 		setSelectedId(userId);
-		setPassword("");
 		setNotice(null);
 	}
 
@@ -84,7 +94,9 @@ function UserAccessPage() {
 		setBusy(true);
 		setNotice(null);
 		try {
-			setNotice({ text: await action(), error: false });
+			const text = await action();
+			setDraft(null);
+			setNotice({ text, error: false });
 		} catch (error) {
 			setNotice({ text: userFacingError(error, fallback), error: true });
 		} finally {
@@ -96,16 +108,7 @@ function UserAccessPage() {
 		setUsers((current) =>
 			current.map((user) => (user.id === updated.id ? updated : user)),
 		);
-		setRoleDrafts(({ [updated.id]: _saved, ...rest }) => rest);
 	}
-
-	const saveRoles = (user: ManagedUser) =>
-		run("No se pudieron guardar los roles.", async () => {
-			applyUpdate(
-				await setUserRolesFn({ data: { userId: user.id, roles: draftRoles } }),
-			);
-			return `Se guardaron los roles de ${user.name} ${user.surname}.`;
-		});
 
 	const toggleActive = (user: ManagedUser) =>
 		run("No se pudo actualizar el acceso.", async () => {
@@ -118,11 +121,24 @@ function UserAccessPage() {
 				: `Se desactivó la cuenta de ${user.name} ${user.surname}.`;
 		});
 
-	function replacePassword(event: FormEvent, user: ManagedUser) {
+	function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (!draft || !selected) return;
+		const user = selected;
+		if (draft.mode === "roles") {
+			return run("No se pudieron guardar los roles.", async () => {
+				applyUpdate(
+					await setUserRolesFn({
+						data: { userId: user.id, roles: draft.roles },
+					}),
+				);
+				return `Se guardaron los roles de ${user.name} ${user.surname}.`;
+			});
+		}
 		return run("No se pudo cambiar la contraseña.", async () => {
-			await replaceUserPasswordFn({ data: { userId: user.id, password } });
-			setPassword("");
+			await replaceUserPasswordFn({
+				data: { userId: user.id, password: draft.password },
+			});
 			return `Se cambió la contraseña de ${user.name} ${user.surname} y se cerraron sus otras sesiones.`;
 		});
 	}
@@ -213,75 +229,49 @@ function UserAccessPage() {
 				{selected && (
 					<Card
 						aria-labelledby="user-detail-title"
-						className="max-w-[420px] flex-[1_1_320px] gap-5"
+						className="max-w-[420px] flex-[1_1_320px]"
 					>
+						{!draft && <ActionNotice notice={notice} />}
 						<div className="flex items-center gap-3.5">
 							<PersonAvatar accent className="size-12" person={selected} />
-							<div className="flex min-w-0 flex-col">
+							<div className="flex min-w-0 flex-1 flex-col">
 								<CardTitle className="text-xl" id="user-detail-title">
 									{selected.name} {selected.surname}
 								</CardTitle>
-								<span className="text-sm text-muted-foreground">
+								<span className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
 									{selected.email}
 								</span>
 							</div>
+							<ActiveBadge active={selected.active} />
 						</div>
 
-						<ActionNotice notice={notice} />
-
-						<RoleCheckboxes
-							disabled={busy}
-							onChange={(roles) =>
-								setRoleDrafts((current) => ({
-									...current,
-									[selected.id]: roles,
-								}))
-							}
-							roles={draftRoles}
-						>
-							<FieldDescription className="mt-1">
-								Administración incluye los permisos del personal de laboratorio.
-							</FieldDescription>
-						</RoleCheckboxes>
-
-						<form
-							className="flex flex-col gap-2.5 border-t pt-5"
-							onSubmit={(event) => void replacePassword(event, selected)}
-						>
-							<h3 className="text-[15px] font-bold">Contraseña</h3>
-							<p className="text-sm text-muted-foreground">
-								Las personas no pueden recuperarla por su cuenta. Escribe una
-								nueva y compártesela. Al cambiarla se cierran sus otras
-								sesiones.
-							</p>
-							<Field>
-								<FieldLabel htmlFor="user-new-password">
-									Contraseña nueva
-								</FieldLabel>
-								<Input
-									autoComplete="new-password"
-									id="user-new-password"
-									minLength={12}
-									onChange={(event) => setPassword(event.target.value)}
-									required
-									value={password}
-								/>
-								<FieldDescription>Al menos 12 caracteres.</FieldDescription>
-							</Field>
-							<div>
-								<Button disabled={busy} type="submit" variant="outline">
-									Restablecer contraseña
-								</Button>
-							</div>
-						</form>
+						<DescriptionList>
+							<DescriptionItem term="Roles">
+								<span className="mt-1 flex flex-wrap gap-1.5">
+									{selected.roles.map((role) => (
+										<Badge key={role} variant="outline">
+											{roleLabels[role]}
+										</Badge>
+									))}
+								</span>
+							</DescriptionItem>
+						</DescriptionList>
 
 						<CardFooter>
 							<Button
 								disabled={busy}
-								onClick={() => void saveRoles(selected)}
+								onClick={() => open({ mode: "roles", roles: selected.roles })}
 								size="lg"
 							>
-								Guardar cambios
+								Editar roles
+							</Button>
+							<Button
+								disabled={busy}
+								onClick={() => open({ mode: "password", password: "" })}
+								size="lg"
+								variant="outline"
+							>
+								Restablecer contraseña
 							</Button>
 							<Button
 								disabled={busy}
@@ -295,6 +285,55 @@ function UserAccessPage() {
 					</Card>
 				)}
 			</div>
+
+			{draft && selected && (
+				<FormDialog
+					busy={busy}
+					description={
+						draft.mode === "roles"
+							? `${selected.name} ${selected.surname}`
+							: `${selected.name} ${selected.surname} no puede recuperarla por su cuenta. Escribe una nueva y compártesela. Al cambiarla se cierran sus otras sesiones.`
+					}
+					notice={notice}
+					onClose={() => open(null)}
+					onSubmit={save}
+					submitLabel={
+						draft.mode === "roles" ? "Guardar roles" : "Restablecer contraseña"
+					}
+					title={
+						draft.mode === "roles" ? "Editar roles" : "Restablecer contraseña"
+					}
+				>
+					{draft.mode === "roles" ? (
+						<RoleCheckboxes
+							disabled={busy}
+							onChange={(roles) => setDraft({ mode: "roles", roles })}
+							roles={draft.roles}
+						>
+							<FieldDescription className="mt-1">
+								Administración incluye los permisos del personal de laboratorio.
+							</FieldDescription>
+						</RoleCheckboxes>
+					) : (
+						<Field>
+							<FieldLabel htmlFor="user-new-password">
+								Contraseña nueva
+							</FieldLabel>
+							<Input
+								autoComplete="new-password"
+								id="user-new-password"
+								minLength={12}
+								onChange={(event) =>
+									setDraft({ mode: "password", password: event.target.value })
+								}
+								required
+								value={draft.password}
+							/>
+							<FieldDescription>Al menos 12 caracteres.</FieldDescription>
+						</Field>
+					)}
+				</FormDialog>
+			)}
 		</Page>
 	);
 }

@@ -64,7 +64,7 @@ function NewGroupPage() {
 	}
 
 	return (
-		<Page size="form">
+		<Page size="narrow">
 			<PageHeader
 				description="Elige un período disponible y registra el horario de laboratorio asignado a tu grupo. SISLAB no asigna ni reserva horarios. Deja el número de grupo vacío para usar el siguiente número disponible."
 				title="Registrar grupo"
@@ -84,10 +84,13 @@ function NewGroupPage() {
 			)}
 
 			{ready && (
-				<Card asChild className="gap-4 p-7 max-md:p-5">
+				<Card
+					asChild
+					className="grid max-w-[860px] gap-x-5 gap-y-4 p-7 max-md:p-5 md:grid-cols-2"
+				>
 					<form key={formKey} onSubmit={submit}>
 						<GroupFields idPrefix="new-group" options={options} />
-						<div className="pt-2">
+						<div className="col-span-full pt-2">
 							<Button disabled={busy} size="lg" type="submit">
 								{busy ? "Registrando…" : "Registrar grupo"}
 							</Button>

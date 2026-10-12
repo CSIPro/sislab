@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
+import { FormDialog } from "../components/form-dialog.tsx";
 import {
 	type QuantityDraft,
 	QuantityEditor,
@@ -83,10 +84,8 @@ function LabExercisesPage() {
 	const [selectedId, setSelectedId] = useState(
 		(initial.find(({ active }) => active) ?? initial[0])?.id ?? null,
 	);
-	/** The form replaces the detail panel while a draft is open. */
-	const [draft, setDraft] = useState<ExerciseDraft | null>(
-		initial.length === 0 ? emptyDraft : null,
-	);
+	/** The lab exercise open in the form dialog. */
+	const [draft, setDraft] = useState<ExerciseDraft | null>(null);
 	const [search, setSearch] = useState("");
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
@@ -97,9 +96,13 @@ function LabExercisesPage() {
 	);
 	const selected = exercises.find(({ id }) => id === selectedId) ?? null;
 
+	function open(next: ExerciseDraft | null) {
+		setDraft(next);
+		setNotice(null);
+	}
+
 	function select(exerciseId: string) {
 		setSelectedId(exerciseId);
-		setDraft(null);
 		setNotice(null);
 	}
 
@@ -172,13 +175,7 @@ function LabExercisesPage() {
 				description="Catálogo de prácticas de laboratorio. Cada grupo puede solicitar cualquiera de las activas."
 				title="Prácticas"
 			>
-				<Button
-					onClick={() => {
-						setDraft(emptyDraft());
-						setNotice(null);
-					}}
-					size="lg"
-				>
+				<Button disabled={busy} onClick={() => open(emptyDraft())} size="lg">
 					<Plus aria-hidden="true" size={18} strokeWidth={2} />
 					Nueva práctica
 				</Button>
@@ -209,7 +206,7 @@ function LabExercisesPage() {
 						</TableHeader>
 						<TableBody>
 							{visible.map((exercise) => {
-								const isSelected = !draft && exercise.id === selectedId;
+								const isSelected = exercise.id === selectedId;
 								return (
 									<TableRow
 										data-muted={!exercise.active}
@@ -255,32 +252,37 @@ function LabExercisesPage() {
 					aria-labelledby="exercise-panel-title"
 					className="max-w-[460px] flex-[1_1_340px]"
 				>
-					<ActionNotice notice={notice} />
-					{draft ? (
-						<ExerciseForm
-							busy={busy}
-							draft={draft}
-							onCancel={() => setDraft(null)}
-							onChange={setDraft}
-							onSubmit={save}
-						/>
-					) : selected ? (
+					{!draft && <ActionNotice notice={notice} />}
+					{selected ? (
 						<ExerciseDetail
 							busy={busy}
 							exercise={selected}
-							onEdit={() => {
-								setDraft(draftFrom(selected));
-								setNotice(null);
-							}}
+							onEdit={() => open(draftFrom(selected))}
 							onRetire={() => void retire(selected)}
 						/>
 					) : (
 						<EmptyState id="exercise-panel-title">
-							Elige una práctica para ver sus materiales.
+							{exercises.length === 0
+								? "Aún no hay prácticas. Agrega la primera con Nueva práctica."
+								: "Elige una práctica para ver sus materiales."}
 						</EmptyState>
 					)}
 				</Card>
 			</div>
+
+			{draft && (
+				<FormDialog
+					busy={busy}
+					className="sm:max-w-4xl"
+					notice={notice}
+					onClose={() => open(null)}
+					onSubmit={save}
+					submitLabel={draft.id ? "Guardar cambios" : "Crear práctica"}
+					title={draft.id ? "Editar práctica" : "Nueva práctica"}
+				>
+					<ExerciseFields draft={draft} onChange={setDraft} />
+				</FormDialog>
+			)}
 		</Page>
 	);
 }
@@ -334,50 +336,45 @@ function ExerciseDetail({
 	);
 }
 
-function ExerciseForm({
+function ExerciseFields({
 	draft,
-	busy,
 	onChange,
-	onSubmit,
-	onCancel,
 }: {
 	draft: ExerciseDraft;
-	busy: boolean;
 	onChange: (draft: ExerciseDraft) => void;
-	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-	onCancel: () => void;
 }) {
 	return (
-		<form className="flex flex-col gap-[18px]" onSubmit={onSubmit}>
-			<CardTitle className="text-xl" id="exercise-panel-title">
-				{draft.id ? "Editar práctica" : "Nueva práctica"}
-			</CardTitle>
-			<Field>
-				<FieldLabel htmlFor="exercise-number">Número o etiqueta</FieldLabel>
-				<Input
-					autoComplete="off"
-					id="exercise-number"
-					maxLength={60}
-					onChange={(event) =>
-						onChange({ ...draft, number: event.target.value })
-					}
-					placeholder="Por ejemplo, 12 o Q-3"
-					required
-					value={draft.number}
-				/>
-			</Field>
-			<Field>
-				<FieldLabel htmlFor="exercise-name">Nombre</FieldLabel>
-				<Input
-					autoComplete="off"
-					id="exercise-name"
-					maxLength={160}
-					onChange={(event) => onChange({ ...draft, name: event.target.value })}
-					placeholder="Por ejemplo, Separación de mezclas"
-					required
-					value={draft.name}
-				/>
-			</Field>
+		<>
+			<div className="grid gap-[18px] sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+				<Field>
+					<FieldLabel htmlFor="exercise-number">Número o etiqueta</FieldLabel>
+					<Input
+						autoComplete="off"
+						id="exercise-number"
+						maxLength={60}
+						onChange={(event) =>
+							onChange({ ...draft, number: event.target.value })
+						}
+						placeholder="Por ejemplo, 12 o Q-3"
+						required
+						value={draft.number}
+					/>
+				</Field>
+				<Field>
+					<FieldLabel htmlFor="exercise-name">Nombre</FieldLabel>
+					<Input
+						autoComplete="off"
+						id="exercise-name"
+						maxLength={160}
+						onChange={(event) =>
+							onChange({ ...draft, name: event.target.value })
+						}
+						placeholder="Por ejemplo, Separación de mezclas"
+						required
+						value={draft.name}
+					/>
+				</Field>
+			</div>
 
 			<div>
 				<h3 className="text-[15px] font-bold">Reactivos</h3>
@@ -405,15 +402,6 @@ function ExerciseForm({
 					onChange={(waste) => onChange({ ...draft, waste })}
 				/>
 			</div>
-
-			<CardFooter>
-				<Button disabled={busy} size="lg" type="submit">
-					{draft.id ? "Guardar cambios" : "Crear práctica"}
-				</Button>
-				<Button disabled={busy} onClick={onCancel} size="lg" variant="outline">
-					Cancelar
-				</Button>
-			</CardFooter>
-		</form>
+		</>
 	);
 }

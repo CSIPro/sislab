@@ -35,7 +35,9 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 ## Shape and layout
 
 - **12px radius is the signature** (`radius-lg`). Use it for buttons, inputs, accordions and menus, and set shadcn `--radius: 12px`. Use `radius-md` (8px) for nested panels, `radius-xl` (16px) for a table container's top corners, `radius-2xl` (32px) for the centred auth card, and `radius-sm` (4px) for chips.
-- Forms sit in a column at most 600px wide (legacy `theme.maxWidth`).
+- A short form sits in a column at most 600px wide (legacy `theme.maxWidth`).
+- A page that lists items (catalogs, períodos, prácticas, usuarios) puts the table beside a card with the selected item's data. The card never turns into a form. Adding or editing opens a `FormDialog`, and an action that needs no input, such as Desactivar, stays on the card.
+- A long form on its own page, such as Registrar grupo, lays its fields out in a two-column grid from `md` up.
 - Accordions are outlined (1px `border`, 12px radius) with no shadow. Elevation is light, and borders do most of the separating.
 - Focus: a 2px solid `ring` outline, offset 2px.
 
@@ -58,6 +60,7 @@ Every primitive is a shadcn/ui component from `src/components/ui`. Do not write 
 - **Badge** carries every status: `success`, `warning`, `destructive`, `neutral`, `info`, plus `outline` for role tags and `muted` for small grey tags.
 - **Card** is the outlined white panel. `CardTitle` renders a heading. Pass `asChild` when the card must be a `form` or an `article`.
 - **Table** (`ui/table.tsx`) draws the outlined shell and scrolls sideways inside a `ScrollArea`. Use `TableEmpty` for the empty row and `TableCellNote` for a second line in a cell.
+- **FormDialog** (`components/form-dialog.tsx`) is the shadcn Dialog holding one form, with Cancelar and the submit button pinned under fields that scroll. Render it only while the form is open, pass a failed save through `notice`, and show the success message on the page after it closes.
 - **Alert** shows messages through `Notice` (`components/notice.tsx`), which picks `role="status"` or `role="alert"` from the tone.
 - **Sidebar** (`components/app-sidebar.tsx`) is the shadcn Sidebar. The header and footer stay fixed and a `ScrollArea` scrolls the links. On phones it becomes a drawer opened from the top bar.
 - Page layout comes from `Page`, `PageHeader`, `Footnote` and `EmptyState` in `components/page.tsx`.
