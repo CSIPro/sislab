@@ -45,6 +45,7 @@
   --info-surface: #e8f0f8;
   --selected-surface: #f2fcf9;
   --csipro-purple: #6c2f86;
+  --csipro-tile: #7145d6;
   --radius: 12px;
   --sidebar: var(--card);
   --sidebar-foreground: var(--foreground);
@@ -127,6 +128,7 @@
   --color-info-surface: var(--info-surface);
   --color-sislab-green: var(--sislab-green);
   --color-csipro-purple: var(--csipro-purple);
+  --color-csipro-tile: var(--csipro-tile);
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: var(--radius);

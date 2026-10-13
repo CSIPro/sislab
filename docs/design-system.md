@@ -19,6 +19,7 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 - Neutrals: text is `foreground` on `background`/`card`, and secondary text is `muted-foreground`. Filled inputs and neutral buttons use `secondary` (#f5f5f5, as in legacy). Dividers and card outlines use `border`.
 - Status colours: `success` (green) means approved or done, `warning` (#ffe066, ink text) means pending, `destructive` (#ff3a20) means rejected or delete, and `info` means help or informational. `destructive` and light `info` are too weak for small white text. Keep their labels bold and 19px+, or use them as icon or border colours next to `foreground` text.
 - `csipro-purple` is only for the name "CSI PRO" in running text.
+- `csipro-tile` (#7145d6) is the square behind the white CSI PRO mark in the footer. It stays the same in both themes.
 - Charts use `chart-1`…`chart-5` in order. The suggested colours #6d9dc5, #ffe066 and #ed217c live here, not in UI states.
 - Dark theme: the `primary` green stays the same, while `primary-text` and the focus `ring` lighten to #3dd9ac. Surfaces are neutral greys that step `background` (#121213) → `card` (#1b1b1d) → `muted` (#262628). Only `accent`, `selected-surface`, the status surfaces and their borders carry a tint.
 - The theme switch is an icon button in the landing header and a "Tema oscuro" / "Tema claro" row in the sidebar footer. `toggleTheme` in `src/lib/theme.ts` flips the `dark` class on `<html>` and saves the choice under `sislab-theme`. With nothing saved, the system setting decides. Use `ThemeIcon` and `ThemeLabel` from `components/theme-toggle.tsx` for any other switch.
@@ -76,7 +77,9 @@ Every primitive is a shadcn/ui component from `src/components/ui`. Do not write 
 
 - `sislab-logo.png` is the full lockup (leaf mark + "SISLAB" + "Sistema de Laboratorios") in `sislab-green`. Use it on light grounds on the auth card.
 - `sislab-mark.svg` (green leaf) is for light grounds. `sislab-mark-white.svg` goes on `primary` or dark grounds, such as the app bar.
-- `csipro-logo.png` is the grey CSI PRO mark for "developed by" footers. Keep it small.
+- `csipro.svg` is the white CSI PRO mark. The footer puts it on a `csipro-tile` square next to the name "CSI PRO", and the pair is one link to csipro.isi.unison.mx.
+- `unison.png` is the Universidad de Sonora logo in the footer, linked to unison.mx. On the dark theme it is inverted to white.
+- `owl-blue.png`, `owl-gold.png` and `owl-black.png` are the CSI PRO owls on the landing's credit cards, one per developer. The black owl is inverted to white on the dark theme.
 - `lab-background.jpg` is the lab photo behind the login card. Cover the viewport with it and centre the `card` on top.
 
 ## Not synced

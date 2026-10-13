@@ -1,4 +1,8 @@
 import { useRouterState } from "@tanstack/react-router";
+import { withBase } from "#/lib/base-path.ts";
+
+const navLink =
+	"inline-flex min-h-11 items-center text-[15px] text-muted-foreground no-underline hover:text-primary-text";
 
 export default function Footer() {
 	const pathname = useRouterState({
@@ -6,31 +10,87 @@ export default function Footer() {
 	});
 	if (pathname.startsWith("/app")) return null;
 	return (
-		<footer className="bg-card" id="acerca">
-			<div className="mx-auto w-full max-w-[1200px] px-8 max-md:px-5 flex flex-wrap items-center gap-6 pt-12 pb-14">
-				<svg
-					aria-hidden="true"
-					className="flex-none text-muted-foreground"
-					fill="none"
-					height="48"
-					stroke="currentColor"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth="1.5"
-					viewBox="0 0 48 48"
-					width="48"
-				>
-					<circle cx="8" cy="24" r="3.5" />
-					<circle cx="40" cy="24" r="3.5" />
-					<circle cx="24" cy="8" r="3.5" />
-					<circle cx="24" cy="40" r="3.5" />
-					<path d="M11 22 22 10.5M26 10.5 37 22M37 26 26 37.5M22 37.5 11 26" />
-				</svg>
-				<p className="max-w-[640px] flex-[1_1_360px] text-pretty text-muted-foreground">
-					SISLAB es un sistema de laboratorios desarrollado por estudiantes de
-					la Universidad de Sonora, miembros del laboratorio{" "}
-					<span className="font-bold text-csipro-purple">CSI PRO</span>.
-				</p>
+		<footer className="border-t bg-secondary" id="acerca">
+			<div className="mx-auto w-full max-w-[1200px] px-8 max-md:px-5 flex flex-col gap-8 pt-14 pb-7">
+				<div className="flex flex-wrap items-start justify-between gap-x-16 gap-y-6">
+					<div className="flex max-w-[440px] flex-[1_1_320px] flex-col gap-4">
+						<div className="flex items-center gap-3">
+							<img
+								alt=""
+								className="size-10"
+								src={withBase("/images/logo.svg")}
+							/>
+							<span className="grid leading-[1.1]">
+								<strong className="text-[28px] tracking-[0.02em]">
+									SISLAB
+								</strong>
+								<span className="mt-[3px] text-[13px] text-muted-foreground">
+									Sistema de Laboratorios
+								</span>
+							</span>
+						</div>
+						<p className="text-pretty text-muted-foreground">
+							SISLAB es un sistema de laboratorios que desarrollaron estudiantes
+							de la Universidad de Sonora, miembros del laboratorio{" "}
+							<strong className="text-csipro-purple">CSI PRO</strong>.
+						</p>
+					</div>
+					<nav
+						aria-label="Pie de página"
+						className="flex flex-wrap items-center gap-x-7"
+					>
+						<a className={navLink} href={withBase("/#como-funciona")}>
+							Cómo funciona
+						</a>
+						<a className={navLink} href={withBase("/#para-quien")}>
+							Para quién
+						</a>
+						<a className={navLink} href={withBase("/#creditos")}>
+							Créditos
+						</a>
+						<a className={navLink} href={withBase("/#acceso")}>
+							Ingresar
+						</a>
+					</nav>
+				</div>
+				<div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-5 border-t pt-6">
+					<span className="text-sm text-muted-foreground">
+						© 2026 CSI PRO · Universidad de Sonora
+					</span>
+					<div className="ml-auto flex flex-wrap items-center justify-end gap-x-9 gap-y-5">
+						<a
+							aria-label="CSI PRO (abre csipro.isi.unison.mx)"
+							className="flex items-center gap-3.5 text-foreground no-underline hover:text-foreground"
+							href="https://csipro.isi.unison.mx/"
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							<span className="flex size-[60px] flex-none items-center justify-center rounded-[14px] bg-csipro-tile">
+								<img
+									alt=""
+									className="h-auto w-10"
+									src={withBase("/csipro.svg")}
+								/>
+							</span>
+							<span className="text-[30px] leading-none font-bold tracking-[0.01em]">
+								CSI PRO
+							</span>
+						</a>
+						<a
+							aria-label="UNISON, Universidad de Sonora (abre unison.mx)"
+							className="inline-flex min-h-11 items-center"
+							href="https://unison.mx"
+							rel="noopener noreferrer"
+							target="_blank"
+						>
+							<img
+								alt=""
+								className="h-11 w-auto dark:brightness-0 dark:invert"
+								src={withBase("/images/unison.png")}
+							/>
+						</a>
+					</div>
+				</div>
 			</div>
 		</footer>
 	);

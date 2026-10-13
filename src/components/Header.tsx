@@ -37,6 +37,9 @@ export default function Header() {
 					<a className={navLink} href={withBase("/#para-quien")}>
 						Para quién
 					</a>
+					<a className={navLink} href={withBase("/#creditos")}>
+						Créditos
+					</a>
 					<a className={navLink} href={withBase("/#acerca")}>
 						Acerca de
 					</a>

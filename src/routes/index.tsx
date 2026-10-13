@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CircleCheck, FileCheck, FlaskConical, UsersRound } from "lucide-react";
+import {
+	CircleCheck,
+	FileCheck,
+	FlaskConical,
+	Globe,
+	Linkedin,
+	UsersRound,
+} from "lucide-react";
 import AccessCard from "../components/AccessCard.tsx";
+import { Button } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
+import { withBase } from "../lib/base-path.ts";
+import { cn } from "../lib/utils.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 
 export const Route = createFileRoute("/")({
@@ -56,6 +66,51 @@ const roles = [
 			"Todo lo del personal de laboratorio.",
 			"Activación de cuentas y gestión de usuarios.",
 			"Períodos, catálogos y prácticas.",
+		],
+	},
+];
+
+const team = [
+	{
+		name: "Saúl Eduardo Fimbres Ruíz",
+		role: "Desarrollo full stack",
+		owl: "blue",
+		links: [
+			{
+				icon: Linkedin,
+				label: "LinkedIn",
+				href: "https://www.linkedin.com/in/fimbressaul/",
+			},
+		],
+	},
+	{
+		name: "Kevin Ochoa Guerrero",
+		role: "Diseño UX/UI y desarrollo front-end",
+		owl: "gold",
+		links: [
+			{
+				icon: Linkedin,
+				label: "LinkedIn",
+				href: "https://www.linkedin.com/in/kevinochoaguerrero/",
+			},
+			{ icon: Globe, label: "Portafolio", href: "https://kevinochoa.dev/" },
+		],
+	},
+	{
+		name: "Saúl Alberto Ramos Laborín",
+		role: "Desarrollo full stack",
+		owl: "black",
+		links: [
+			{
+				icon: Linkedin,
+				label: "LinkedIn",
+				href: "https://www.linkedin.com/in/sa%C3%BAl-ramos-labor%C3%ADn-82b8291a1",
+			},
+			{
+				icon: Globe,
+				label: "Portafolio",
+				href: "https://portfolio-saulprl.vercel.app/",
+			},
 		],
 	},
 ];
@@ -155,6 +210,63 @@ function LandingPage() {
 					</div>
 				</section>
 			</div>
+
+			<section
+				className={`${wrap} flex flex-col gap-8 pt-[72px] pb-[88px]`}
+				id="creditos"
+			>
+				<SectionHead
+					text="Estudiantes de la Universidad de Sonora diseñaron y programaron SISLAB en el laboratorio CSI PRO."
+					textClassName="max-w-[640px] text-pretty"
+					title="Quién lo desarrolló"
+				/>
+				<div className={grid}>
+					{team.map(({ name, role, owl, links }) => (
+						<Card
+							asChild
+							className="items-center gap-3.5 px-6 pt-7 text-center"
+							key={name}
+						>
+							<article>
+								<div className="flex size-[104px] flex-none items-center justify-center rounded-full bg-accent">
+									<img
+										alt=""
+										// The black owl would vanish on the dark circle.
+										className={cn(
+											"h-auto w-16",
+											owl === "black" && "dark:invert",
+										)}
+										height={50}
+										src={withBase(`/images/owl-${owl}.png`)}
+										width={64}
+									/>
+								</div>
+								<div className="flex flex-col gap-0.5">
+									<CardTitle as="h3" className="text-[21px] leading-tight">
+										{name}
+									</CardTitle>
+									<p className="text-muted-foreground">{role}</p>
+								</div>
+								<div className="mt-1 flex flex-wrap justify-center gap-2.5">
+									{links.map(({ icon: Icon, label, href }) => (
+										<Button asChild key={label} size="sm" variant="outline">
+											<a
+												aria-label={`${label} de ${name}`}
+												href={href}
+												rel="noopener noreferrer"
+												target="_blank"
+											>
+												<Icon aria-hidden="true" size={18} strokeWidth={1.75} />
+												{label}
+											</a>
+										</Button>
+									))}
+								</div>
+							</article>
+						</Card>
+					))}
+				</div>
+			</section>
 		</main>
 	);
 }
@@ -163,11 +275,21 @@ const wrap = "mx-auto w-full max-w-[1200px] px-8 max-md:px-5";
 const grid =
 	"grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-5";
 
-function SectionHead({ title, text }: { title: string; text: string }) {
+function SectionHead({
+	title,
+	text,
+	textClassName,
+}: {
+	title: string;
+	text: string;
+	textClassName?: string;
+}) {
 	return (
 		<div className="flex flex-col gap-2">
 			<h2 className="text-[32px] leading-tight font-bold">{title}</h2>
-			<p className="text-[17px] text-muted-foreground">{text}</p>
+			<p className={cn("text-[17px] text-muted-foreground", textClassName)}>
+				{text}
+			</p>
 		</div>
 	);
 }
