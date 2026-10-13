@@ -264,13 +264,19 @@ Un administrador no es profesor de forma automática. Si esa persona también de
 
 ### Administración de usuarios
 
-La administración de cuentas tiene dos pantallas. **Cuentas** activa las solicitudes de acceso nuevas. **Usuarios** cambia roles, restablece contraseñas y desactiva cuentas.
+La sección **Usuarios** tiene dos pestañas. La pestaña **Usuarios** lista las cuentas activas y permite cambiar roles, restablecer contraseñas y desactivar cuentas. La pestaña **Solicitudes de acceso** lista a las personas que pidieron acceso y esperan su activación.
+
+#### Ver las solicitudes de acceso
+
+Cada persona que pide acceso aparece en la pestaña **Solicitudes de acceso**. El número de solicitudes pendientes aparece también en el menú lateral, junto a **Usuarios**, como una insignia amarilla. La insignia y el número de la pestaña muestran cuántas solicitudes esperan una decisión.
+
+![Insignia de solicitudes de acceso en el menú lateral](capturas/05b-insignia-solicitudes.png)
+
+![Pestaña Solicitudes de acceso con tres solicitudes pendientes](capturas/06-solicitudes-de-acceso.png)
 
 #### Activar una cuenta nueva
 
-Las solicitudes de acceso aparecen en **Cuentas**. Antes de activar una cuenta, verifica la identidad de la persona fuera de SISLAB. SISLAB no tiene una forma de hacerlo.
-
-![Cuentas pendientes de activación](capturas/06-cuentas-pendientes.png)
+Abre la pestaña **Solicitudes de acceso**. Antes de activar una cuenta, verifica la identidad de la persona fuera de SISLAB. SISLAB no tiene una forma de hacerlo.
 
 Para activar una cuenta:
 
@@ -282,13 +288,17 @@ Los botones se habilitan cuando marcas la verificación y eliges al menos un rol
 
 ![Verificación de identidad y roles antes de activar](capturas/07-verificar-y-elegir-roles.png)
 
-Cuando la cuenta se activa, SISLAB muestra el aviso "[Nombre] ya puede ingresar a SISLAB." y la solicitud sale de la lista.
+Cuando la cuenta se activa, SISLAB muestra el aviso "[Nombre] ya puede ingresar a SISLAB." y la solicitud sale de la lista. La persona aparece ahora en la pestaña **Usuarios**, y la insignia baja en uno.
 
 ![Aviso de cuenta activada](capturas/08-cuenta-activada.png)
 
+Cuando no quedan solicitudes pendientes, la insignia desaparece del menú lateral.
+
+![Menú lateral sin solicitudes de acceso pendientes](capturas/08b-insignia-sin-solicitudes.png)
+
 #### Buscar y seleccionar una cuenta
 
-**Usuarios** lista todas las cuentas. Escribe en el campo **Buscar** para filtrar por nombre o correo, o usa el filtro **Rol**. Pulsa el nombre de una persona para ver su tarjeta con roles y estado.
+La pestaña **Usuarios** lista las cuentas activas. Escribe en el campo **Buscar** para filtrar por nombre o correo, o usa el filtro **Rol**. Pulsa el nombre de una persona para ver su tarjeta con roles y estado.
 
 ![Lista de usuarios con una cuenta seleccionada](capturas/42-usuarios.png)
 
@@ -316,7 +326,7 @@ Pulsa **Desactivar cuenta** para impedir que una persona ingrese. La tarjeta mue
 
 ![Intento de ingreso con una cuenta desactivada](capturas/46-ingreso-desactivado.png)
 
-Para permitir el acceso otra vez, selecciona la cuenta y pulsa **Reactivar cuenta**. Desactivar una cuenta no borra sus grupos ni sus solicitudes.
+Para permitir el acceso otra vez, selecciona la cuenta y pulsa **Reactivar cuenta**. Solo puedes reactivar cuentas que ya fueron aceptadas. Una persona que todavía espera en **Solicitudes de acceso** se activa desde esa pestaña, porque ahí se confirma su identidad. Un profesor desactivado no vuelve a aparecer en **Solicitudes de acceso**. Desactivar una cuenta no borra sus grupos ni sus solicitudes.
 
 ### Prácticas de laboratorio
 
