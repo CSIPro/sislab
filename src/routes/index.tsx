@@ -21,15 +21,15 @@ export const Route = createFileRoute("/")({
 
 const points = [
 	"Consulta el día, la hora y el laboratorio de cada uno de tus grupos.",
-	"Pide reactivos, equipo y manejo de residuos para cada práctica.",
-	"El personal prepara todo desde un ticket diario.",
+	"Solicita reactivos, equipo y manejo de residuos para cada práctica.",
+	"El personal recibe la solicitud y prepara tu laboratorio.",
 ];
 
 const steps = [
 	{
 		icon: UsersRound,
 		title: "Organiza tus grupos",
-		text: "Cada grupo tiene su materia, su día y hora y su laboratorio. Todo queda a la vista en tu tablero.",
+		text: "Registra cada grupo con su materia, su día, su hora y su laboratorio. Todo queda a la vista en tu tablero.",
 	},
 	{
 		icon: FlaskConical,
@@ -39,7 +39,7 @@ const steps = [
 	{
 		icon: FileCheck,
 		title: "El laboratorio prepara",
-		text: "El personal prepara desde el ticket diario. Tu solicitud conserva exactamente lo que pediste.",
+		text: "El personal recibe la solicitud y prepara tu laboratorio. Tu solicitud conserva exactamente lo que pediste.",
 	},
 ];
 
@@ -47,7 +47,7 @@ const roles = [
 	{
 		title: "Profesores",
 		items: [
-			"Tus próximas solicitudes, con el nombre de cada práctica.",
+			"Tus solicitudes por fecha, con el nombre de cada práctica.",
 			"Tus grupos con día, horario y laboratorio.",
 			"El detalle de cada solicitud en un clic.",
 		],
@@ -73,7 +73,7 @@ const roles = [
 const team = [
 	{
 		name: "Saúl Eduardo Fimbres Ruíz",
-		role: "Desarrollo full stack",
+		role: "Desarrollador Full Stack",
 		owl: "blue",
 		links: [
 			{
@@ -85,7 +85,7 @@ const team = [
 	},
 	{
 		name: "Kevin Ochoa Guerrero",
-		role: "Diseño UX/UI y desarrollo front-end",
+		role: "Diseñador UX/UI y Desarrollador Front-end",
 		owl: "gold",
 		links: [
 			{
@@ -98,7 +98,7 @@ const team = [
 	},
 	{
 		name: "Saúl Alberto Ramos Laborín",
-		role: "Desarrollo full stack",
+		role: "Desarrollador Full Stack",
 		owl: "black",
 		links: [
 			{
@@ -133,7 +133,7 @@ function LandingPage() {
 					<p className="max-w-[520px] text-lg leading-[1.6] text-pretty text-muted-foreground">
 						SISLAB reúne en un solo lugar tus grupos, el horario de cada
 						laboratorio y las solicitudes de preparación de reactivos y equipo.
-						Es para profesores y personal de laboratorio de la Universidad de
+						Para profesores y personal de laboratorio de la Universidad de
 						Sonora.
 					</p>
 					<ul className="mt-2 flex flex-col gap-3.5">
@@ -218,7 +218,7 @@ function LandingPage() {
 				<SectionHead
 					text="Estudiantes de la Universidad de Sonora diseñaron y programaron SISLAB en el laboratorio CSI PRO."
 					textClassName="max-w-[640px] text-pretty"
-					title="Quién lo desarrolló"
+					title="Equipo de desarrollo"
 				/>
 				<div className={grid}>
 					{team.map(({ name, role, owl, links }) => (

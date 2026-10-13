@@ -63,22 +63,22 @@ export default function Footer() {
 					<span className="text-sm text-muted-foreground">
 						© {year} CSI PRO · Universidad de Sonora
 					</span>
-					<div className="ml-auto flex flex-wrap items-center justify-end gap-x-9 gap-y-5">
+					<div className="flex flex-wrap items-center justify-start md:justify-end gap-x-6 gap-y-5">
 						<a
 							aria-label="CSI PRO (abre csipro.isi.unison.mx)"
-							className="flex items-center gap-3.5 text-foreground no-underline hover:text-foreground"
+							className="flex items-center gap-2 text-foreground no-underline hover:text-foreground"
 							href="https://csipro.isi.unison.mx/"
 							rel="noopener noreferrer"
 							target="_blank"
 						>
-							<span className="flex size-[60px] flex-none items-center justify-center rounded-[14px] bg-csipro-tile">
+							<span className="flex size-10 flex-none items-center justify-center rounded-md bg-csipro-tile">
 								<img
 									alt=""
-									className="h-auto w-10"
+									className="h-auto w-7"
 									src={withBase("/csipro.svg")}
 								/>
 							</span>
-							<span className="text-[30px] leading-none font-bold tracking-[0.01em]">
+							<span className="text-2xl leading-none font-bold tracking-[0.01em]">
 								CSI PRO
 							</span>
 						</a>
@@ -91,7 +91,7 @@ export default function Footer() {
 						>
 							<img
 								alt=""
-								className="h-11 w-auto dark:brightness-0 dark:invert"
+								className="h-10 w-auto dark:brightness-0 dark:invert"
 								src={withBase("/images/unison.png")}
 							/>
 						</a>
