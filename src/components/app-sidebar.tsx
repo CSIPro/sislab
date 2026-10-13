@@ -13,7 +13,6 @@ import {
 	type LucideIcon,
 	Menu,
 	Settings2,
-	UserCheck,
 	UsersRound,
 	X,
 } from "lucide-react";
@@ -43,7 +42,6 @@ type NavItem = { to: LinkProps["to"]; label: string; icon: LucideIcon };
 type NavGroup = { caption: string | null; items: NavItem[] };
 
 const adminItems: NavItem[] = [
-	{ to: "/app/admin/accounts", label: "Cuentas", icon: UserCheck },
 	{ to: "/app/admin/users", label: "Usuarios", icon: CircleUserRound },
 	{ to: "/app/admin/exercises", label: "Prácticas", icon: FlaskConical },
 	{ to: "/app/admin/periods", label: "Períodos", icon: CalendarDays },

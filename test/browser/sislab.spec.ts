@@ -260,7 +260,6 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await signIn(page, admin.email)
 	for (const [legacy, canonical] of [
 		['/admin/users', '/app/admin/users'],
-		['/admin/accounts', '/app/admin/accounts'],
 		['/admin/groups', '/app/admin/groups'],
 		['/admin/periods', '/app/admin/periods'],
 		['/admin/catalogs', '/app/admin/catalogs'],
@@ -268,14 +267,27 @@ test('admin activates a requested account and can sign in as that account', asyn
 		await page.goto(`${base}${legacy}`)
 		await expect.poll(() => new URL(page.url()).pathname).toBe(`${base}${canonical}`)
 	}
-	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Cuentas' }).click()
+	for (const former of ['/admin/accounts', '/app/admin/accounts']) {
+		await page.goto(`${base}${former}`)
+		await expect(page.getByRole('tab', { name: /^Solicitudes de acceso/ })).toHaveAttribute('aria-selected', 'true')
+		expect(new URL(page.url()).pathname).toBe(`${base}/app/admin/users`)
+	}
+	const nav = page.getByRole('navigation', { name: 'Navegación principal' })
+	await expect(nav.getByRole('link', { name: 'Cuentas' })).toHaveCount(0)
+	await nav.getByRole('link', { name: 'Usuarios' }).click()
 	await page.waitForLoadState('networkidle')
+	await expect(page.getByRole('tab', { name: /^Usuarios/ })).toHaveAttribute('aria-selected', 'true')
+	await page.getByRole('tab', { name: /^Solicitudes de acceso/ }).click()
 	const request = page.locator('article').filter({ hasText: pendingEmail })
 	await expect(request).toBeVisible()
 	await expect(request.getByRole('button', { name: 'Activar cuenta' })).toBeDisabled()
 	await request.getByLabel('Verifiqué su identidad fuera de SISLAB').check()
 	await request.getByRole('button', { name: 'Activar cuenta' }).click()
 	await expect(page.getByRole('status')).toContainText('ya puede ingresar a SISLAB')
+	await expect(request).toHaveCount(0)
+	await page.getByRole('tab', { name: /^Usuarios/ }).click()
+	await page.getByLabel('Buscar').fill(pendingEmail)
+	await expect(page.getByRole('row').filter({ hasText: pendingEmail })).toContainText('Activa')
 	await page.getByRole('button', { name: 'Cerrar sesión' }).click()
 	await page.waitForURL('**/')
 	await signIn(page, pendingEmail, pendingPassword)

@@ -1,5 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import {
+	type FormEvent,
+	startTransition,
+	useOptimistic,
+	useState,
+} from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import {
 	DescriptionItem,
@@ -8,18 +13,20 @@ import {
 import { FormDialog } from "../components/form-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
-import { Page, PageHeader } from "../components/page.tsx";
+import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { PersonAvatar } from "../components/person-avatar.tsx";
 import { RoleCheckboxes } from "../components/role-checkboxes.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
+import { Checkbox } from "../components/ui/checkbox.tsx";
 import {
 	Field,
 	FieldDescription,
 	FieldLabel,
 } from "../components/ui/field.tsx";
 import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
 import {
 	Table,
 	TableBody,
@@ -30,9 +37,21 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
+import {
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from "../components/ui/tabs.tsx";
+import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { allRoles, roleLabels } from "../lib/user-roles.ts";
+import {
+	activatePendingAccountFn,
+	listPendingAccountsFn,
+} from "../server/account-functions.ts";
+import type { AccountRole, PendingAccount } from "../server/accounts.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import type { ManagedUser, UserRole } from "../server/user-access.ts";
 import {
@@ -42,15 +61,88 @@ import {
 	setUserRolesFn,
 } from "../server/user-access-functions.ts";
 
+type Search = { tab?: "access-requests" };
+
 export const Route = createFileRoute("/app/admin/users")({
+	validateSearch: (search: Record<string, unknown>): Search =>
+		search.tab === "access-requests" ? { tab: "access-requests" } : {},
 	loader: async () => {
 		const user = await getCurrentSessionFn();
 		if (!user) throw redirect({ to: "/sign-in" });
 		if (!user.roles.includes("admin")) throw redirect({ to: "/app/dashboard" });
-		return { users: await listUsersFn() };
+		const [users, pending] = await Promise.all([
+			listUsersFn(),
+			listPendingAccountsFn(),
+		]);
+		return { users, pending };
 	},
-	component: UserAccessPage,
+	component: UsersPage,
 });
+
+const sectionTab =
+	"h-12 flex-none gap-2.5 px-[18px] text-base text-muted-foreground after:bg-primary data-[state=active]:font-bold group-data-[orientation=horizontal]/tabs:after:-bottom-px group-data-[orientation=horizontal]/tabs:after:h-[3px] max-md:px-3";
+
+function UsersPage() {
+	// Read the loader's lists directly, so a change in one tab shows in the other after the reload.
+	const { users, pending } = Route.useLoaderData();
+	const search = Route.useSearch();
+	const navigate = Route.useNavigate();
+	// The address changes only after the layout checks the session, so the tab moves first.
+	const [tab, setTab] = useOptimistic(search.tab ?? "users");
+
+	function showTab(next: string) {
+		const target: Search =
+			next === "access-requests" ? { tab: "access-requests" } : {};
+		startTransition(async () => {
+			setTab(target.tab ?? "users");
+			await navigate({ replace: true, search: target });
+		});
+	}
+
+	return (
+		<Page size="compact">
+			<PageHeader
+				description="Administra las cuentas de SISLAB y revisa quién ha pedido acceso."
+				title="Usuarios"
+			/>
+
+			<Tabs className="gap-6" onValueChange={showTab} value={tab}>
+				<TabsList
+					aria-label="Secciones de usuarios"
+					className="w-full flex-wrap justify-start gap-2 border-b p-0 max-md:gap-1"
+					variant="line"
+				>
+					<TabsTrigger className={sectionTab} value="users">
+						Usuarios{" "}
+						<span className="text-[13.5px] font-normal text-muted-foreground">
+							{users.length}
+						</span>
+					</TabsTrigger>
+					<TabsTrigger className={sectionTab} value="access-requests">
+						Solicitudes de acceso{" "}
+						{pending.length > 0 && (
+							<Badge
+								className="h-[22px] min-w-[22px] justify-center rounded-full px-[7px] py-0 text-[12.5px]"
+								variant="warning"
+							>
+								{pending.length}
+								<span className="sr-only">
+									{pending.length === 1 ? " pendiente" : " pendientes"}
+								</span>
+							</Badge>
+						)}
+					</TabsTrigger>
+				</TabsList>
+				<TabsContent value="users">
+					<UserAccess users={users} />
+				</TabsContent>
+				<TabsContent value="access-requests">
+					<AccessRequests pending={pending} />
+				</TabsContent>
+			</Tabs>
+		</Page>
+	);
+}
 
 const roleFilterOptions = [
 	["all", "Todos"],
@@ -62,10 +154,9 @@ type Draft =
 	| { mode: "roles"; roles: UserRole[] }
 	| { mode: "password"; password: string };
 
-function UserAccessPage() {
-	const initial = Route.useLoaderData();
-	const [users, setUsers] = useState(initial.users);
-	const [selectedId, setSelectedId] = useState(initial.users[0]?.id ?? null);
+function UserAccess({ users }: { users: ManagedUser[] }) {
+	const router = useRouter();
+	const [selectedId, setSelectedId] = useState(users[0]?.id ?? null);
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [search, setSearch] = useState("");
 	const [roleFilter, setRoleFilter] = useState("all");
@@ -95,6 +186,7 @@ function UserAccessPage() {
 		setNotice(null);
 		try {
 			const text = await action();
+			await router.invalidate();
 			setDraft(null);
 			setNotice({ text, error: false });
 		} catch (error) {
@@ -104,18 +196,11 @@ function UserAccessPage() {
 		}
 	}
 
-	function applyUpdate(updated: ManagedUser) {
-		setUsers((current) =>
-			current.map((user) => (user.id === updated.id ? updated : user)),
-		);
-	}
-
 	const toggleActive = (user: ManagedUser) =>
 		run("No se pudo actualizar el acceso.", async () => {
 			const updated = await setUserActiveFn({
 				data: { userId: user.id, active: !user.active },
 			});
-			applyUpdate(updated);
 			return updated.active
 				? `${user.name} ${user.surname} ya puede ingresar de nuevo.`
 				: `Se desactivó la cuenta de ${user.name} ${user.surname}.`;
@@ -127,11 +212,9 @@ function UserAccessPage() {
 		const user = selected;
 		if (draft.mode === "roles") {
 			return run("No se pudieron guardar los roles.", async () => {
-				applyUpdate(
-					await setUserRolesFn({
-						data: { userId: user.id, roles: draft.roles },
-					}),
-				);
+				await setUserRolesFn({
+					data: { userId: user.id, roles: draft.roles },
+				});
 				return `Se guardaron los roles de ${user.name} ${user.surname}.`;
 			});
 		}
@@ -144,12 +227,7 @@ function UserAccessPage() {
 	}
 
 	return (
-		<Page size="compact">
-			<PageHeader
-				description="Administra los roles y el acceso de cada cuenta. Los accesos nuevos se activan desde Cuentas."
-				title="Usuarios"
-			/>
-
+		<>
 			<div className="flex flex-wrap items-start gap-6">
 				<section className="flex min-w-0 flex-[1.8_1_560px] flex-col gap-4">
 					<div className="flex flex-wrap items-end gap-3">
@@ -334,9 +412,138 @@ function UserAccessPage() {
 					)}
 				</FormDialog>
 			)}
-		</Page>
+		</>
 	);
 }
 
 /** Names and emails read badly in the monospace face the other tables use. */
 const personCell = "font-sans text-[14.5px]";
+
+type Review = { roles: AccountRole[]; verified: boolean };
+const newReview = (): Review => ({ roles: ["professor"], verified: false });
+
+function AccessRequests({ pending }: { pending: PendingAccount[] }) {
+	const router = useRouter();
+	const [reviews, setReviews] = useState<Record<string, Review>>({});
+	const [notice, setNotice] = useState<NoticeState>(null);
+	const [busyId, setBusyId] = useState<string | null>(null);
+
+	const review = (id: string) => reviews[id] ?? newReview();
+	const patchReview = (id: string, patch: Partial<Review>) =>
+		setReviews((current) => ({
+			...current,
+			[id]: { ...(current[id] ?? newReview()), ...patch },
+		}));
+
+	async function activate(account: PendingAccount) {
+		setBusyId(account.id);
+		setNotice(null);
+		try {
+			await activatePendingAccountFn({
+				data: { userId: account.id, roles: review(account.id).roles },
+			});
+			await router.invalidate();
+			setNotice({
+				text: `${account.name} ${account.surname} ya puede ingresar a SISLAB.`,
+				error: false,
+			});
+		} catch (error) {
+			setNotice({
+				text: userFacingError(error, "No se pudo activar esta cuenta."),
+				error: true,
+			});
+		} finally {
+			setBusyId(null);
+		}
+	}
+
+	return (
+		<div className="flex flex-col gap-7">
+			<ActionNotice notice={notice} />
+
+			{pending.length === 0 ? (
+				<EmptyState>No hay solicitudes de acceso pendientes.</EmptyState>
+			) : (
+				<div className="flex flex-col gap-3.5">
+					<h2 className="text-[15px] font-bold">
+						{pending.length === 1
+							? "1 solicitud pendiente"
+							: `${pending.length} solicitudes pendientes`}
+					</h2>
+					{pending.map((account) => {
+						const { roles, verified } = review(account.id);
+						return (
+							<Card
+								asChild
+								className="flex-row flex-wrap items-start gap-6 *:min-w-0 *:flex-[1_1_240px]"
+								key={account.id}
+							>
+								<article>
+									<div className="flex items-start gap-3.5">
+										<PersonAvatar person={account} />
+										<div className="flex min-w-0 flex-col">
+											<h3 className="text-[19px] font-bold">
+												{account.name} {account.surname}
+											</h3>
+											<span className="text-[15px] text-muted-foreground">
+												{account.email}
+											</span>
+											<span className="mt-1 text-[13.5px] text-muted-foreground">
+												Solicitó acceso el {requestedOn(account.createdAt)}
+											</span>
+										</div>
+									</div>
+									<RoleCheckboxes
+										onChange={(next) =>
+											patchReview(account.id, { roles: next })
+										}
+										roles={roles}
+									/>
+									<div className="flex flex-col gap-3">
+										<Label className="min-h-11 cursor-pointer gap-3 text-[15px] font-normal">
+											<Checkbox
+												checked={verified}
+												onCheckedChange={(checked) =>
+													patchReview(account.id, {
+														verified: checked === true,
+													})
+												}
+											/>
+											Verifiqué su identidad fuera de SISLAB
+										</Label>
+										<div>
+											<Button
+												disabled={
+													busyId !== null || !verified || roles.length === 0
+												}
+												onClick={() => activate(account)}
+												size="lg"
+											>
+												{busyId === account.id
+													? "Activando…"
+													: "Activar cuenta"}
+											</Button>
+										</div>
+									</div>
+								</article>
+							</Card>
+						);
+					})}
+				</div>
+			)}
+
+			<Footnote>
+				Para activar una cuenta marca la verificación de identidad y elige al
+				menos un rol. La persona podrá ingresar en cuanto la actives.
+			</Footnote>
+		</div>
+	);
+}
+
+function requestedOn(createdAt: Date) {
+	return new Intl.DateTimeFormat("es-MX", {
+		timeZone: SISLAB_TIME_ZONE,
+		day: "numeric",
+		month: "long",
+	}).format(new Date(createdAt));
+}
