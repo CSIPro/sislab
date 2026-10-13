@@ -9,7 +9,7 @@ An interval of teaching identified by a year and term code, including regular an
 _Avoid_: Semester
 
 **Group**:
-A class assigned to one professor and a recurring laboratory slot during an academic period. Its number is unique among that professor's groups in the period.
+A class assigned to one professor and a recurring laboratory slot during an academic period. Its number is unique among that professor's groups in the period. The slot lasts two hours by default, and the professor can set a different end time.
 
 **Lab exercise**:
 A reusable description of work that a group can perform in a laboratory. The Spanish interface calls it a **práctica** ("Prácticas" in the navigation, "Elige la práctica" in the request form). Code, English docs, and the `lab_exercises` table keep "lab exercise".
