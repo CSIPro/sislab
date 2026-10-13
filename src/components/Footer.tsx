@@ -36,8 +36,9 @@ export default function Footer() {
 							</span>
 						</div>
 						<p className="text-pretty text-muted-foreground">
-							SISLAB es un sistema de laboratorios que desarrollaron estudiantes
-							de la Universidad de Sonora, miembros del laboratorio{" "}
+							SISLAB es un sistema para solicitudes de laboratorios desarrollado
+							por estudiantes de la Universidad de Sonora, miembros del
+							laboratorio{" "}
 							<strong className="text-csipro-purple">CSI PRO</strong>.
 						</p>
 					</div>

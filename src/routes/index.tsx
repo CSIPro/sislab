@@ -216,7 +216,7 @@ function LandingPage() {
 				id="creditos"
 			>
 				<SectionHead
-					text="Estudiantes de la Universidad de Sonora diseñaron y programaron SISLAB en el laboratorio CSI PRO."
+					text="Conoce a los estudiantes de la Universidad de Sonora que desarrollaron SISLAB en el laboratorio CSI PRO."
 					textClassName="max-w-[640px] text-pretty"
 					title="Equipo de desarrollo"
 				/>
