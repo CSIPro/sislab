@@ -1,5 +1,6 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, not, sql } from "drizzle-orm";
 import { sessions, userRoles, users } from "../db/schema.ts";
+import { isAccessRequest } from "./accounts.ts";
 import type { AuthDatabase, AuthUser } from "./auth.server.ts";
 import { hashPassword, hasRole, validatePassword } from "./auth.server.ts";
 
@@ -37,6 +38,8 @@ export async function listUsers(
 		})
 		.from(users)
 		.leftJoin(userRoles, eq(userRoles.userId, users.id))
+		// An access request is not a user yet. It waits in its own list.
+		.where(not(isAccessRequest))
 		.orderBy(asc(users.createdAt), asc(users.email));
 
 	const managed = new Map<string, ManagedUser>();
@@ -108,11 +111,20 @@ export async function setUserActive(
 	return database.transaction(async (transaction) => {
 		await lockUserAccess(transaction);
 		const [target] = await transaction
-			.select({ id: users.id, active: users.active })
+			.select({
+				id: users.id,
+				active: users.active,
+				accessRequest: isAccessRequest,
+			})
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
 		if (!target) throw new Error("User not found.");
+		// Turning the account on here would skip the identity check.
+		if (active && target.accessRequest)
+			throw new Error(
+				"Accept this access request before activating the account.",
+			);
 
 		if (!active && target.active) {
 			const [adminRole] = await transaction
@@ -123,7 +135,17 @@ export async function setUserActive(
 			if (adminRole) await ensureAnotherActiveAdmin(transaction, userId);
 		}
 
-		await transaction.update(users).set({ active }).where(eq(users.id, userId));
+		await transaction
+			.update(users)
+			.set({
+				active,
+				// An account that was active had been accepted, even if it predates `verifiedAt`.
+				// Without the time it would count as an access request once inactive.
+				...(target.active && {
+					verifiedAt: sql`coalesce(${users.verifiedAt}, now())`,
+				}),
+			})
+			.where(eq(users.id, userId));
 		if (!active)
 			await transaction.delete(sessions).where(eq(sessions.userId, userId));
 		return getManagedUser(transaction, userId);

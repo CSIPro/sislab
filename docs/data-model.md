@@ -6,7 +6,7 @@ Status: agreed model. The first application slice is professor group registratio
 
 | Table | Core data | Rules |
 | --- | --- | --- |
-| `users` | Internal ID, optional legacy Clerk ID, email, password credential, name, active state | Admin activates accounts after checking identity outside Sislab. Historical Clerk accounts are linked only after that check. |
+| `users` | Internal ID, optional legacy Clerk ID, email, password credential, name, active state, verification time | Admin activates accounts after checking identity outside Sislab, which sets `verified_at`. An inactive account without `verified_at` is an access request. An inactive account with it was deactivated. Historical Clerk accounts are linked only after that check. |
 | `user_roles` | User ID, role (`professor`, `staff`, `admin`) | A user can hold several roles. Admin includes staff privileges. |
 | `periods` | Code, optional official start and end dates | Regular codes use `YEAR-1` and `YEAR-2`, and the summer term uses `YEAR-V`, which sorts between them. A period with both dates is current between them; without dates, its code is compared to the current half-year. Group forms suggest the period whose dates include today, or else the current half-year, but allow another period. |
 | `labs`, `careers`, `subjects` | Name, active state | Admin-managed catalogs, initially seeded. Retired entries remain available to historical records. |

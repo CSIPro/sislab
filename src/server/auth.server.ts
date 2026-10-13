@@ -94,6 +94,7 @@ export async function bootstrapAdmin(
 				name,
 				surname,
 				active: true,
+				verifiedAt: new Date(),
 			})
 			.returning()
 		if (!admin) throw new Error('Could not create the admin account.')

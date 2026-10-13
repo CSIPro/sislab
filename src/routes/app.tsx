@@ -4,6 +4,7 @@ import { AppSidebar, MobileTopBar } from "../components/app-sidebar.tsx";
 import { SidebarProvider } from "../components/ui/sidebar.tsx";
 import { withBase } from "../lib/base-path.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
+import { countAccessRequestsFn } from "../server/account-functions.ts";
 import { getCurrentSessionFn, signOutFn } from "../server/auth-functions.ts";
 
 export const Route = createFileRoute("/app")({
@@ -13,11 +14,18 @@ export const Route = createFileRoute("/app")({
 		const periodOptions = await listAcademicPeriodsFn();
 		return { user, periodCode: periodOptions.suggestedCode };
 	},
+	// Reloads with every `router.invalidate()`, so accepting a request updates the sidebar.
+	loader: async ({ context }) => ({
+		accessRequestCount: context.user.roles.includes("admin")
+			? await countAccessRequestsFn()
+			: 0,
+	}),
 	component: AppLayout,
 });
 
 function AppLayout() {
 	const { user } = Route.useRouteContext();
+	const { accessRequestCount } = Route.useLoaderData();
 
 	async function signOut() {
 		await signOutFn();
@@ -31,7 +39,11 @@ function AppLayout() {
 			open
 			style={{ "--sidebar-width": "264px" } as CSSProperties}
 		>
-			<AppSidebar onSignOut={signOut} user={user} />
+			<AppSidebar
+				accessRequestCount={accessRequestCount}
+				onSignOut={signOut}
+				user={user}
+			/>
 			<div className="flex min-w-0 flex-1 flex-col bg-background">
 				<MobileTopBar />
 				<Outlet />

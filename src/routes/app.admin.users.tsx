@@ -6,6 +6,7 @@ import {
 	useState,
 } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
+import { CountBadge } from "../components/count-badge.tsx";
 import {
 	DescriptionItem,
 	DescriptionList,
@@ -121,15 +122,10 @@ function UsersPage() {
 					<TabsTrigger className={sectionTab} value="access-requests">
 						Solicitudes de acceso{" "}
 						{pending.length > 0 && (
-							<Badge
-								className="h-[22px] min-w-[22px] justify-center rounded-full px-[7px] py-0 text-[12.5px]"
-								variant="warning"
-							>
-								{pending.length}
-								<span className="sr-only">
-									{pending.length === 1 ? " pendiente" : " pendientes"}
-								</span>
-							</Badge>
+							<CountBadge
+								count={pending.length}
+								labels={["pendiente", "pendientes"]}
+							/>
 						)}
 					</TabsTrigger>
 				</TabsList>

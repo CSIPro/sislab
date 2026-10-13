@@ -68,6 +68,8 @@ export const users = pgTable(
 		name: text().notNull(),
 		surname: text().notNull(),
 		active: boolean().notNull().default(false),
+		// When an admin accepted the access request. Until then the account is an access request.
+		verifiedAt: timestamp("verified_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),

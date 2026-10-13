@@ -50,7 +50,7 @@ test.beforeAll(async () => {
 		[mixed, ['professor', 'admin']],
 	] as const) {
 		const result = await pool.query(
-			'INSERT INTO users (email, name, surname, password_hash, active) VALUES ($1, $2, $3, $4, true) RETURNING id',
+			'INSERT INTO users (email, name, surname, password_hash, active, verified_at) VALUES ($1, $2, $3, $4, true, NOW()) RETURNING id',
 			[user.email, user.name, user.surname, passwordHash],
 		)
 		const userId = result.rows[0].id as string
@@ -274,9 +274,16 @@ test('admin activates a requested account and can sign in as that account', asyn
 	}
 	const nav = page.getByRole('navigation', { name: 'Navegación principal' })
 	await expect(nav.getByRole('link', { name: 'Cuentas' })).toHaveCount(0)
-	await nav.getByRole('link', { name: 'Usuarios' }).click()
+	const usersLink = nav.getByRole('link', { name: 'Usuarios' })
+	const pendingBadge = usersLink.locator('[data-slot="badge"]')
+	await expect(pendingBadge).toContainText('de acceso pendiente')
+	const pendingBefore = Number.parseInt((await pendingBadge.textContent()) ?? '', 10)
+	expect(pendingBefore).toBeGreaterThan(0)
+	await usersLink.click()
 	await page.waitForLoadState('networkidle')
 	await expect(page.getByRole('tab', { name: /^Usuarios/ })).toHaveAttribute('aria-selected', 'true')
+	await page.getByLabel('Buscar').fill(pendingEmail)
+	await expect(page.getByRole('row').filter({ hasText: pendingEmail })).toHaveCount(0)
 	await page.getByRole('tab', { name: /^Solicitudes de acceso/ }).click()
 	const request = page.locator('article').filter({ hasText: pendingEmail })
 	await expect(request).toBeVisible()
@@ -285,6 +292,8 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await request.getByRole('button', { name: 'Activar cuenta' }).click()
 	await expect(page.getByRole('status')).toContainText('ya puede ingresar a SISLAB')
 	await expect(request).toHaveCount(0)
+	if (pendingBefore === 1) await expect(pendingBadge).toHaveCount(0)
+	else await expect(pendingBadge).toHaveText(new RegExp(`^${pendingBefore - 1}\\D`))
 	await page.getByRole('tab', { name: /^Usuarios/ }).click()
 	await page.getByLabel('Buscar').fill(pendingEmail)
 	await expect(page.getByRole('row').filter({ hasText: pendingEmail })).toContainText('Activa')

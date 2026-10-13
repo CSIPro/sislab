@@ -5,6 +5,7 @@ import { Pool } from 'pg'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import * as schema from '../src/db/schema.ts'
 import { getSession, hasRole, hashPassword, signIn } from '../src/server/auth.server.ts'
+import { listPendingAccounts } from '../src/server/accounts.ts'
 import {
 	listUsers,
 	replaceUserPassword,
@@ -44,8 +45,8 @@ test('admins can manage roles and activity; password replacement revokes old cre
 	const targetHash = await hashPassword(targetPassword)
 	const otherHash = await hashPassword('another admin password secret')
 	const inserted = await pool.query(
-		`INSERT INTO users (email, password_hash, name, surname, active)
-		 VALUES ($1, $2, 'Access', 'Admin', true), ($3, $4, 'Target', 'User', true), ($5, $6, 'Other', 'Admin', true)
+		`INSERT INTO users (email, password_hash, name, surname, active, verified_at)
+		 VALUES ($1, $2, 'Access', 'Admin', true, NOW()), ($3, $4, 'Target', 'User', true, NOW()), ($5, $6, 'Other', 'Admin', true, NOW())
 		 RETURNING id, email`,
 		[adminEmail, adminHash, targetEmail, targetHash, otherAdminEmail, otherHash],
 	)
@@ -90,4 +91,19 @@ test('admins can manage roles and activity; password replacement revokes old cre
 	await assert.rejects(setUserRoles(database, adminId, ['staff'], actor), /last active admin/i)
 	await assert.rejects(setUserActive(database, otherAdminId, false, { roles: ['professor'] }), /admin/i)
 	await assert.rejects(setUserActive(database, adminId, false, actor), /last active admin/i)
+})
+
+test('deactivating an account from before verified_at existed does not turn it into an access request', async () => {
+	const inserted = await pool.query(
+		`INSERT INTO users (email, name, surname, active) VALUES ($1, 'Earlier', 'Professor', true) RETURNING id`,
+		[`access-earlier-${randomUUID()}@integration.test`],
+	)
+	const earlierId = inserted.rows[0].id as string
+	userIds.push(earlierId)
+	await pool.query(`INSERT INTO user_roles (user_id, role) VALUES ($1, 'professor')`, [earlierId])
+
+	await setUserActive(database, earlierId, false, actor)
+	assert.ok(!(await listPendingAccounts(database, actor)).some(({ id }) => id === earlierId))
+	assert.equal((await listUsers(database, actor)).find(({ id }) => id === earlierId)?.active, false)
+	assert.equal((await setUserActive(database, earlierId, true, actor)).active, true)
 })

@@ -18,6 +18,9 @@ const badgeVariants = cva(
 				info: "bg-info-surface px-2.5 py-[3px] text-[13px] text-info-text",
 				outline: "border bg-card px-[9px] py-0.5 text-[12.5px] text-foreground",
 				muted: "bg-secondary px-2 py-0.5 text-[12.5px] text-muted-foreground",
+				// A round counter beside a label that says what is being counted.
+				count:
+					"h-[22px] min-w-[22px] justify-center rounded-full bg-warning px-[7px] text-[12.5px] text-warning-foreground",
 			},
 		},
 		defaultVariants: { variant: "neutral" },

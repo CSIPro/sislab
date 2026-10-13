@@ -58,7 +58,7 @@ Every primitive is a shadcn/ui component from `src/components/ui`. Do not write 
 - **Lists that come from data** (prácticas, periods, labs, careers, subjects) use `Combobox` (`ui/combobox.tsx`), so the person can type to filter. The search ignores accents and case.
 - **Fixed lists** (status, role, weekday, quantity basis) use `OptionSelect` (`components/option-select.tsx`), which wraps the shadcn Select.
 - Give a picker `name` when a form reads it through `FormData`, and `fieldVariant="filled"` to match a filled Input.
-- **Badge** carries every status: `success`, `warning`, `destructive`, `neutral`, `info`, plus `outline` for role tags and `muted` for small grey tags.
+- **Badge** carries every status: `success`, `warning`, `destructive`, `neutral`, `info`, plus `outline` for role tags and `muted` for small grey tags. `count` is the round yellow counter on a tab or sidebar link. Render it through `CountBadge` (`components/count-badge.tsx`) and pass the singular and plural of what it counts, which screen readers hear after the number.
 - **Card** is the outlined white panel. `CardTitle` renders a heading. Pass `asChild` when the card must be a `form` or an `article`.
 - **Table** (`ui/table.tsx`) draws the outlined shell and scrolls sideways inside a `ScrollArea`. Use `TableEmpty` for the empty row and `TableCellNote` for a second line in a cell.
 - **FormDialog** (`components/form-dialog.tsx`) is the shadcn Dialog holding one form, with Cancelar and the submit button pinned under fields that scroll. Render it only while the form is open, pass a failed save through `notice`, and show the success message on the page after it closes.

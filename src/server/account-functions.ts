@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
-import { type AccountRole, listPendingAccounts } from "./accounts.ts";
+import {
+	type AccountRole,
+	countAccessRequests,
+	listPendingAccounts,
+} from "./accounts.ts";
 import { requireRole, requireUser } from "./auth.server.ts";
 import { createFirstUsableOperations } from "./first-usable-operations.ts";
 
@@ -12,6 +16,10 @@ export const signUpFn = createServerFn({ method: "POST" })
 
 export const listPendingAccountsFn = createServerFn({ method: "GET" }).handler(
 	async () => listPendingAccounts(db, await requireRole("admin")),
+);
+
+export const countAccessRequestsFn = createServerFn({ method: "GET" }).handler(
+	async () => countAccessRequests(db, await requireRole("admin")),
 );
 
 export const activatePendingAccountFn = createServerFn({ method: "POST" })

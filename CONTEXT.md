@@ -20,7 +20,7 @@ A professor's request for laboratory staff to prepare the reagents, equipment, a
 _Avoid_: Approval request
 
 **Access request**:
-A person's request for a SISLAB account. An admin verifies the person's identity and activates the account; it does not ask laboratory staff to prepare an exercise.
+A person's request for a SISLAB account. An admin verifies the person's identity and activates the account; it does not ask laboratory staff to prepare an exercise. Once accepted, the account is a user and never becomes an access request again, even if an admin deactivates it.
 
 **Reviewed**:
 A preparation request whose materials and waste plan have been checked by laboratory staff.

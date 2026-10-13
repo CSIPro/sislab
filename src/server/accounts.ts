@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { userRoles, users } from "../db/schema.ts";
 import type { AuthDatabase, AuthUser } from "./auth.server.ts";
 import {
@@ -18,6 +18,9 @@ export type PendingAccount = {
 	roles: AccountRole[];
 };
 export type AccountRole = (typeof userRoles.$inferSelect)["role"];
+
+/** An access request: an account no admin has accepted yet. A deactivated account keeps its `verifiedAt`. */
+export const isAccessRequest = sql<boolean>`(${users.verifiedAt} is null and not ${users.active})`;
 
 export type SignUpInput = {
 	email: string;
@@ -68,7 +71,7 @@ export async function listPendingAccounts(
 	actor: AccountActor,
 ): Promise<PendingAccount[]> {
 	requireAdmin(actor);
-	const rows = await database
+	return database
 		.select({
 			id: users.id,
 			email: users.email,
@@ -76,12 +79,22 @@ export async function listPendingAccounts(
 			surname: users.surname,
 			active: users.active,
 			createdAt: users.createdAt,
+			// Written out with table names, because Drizzle drops them from columns in a one-table select.
+			roles: sql<
+				AccountRole[]
+			>`coalesce((select array_agg(granted.role::text) from user_roles as granted where granted.user_id = "users"."id"), '{}')`,
 		})
 		.from(users)
-		.innerJoin(userRoles, eq(userRoles.userId, users.id))
-		.where(and(eq(users.active, false), eq(userRoles.role, "professor")))
+		.where(isAccessRequest)
 		.orderBy(asc(users.createdAt));
-	return rows.map((user) => ({ ...user, roles: ["professor" as const] }));
+}
+
+export async function countAccessRequests(
+	database: AuthDatabase,
+	actor: AccountActor,
+): Promise<number> {
+	requireAdmin(actor);
+	return database.$count(users, isAccessRequest);
 }
 
 export async function activatePendingAccount(
@@ -97,16 +110,8 @@ export async function activatePendingAccount(
 	return database.transaction(async (transaction) => {
 		const [user] = await transaction
 			.update(users)
-			.set({ active: true })
-			.from(userRoles)
-			.where(
-				and(
-					eq(users.id, userId),
-					eq(userRoles.userId, users.id),
-					eq(userRoles.role, "professor"),
-					eq(users.active, false),
-				),
-			)
+			.set({ active: true, verifiedAt: new Date() })
+			.where(and(eq(users.id, userId), isAccessRequest))
 			.returning({
 				id: users.id,
 				email: users.email,
@@ -115,7 +120,7 @@ export async function activatePendingAccount(
 				active: users.active,
 				createdAt: users.createdAt,
 			});
-		if (!user) throw new Error("Pending professor account not found.");
+		if (!user) throw new Error("Access request not found.");
 		await transaction.delete(userRoles).where(eq(userRoles.userId, userId));
 		await transaction
 			.insert(userRoles)

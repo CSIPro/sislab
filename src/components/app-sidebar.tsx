@@ -17,6 +17,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { CountBadge, type CountLabels } from "#/components/count-badge.tsx";
 import { PersonAvatar } from "#/components/person-avatar.tsx";
 import { ThemeIcon, ThemeLabel } from "#/components/theme-toggle.tsx";
 import { Button } from "#/components/ui/button.tsx";
@@ -38,18 +39,38 @@ import { withBase } from "#/lib/base-path.ts";
 import { toggleTheme } from "#/lib/theme.ts";
 import type { AuthUser } from "#/server/auth.server.ts";
 
-type NavItem = { to: LinkProps["to"]; label: string; icon: LucideIcon };
+type NavItem = {
+	to: LinkProps["to"];
+	label: string;
+	icon: LucideIcon;
+	/** A counter at the right edge of the link. */
+	badge?: { count: number; labels: CountLabels };
+};
 type NavGroup = { caption: string | null; items: NavItem[] };
 
-const adminItems: NavItem[] = [
-	{ to: "/app/admin/users", label: "Usuarios", icon: CircleUserRound },
+const adminItems = (accessRequestCount: number): NavItem[] => [
+	{
+		to: "/app/admin/users",
+		label: "Usuarios",
+		icon: CircleUserRound,
+		badge: {
+			count: accessRequestCount,
+			labels: [
+				"solicitud de acceso pendiente",
+				"solicitudes de acceso pendientes",
+			],
+		},
+	},
 	{ to: "/app/admin/exercises", label: "Prácticas", icon: FlaskConical },
 	{ to: "/app/admin/periods", label: "Períodos", icon: CalendarDays },
 	{ to: "/app/admin/catalogs", label: "Catálogos", icon: Layers },
 	{ to: "/app/admin/settings", label: "Configuración", icon: Settings2 },
 ];
 
-function navGroups(roles: AuthUser["roles"]): NavGroup[] {
+function navGroups(
+	roles: AuthUser["roles"],
+	accessRequestCount: number,
+): NavGroup[] {
 	const admin = roles.includes("admin");
 	const groups: NavGroup[] = [
 		{
@@ -93,7 +114,7 @@ function navGroups(roles: AuthUser["roles"]): NavGroup[] {
 					label: "Todas las solicitudes",
 					icon: ClipboardList,
 				},
-				...(admin ? adminItems : []),
+				...(admin ? adminItems(accessRequestCount) : []),
 			],
 		});
 	}
@@ -105,9 +126,11 @@ const menuButton =
 
 export function AppSidebar({
 	user,
+	accessRequestCount,
 	onSignOut,
 }: {
 	user: AuthUser;
+	accessRequestCount: number;
 	onSignOut: () => void;
 }) {
 	const { pathname } = useLocation();
@@ -145,7 +168,7 @@ export function AppSidebar({
 			<SidebarContent className="overflow-hidden">
 				<ScrollArea className="min-h-0 flex-1">
 					<nav aria-label="Navegación principal" className="px-2 pt-2 pb-3">
-						{navGroups(user.roles).map((group) => (
+						{navGroups(user.roles, accessRequestCount).map((group) => (
 							<SidebarGroup className="py-0" key={group.caption ?? "main"}>
 								{group.caption && (
 									<SidebarGroupLabel className="mt-4 mb-1 h-auto px-3 text-[12.5px] font-bold text-muted-foreground">
@@ -154,7 +177,7 @@ export function AppSidebar({
 								)}
 								<SidebarGroupContent>
 									<SidebarMenu className="gap-0.5">
-										{group.items.map(({ to, label, icon: Icon }) => {
+										{group.items.map(({ to, label, icon: Icon, badge }) => {
 											// A page under this one, such as a single catalog, keeps it marked.
 											const isCurrent = pathname === to;
 											const isActive =
@@ -177,6 +200,9 @@ export function AppSidebar({
 														>
 															<Icon aria-hidden="true" strokeWidth={1.75} />
 															<span>{label}</span>
+															{badge && badge.count > 0 && (
+																<CountBadge className="ml-auto" {...badge} />
+															)}
 														</Link>
 													</SidebarMenuButton>
 												</SidebarMenuItem>
