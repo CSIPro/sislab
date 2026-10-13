@@ -8,30 +8,31 @@ web
 
 ## Users
 
-- Professors register groups and manage their recurring laboratory schedules.
-- Lab staff use preparation requests and daily tickets to prepare lab exercises; the preparation-request workflow is planned, not part of the current application slice.
-- Admins manage user access and academic catalogs, and have lab staff privileges.
+- Professors register groups, manage their recurring laboratory schedules, and submit preparation requests for lab exercises.
+- Lab staff decide short-notice requests, void mistaken submissions, and prepare lab exercises from daily PDF tickets.
+- Admins manage user access, academic catalogs, and the minimum notice setting, and have lab staff privileges.
 
 ## Product Purpose
 
-SISLAB (Sistema de Laboratorios) supports teaching laboratories at the Universidad de Sonora. Its current application slice lets professors register groups and schedule laboratory time. The planned next workflow lets professors request preparation for lab exercises and lets lab staff work from daily tickets. Success means staff and professors can coordinate teaching-lab schedules and preparation through the system.
+SISLAB (Sistema de Laboratorios) supports teaching laboratories at the Universidad de Sonora. Professors register groups, schedule laboratory time, and request preparation of reagents, equipment, and waste handling for each lab exercise. Lab staff work from the requests and print daily tickets. Success means staff and professors can coordinate teaching-lab schedules and preparation through the system.
 
 ## Positioning
 
-SISLAB is for university teaching laboratories. It connects recurring group schedules with a planned preparation-request workflow for reagents, equipment, and waste handling.
+SISLAB is for university teaching laboratories. It connects recurring group schedules with preparation requests for reagents, equipment, and waste handling.
 
 ## Operating Context
 
-Professors create groups for academic periods, assigning each a laboratory, course labels, student and team counts, weekday, and time slot. Admins activate accounts after checking identity outside SISLAB. In the planned request release, lab staff decide short-notice exceptions and prepare from daily tickets; recorded review and fulfillment can follow later.
+Professors create groups for academic periods, assigning each a laboratory, course labels, student and team counts, weekday, and time slot. Professors then submit preparation requests for a group's sessions. Admins activate accounts after checking identity outside SISLAB. Lab staff accept or decline short-notice requests, void mistaken submissions, and prepare from daily tickets. The system does not yet record review or fulfillment of a request.
 
 ## Capabilities and Constraints
 
-- The current product supports professor group registration and laboratory scheduling, plus admin account, period, catalog, and group management.
+- The product supports professor group registration and laboratory scheduling, preparation requests, daily PDF tickets, and admin account, period, catalog, group, and notice-setting management.
 - A user can hold multiple roles. Admin includes lab staff privileges.
 - New accounts require admin activation after an out-of-band identity check. Accounts use passwords; email verification and self-service password recovery are not available, so admins handle resets.
 - Group numbers are stable and unique per professor and academic period, including for inactive groups.
 - Active laboratory time slots cannot overlap within the same academic period and weekday.
-- The planned preparation-request workflow preserves submitted material, quantity, laboratory, and time details as a snapshot. Later group or exercise edits do not silently rewrite submitted requests.
+- Preparation requests preserve submitted material, quantity, laboratory, and time details as a snapshot. Later group or exercise edits do not silently rewrite submitted requests.
+- Submitted requests are read-only for professors, lab staff, and admins. Staff and admins can only accept or decline a short-notice request and void a mistaken one. Review, fulfillment, and general cancellation are not implemented.
 - The interface is in Spanish. Use the domain vocabulary in `CONTEXT.md`; in particular, call a reusable description a “lab exercise” and a staff preparation workflow a “preparation request.” On screen a lab exercise is a “práctica”, never an “ejercicio”.
 - Academic dates and times use the `America/Hermosillo` time zone.
 
@@ -43,7 +44,7 @@ The product name is SISLAB (Sistema de Laboratorios). The existing SISLAB name a
 
 - Existing SISLAB logo assets: `public/images/logo.svg` and `public/images/logowhite.svg`.
 - Product terminology and agreed preparation-request model: `CONTEXT.md` and `docs/data-model.md`.
-- The repository describes preparation requests as planned; do not present them as currently available or invent operational results, testimonials, or usage metrics.
+- Review, fulfillment, and general cancellation are later possibilities; do not present them as available. Do not invent operational results, testimonials, or usage metrics.
 
 ## Product Principles
 
