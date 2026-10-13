@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { OptionSelect } from "#/components/option-select.tsx";
 import { Combobox, type ComboboxOption } from "#/components/ui/combobox.tsx";
 import { Field, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import { TimePicker } from "#/components/ui/time-picker.tsx";
+import { defaultEndTime } from "#/lib/session-dates.ts";
 import { weekdayOptions } from "#/lib/weekdays.ts";
 
 type CatalogChoice = { id: string; name: string };
@@ -63,6 +65,10 @@ export function GroupFields({
 	idPrefix: string;
 }) {
 	const id = (field: string) => `${idPrefix}-${field}`;
+	const [endTime, setEndTime] = useState(group?.endTime.slice(0, 5) ?? "");
+	// A new group's end time follows its start time until the person sets their own.
+	// Emptying the end time hands it back to the start time.
+	const [endTimeFollowsStart, setEndTimeFollowsStart] = useState(!group);
 	const periodCodes = options.periods.map(({ code }) => code);
 	const catalogs = [
 		[
@@ -183,16 +189,24 @@ export function GroupFields({
 					defaultValue={group?.startTime.slice(0, 5)}
 					id={id("start")}
 					name="startTime"
+					onChange={(event) => {
+						if (endTimeFollowsStart)
+							setEndTime(defaultEndTime(event.target.value) ?? "");
+					}}
 					required
 				/>
 			</Field>
 			<Field>
 				<FieldLabel htmlFor={id("end")}>Hora de término</FieldLabel>
 				<TimePicker
-					defaultValue={group?.endTime.slice(0, 5)}
 					id={id("end")}
 					name="endTime"
+					onChange={(event) => {
+						setEndTime(event.target.value);
+						setEndTimeFollowsStart(!group && event.target.value === "");
+					}}
 					required
+					value={endTime}
 				/>
 			</Field>
 		</>

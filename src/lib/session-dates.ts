@@ -132,6 +132,23 @@ export function timeRange(startTime: string, endTime: string): string {
 	return `${startTime.slice(0, 5)}–${endTime.slice(0, 5)}`;
 }
 
+/** Lab sessions last two hours unless the professor says otherwise. */
+const DEFAULT_SESSION_MINUTES = 120;
+
+/**
+ * The end time to suggest for a session that starts at `startTime` (HH:MM).
+ * Null when the start is incomplete or the session would run past midnight.
+ */
+export function defaultEndTime(startTime: string): string | null {
+	const match = /^(\d{2}):(\d{2})/.exec(startTime);
+	if (!match) return null;
+	const endMinutes =
+		Number(match[1]) * 60 + Number(match[2]) + DEFAULT_SESSION_MINUTES;
+	if (endMinutes >= 24 * 60) return null;
+	const pad = (value: number) => String(value).padStart(2, "0");
+	return `${pad(Math.floor(endMinutes / 60))}:${pad(endMinutes % 60)}`;
+}
+
 export function groupLabel(number: number): string {
 	return `Grupo ${String(number).padStart(2, "0")}`;
 }

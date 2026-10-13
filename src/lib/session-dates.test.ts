@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
 	addDays,
 	daysBetween,
+	defaultEndTime,
 	formatDateSpan,
 	sessionDateOption,
 	upcomingSessionDates,
@@ -98,4 +99,19 @@ test("a hand-picked date must fall on the group's weekday and still be open", ()
 		}),
 		null,
 	);
+});
+
+test("a lab session ends two hours after it starts by default", () => {
+	assert.equal(defaultEndTime("10:00"), "12:00");
+	assert.equal(defaultEndTime("07:30"), "09:30");
+	assert.equal(defaultEndTime("21:59"), "23:59");
+});
+
+test("offers no default end time when two hours would pass midnight", () => {
+	assert.equal(defaultEndTime("22:00"), null);
+	assert.equal(defaultEndTime("23:15"), null);
+});
+
+test("offers no default end time while the start time is incomplete", () => {
+	assert.equal(defaultEndTime(""), null);
 });
