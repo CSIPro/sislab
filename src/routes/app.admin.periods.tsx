@@ -32,7 +32,9 @@ import {
 	academicPeriodStatus,
 	currentAcademicPeriodCode,
 	regularPeriodCodes,
+	suggestedAcademicPeriodCode,
 } from "../lib/academic-period.ts";
+import { sislabToday } from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import {
 	ensureRegularAcademicPeriodsFn,
@@ -70,11 +72,11 @@ function AcademicPeriodsPage() {
 	const initial = Route.useLoaderData();
 	const [periods, setPeriods] = useState(initial.periods);
 	const currentCode = currentAcademicPeriodCode();
+	const today = sislabToday();
 	const [selectedCode, setSelectedCode] = useState(
-		(
-			initial.periods.find(({ code }) => code === currentCode) ??
-			initial.periods.at(-1)
-		)?.code ?? null,
+		suggestedAcademicPeriodCode(initial.periods, today, currentCode) ??
+			initial.periods.at(-1)?.code ??
+			null,
 	);
 	const [draft, setDraft] = useState<PeriodDraft | null>(null);
 	const [notice, setNotice] = useState<NoticeState>(null);
@@ -209,7 +211,7 @@ function AcademicPeriodsPage() {
 					<TableBody>
 						{[...periods].reverse().map((period) => {
 							const [variant, label] =
-								statusBadges[academicPeriodStatus(period.code, currentCode)];
+								statusBadges[academicPeriodStatus(period, today, currentCode)];
 							const isSelected = period.code === selectedCode;
 							return (
 								<TableRow
@@ -260,7 +262,7 @@ function AcademicPeriodsPage() {
 								})
 							}
 							period={selected}
-							status={academicPeriodStatus(selected.code, currentCode)}
+							status={academicPeriodStatus(selected, today, currentCode)}
 						/>
 					) : (
 						<EmptyState id="period-panel-title">
@@ -294,12 +296,14 @@ function AcademicPeriodsPage() {
 								onChange={(event) =>
 									setDraft({ ...draft, code: event.target.value })
 								}
-								pattern="[0-9]{4}-[12]"
+								pattern="[0-9]{4}-[12Vv]"
 								placeholder={`${currentYear + 1}-1`}
 								required
 								value={draft.code}
 							/>
-							<FieldDescription>Usa AAAA-1 o AAAA-2.</FieldDescription>
+							<FieldDescription>
+								Usa AAAA-1 o AAAA-2, o AAAA-V para el período de verano.
+							</FieldDescription>
 						</Field>
 					)}
 					<Field>

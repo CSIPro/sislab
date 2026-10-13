@@ -5,7 +5,7 @@ Sislab schedules teaching in laboratories and helps staff prepare for lab exerci
 ## Language
 
 **Academic period**:
-An interval of teaching identified by a year and term code, including regular and summer terms.
+An interval of teaching identified by a year and term code, including regular and summer terms. The regular terms are `YEAR-1` and `YEAR-2`, and the summer term is `YEAR-V` ("Verano"), which falls between them. A period with official dates is current between those dates. Without dates, it is current during its half of the year.
 _Avoid_: Semester
 
 **Group**:

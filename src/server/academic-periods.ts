@@ -1,27 +1,45 @@
-import { asc, count, eq, inArray } from 'drizzle-orm'
+import { type AnyColumn, asc, count, eq, inArray, type SQL, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type * as schema from '../db/schema.ts'
 import { groups, periods } from '../db/schema.ts'
 import {
 	currentAcademicPeriodCode,
 	regularPeriodCodes,
-	validateRegularPeriodCode,
+	suggestedAcademicPeriodCode,
+	validateAcademicPeriodCode,
 } from '../lib/academic-period.ts'
+import { sislabToday } from '../lib/session-dates.ts'
 
 export type PeriodDatabase = NodePgDatabase<typeof schema>
 export type AcademicPeriod = typeof periods.$inferSelect
+
+/**
+ * Orders a period-code column by year and then term, with summer (V) between terms 1 and 2.
+ * It matches `compareAcademicPeriodCodes`; text order alone would put V after 2.
+ */
+export function byPeriodCode(code: AnyColumn): SQL[] {
+	return [
+		sql`split_part(${code}, '-', 1)`,
+		sql`CASE split_part(${code}, '-', 2) WHEN '1' THEN 1 WHEN 'V' THEN 2 WHEN '2' THEN 3 ELSE 4 END`,
+		asc(code),
+	]
+}
 
 export async function listAcademicPeriods(
 	database: PeriodDatabase,
 	instant: Date = new Date(),
 ): Promise<{ periods: AcademicPeriod[]; suggestedCode: string | null }> {
-	const available = await database.select().from(periods).orderBy(asc(periods.code))
-	const currentCode = currentAcademicPeriodCode(instant)
+	const available = await database
+		.select()
+		.from(periods)
+		.orderBy(...byPeriodCode(periods.code))
 	return {
 		periods: available,
-		suggestedCode: available.some(({ code }) => code === currentCode)
-			? currentCode
-			: null,
+		suggestedCode: suggestedAcademicPeriodCode(
+			available,
+			sislabToday(instant),
+			currentAcademicPeriodCode(instant),
+		),
 	}
 }
 
@@ -38,14 +56,14 @@ export async function listAcademicPeriodsWithGroupCounts(
 		.from(periods)
 		.leftJoin(groups, eq(groups.periodCode, periods.code))
 		.groupBy(periods.code)
-		.orderBy(asc(periods.code))
+		.orderBy(...byPeriodCode(periods.code))
 }
 
 export async function saveAcademicPeriod(
 	database: PeriodDatabase,
 	input: { code: string; startsOn?: string | null; endsOn?: string | null },
 ): Promise<AcademicPeriod> {
-	const code = validateRegularPeriodCode(input.code.trim())
+	const code = validateAcademicPeriodCode(input.code)
 	const startsOn = normalizeDate(input.startsOn)
 	const endsOn = normalizeDate(input.endsOn)
 	if ((startsOn === null) !== (endsOn === null)) {

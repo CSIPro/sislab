@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
 import { groups, users } from "../db/schema.ts";
+import { byPeriodCode } from "./academic-periods.ts";
 import type { GroupActor, RegisterGroupInput } from "./groups.ts";
 import {
 	deactivateProfessorGroup,
@@ -36,7 +37,7 @@ export async function listAllGroups(
 		.from(groups)
 		.innerJoin(users, eq(users.id, groups.professorId))
 		.where(includeInactive ? undefined : eq(groups.active, true))
-		.orderBy(groups.periodCode, groups.number);
+		.orderBy(...byPeriodCode(groups.periodCode), groups.number);
 }
 
 export async function getAnyGroup(

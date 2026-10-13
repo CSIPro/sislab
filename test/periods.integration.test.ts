@@ -20,7 +20,10 @@ const database = drizzle(pool, { schema })
 const testYear = 2098
 
 after(async () => {
-	await pool.query('DELETE FROM periods WHERE code LIKE $1', [`${testYear}-%`])
+	// Other test files name their periods 2098-<suffix>, so only this file's codes are deleted.
+	await pool.query('DELETE FROM periods WHERE code = ANY($1)', [
+		[testYear, testYear + 1].flatMap((year) => [`${year}-1`, `${year}-V`, `${year}-2`]),
+	])
 	await pool.end()
 })
 
@@ -64,4 +67,24 @@ test('admins see how many groups each period holds', async () => {
 		seeded.map(({ code, groupCount }) => [code, groupCount]),
 		[['2098-1', 0], ['2098-2', 0]],
 	)
+})
+
+test('admins can add a summer period, which lists between the regular terms', async () => {
+	await ensureRegularAcademicPeriods(database, [testYear])
+	const summer = await saveAcademicPeriod(database, { code: ' 2098-v ' })
+	assert.equal(summer.code, '2098-V')
+	await assert.rejects(saveAcademicPeriod(database, { code: '2098-3' }), /YEAR-1, YEAR-2 or YEAR-V/)
+
+	const expected = ['2098-1', '2098-V', '2098-2']
+	const inTestYear = ({ code }: { code: string }) => expected.includes(code)
+	const options = await listAcademicPeriods(database)
+	const counted = await listAcademicPeriodsWithGroupCounts(database)
+	assert.deepEqual(options.periods.filter(inTestYear).map(({ code }) => code), expected)
+	assert.deepEqual(counted.filter(inTestYear).map(({ code }) => code), expected)
+
+	await saveAcademicPeriod(database, { code: '2098-V', startsOn: '2098-06-09', endsOn: '2098-07-18' })
+	const duringSummer = await listAcademicPeriods(database, new Date('2098-07-01T19:00:00.000Z'))
+	const afterSummer = await listAcademicPeriods(database, new Date('2098-07-19T19:00:00.000Z'))
+	assert.equal(duringSummer.suggestedCode, '2098-V')
+	assert.equal(afterSummer.suggestedCode, '2098-2')
 })

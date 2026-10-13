@@ -9,6 +9,7 @@ import {
 	preparationRequests,
 	subjects,
 } from "../db/schema.ts";
+import { byPeriodCode } from "./academic-periods.ts";
 
 export type GroupDatabase = NodePgDatabase<typeof schema>;
 export type GroupActor = { id: string; roles: readonly string[] };
@@ -156,7 +157,7 @@ export async function listProfessorGroups(
 				? eq(groups.professorId, actor.id)
 				: and(eq(groups.professorId, actor.id), eq(groups.active, true)),
 		)
-		.orderBy(groups.periodCode, groups.number);
+		.orderBy(...byPeriodCode(groups.periodCode), groups.number);
 }
 
 export async function getProfessorGroup(

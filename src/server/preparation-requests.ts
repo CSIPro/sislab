@@ -13,6 +13,7 @@ import {
 	users,
 	type WasteItem,
 } from "../db/schema.ts";
+import { byPeriodCode } from "./academic-periods.ts";
 import { listActiveLabExercises } from "./lab-exercises.ts";
 
 type Database = NodePgDatabase<typeof schema>;
@@ -42,7 +43,7 @@ export async function getPreparationRequestOptions(
 			.select()
 			.from(groups)
 			.where(and(eq(groups.professorId, actor.id), eq(groups.active, true)))
-			.orderBy(groups.periodCode, groups.number),
+			.orderBy(...byPeriodCode(groups.periodCode), groups.number),
 		listActiveLabExercises(database),
 		getMinimumNoticeDays(database),
 	]);

@@ -18,6 +18,7 @@ const careerName = `Browser Career ${suffix}`
 const subjectName = `Browser Subject ${suffix}`
 const addedCatalogName = `Browser Added Lab ${suffix}`
 let createdPeriodCode = ''
+let summerPeriodCode = ''
 let pendingEmail = ''
 let pendingPassword = ''
 let pool: Pool
@@ -33,10 +34,10 @@ test.beforeAll(async () => {
 	const firstYear = 2000 + (Number.parseInt(suffix.slice(0, 4), 16) % 201)
 	for (let offset = 0; offset < 201; offset += 1) {
 		const year = 2000 + ((firstYear - 2000 + offset) % 201)
-		const candidateCodes = [`${year}-1`, `${year}-2`]
+		const candidateCodes = [`${year}-1`, `${year}-2`, `${year}-V`]
 		const existing = await pool.query('SELECT code FROM periods WHERE code = ANY($1)', [candidateCodes])
 		if (existing.rowCount === 0) {
-			[periodCode, createdPeriodCode] = candidateCodes
+			[periodCode, createdPeriodCode, summerPeriodCode] = candidateCodes
 			break
 		}
 	}
@@ -74,7 +75,7 @@ test.afterAll(async () => {
 		await pool.query('DELETE FROM user_roles WHERE user_id = ANY($1)', [userIds])
 		await pool.query('DELETE FROM users WHERE id = ANY($1)', [userIds])
 	}
-	await pool.query('DELETE FROM periods WHERE code = ANY($1)', [[periodCode, createdPeriodCode]])
+	await pool.query('DELETE FROM periods WHERE code = ANY($1)', [[periodCode, createdPeriodCode, summerPeriodCode]])
 	await pool.query('DELETE FROM labs WHERE name = ANY($1)', [[labName, addedCatalogName]])
 	await pool.query('DELETE FROM careers WHERE name = $1', [careerName])
 	await pool.query('DELETE FROM subjects WHERE name = $1', [subjectName])
@@ -310,6 +311,19 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(editPeriodDialog.getByLabel('Código')).toHaveCount(0)
 	await editPeriodDialog.getByRole('button', { name: 'Cancelar' }).click()
 	await expect(editPeriodDialog).toHaveCount(0)
+
+	await page.getByRole('button', { name: 'Agregar período', exact: true }).click()
+	await periodDialog.getByLabel('Código').fill(summerPeriodCode.toLowerCase())
+	await periodDialog.getByRole('button', { name: 'Agregar período', exact: true }).click()
+	await expect(page.getByRole('status')).toContainText(`Se guardó el período ${summerPeriodCode}`)
+	const summerCard = page.getByRole('region', { name: summerPeriodCode })
+	for (const [startsIn, endsIn, status] of [[-2, 2, 'Actual'], [-9, -5, 'Concluido'], [5, 9, 'Próximo']] as const) {
+		await pool.query('UPDATE periods SET starts_on = CURRENT_DATE + $2::int, ends_on = CURRENT_DATE + $3::int WHERE code = $1', [summerPeriodCode, startsIn, endsIn])
+		await page.reload()
+		await page.waitForLoadState('networkidle')
+		await page.getByRole('button', { name: summerPeriodCode, exact: true }).click()
+		await expect(summerCard.getByText(status, { exact: true })).toBeVisible()
+	}
 
 	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Catálogos' }).click()
 	await page.waitForLoadState('networkidle')

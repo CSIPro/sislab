@@ -40,7 +40,7 @@ const translations = new Map<string, string>([
 	['Academic years are required.', 'Indica los años académicos.'],
 	['Enter one or more academic years.', 'Escribe uno o más años académicos.'],
 	['Period dates must be text values.', 'Las fechas del período no son válidas.'],
-	['Period code must use YEAR-1 or YEAR-2 format.', 'La clave debe seguir el formato AÑO-1 o AÑO-2.'],
+	['Period code must use YEAR-1, YEAR-2 or YEAR-V format.', 'La clave debe seguir el formato AÑO-1, AÑO-2 o AÑO-V.'],
 	['Period year must be between 2000 and 2200.', 'El año del período debe estar entre 2000 y 2200.'],
 	['Enter a year between 2000 and 2200.', 'Escribe un año entre 2000 y 2200.'],
 	['Could not determine the current academic period.', 'No se pudo determinar el período académico actual.'],
