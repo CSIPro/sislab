@@ -1,4 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
+import { SISLAB_TIME_ZONE } from "#/lib/academic-period.ts";
 import { withBase } from "#/lib/base-path.ts";
 
 const navLink =
@@ -9,6 +10,11 @@ export default function Footer() {
 		select: (state) => state.location.pathname,
 	});
 	if (pathname.startsWith("/app")) return null;
+	// The year in Hermosillo, so the server and a browser in another zone render the same text.
+	const year = new Intl.DateTimeFormat("es-MX", {
+		timeZone: SISLAB_TIME_ZONE,
+		year: "numeric",
+	}).format(new Date());
 	return (
 		<footer className="border-t bg-secondary" id="acerca">
 			<div className="mx-auto w-full max-w-[1200px] px-8 max-md:px-5 flex flex-col gap-8 pt-14 pb-7">
@@ -55,7 +61,7 @@ export default function Footer() {
 				</div>
 				<div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-5 border-t pt-6">
 					<span className="text-sm text-muted-foreground">
-						© 2026 CSI PRO · Universidad de Sonora
+						© {year} CSI PRO · Universidad de Sonora
 					</span>
 					<div className="ml-auto flex flex-wrap items-center justify-end gap-x-9 gap-y-5">
 						<a
