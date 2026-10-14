@@ -164,16 +164,19 @@ function ManageGroupsPage() {
 									return (
 										<div
 											className={cn(
-												"flex min-h-[92px] flex-col gap-0.5 rounded-md p-3",
+												"relative flex min-h-[92px] flex-col gap-0.5 rounded-md p-3",
 												progress === "past"
-													? "border border-dashed text-muted-foreground"
+													? "border bg-muted/40 text-muted-foreground"
 													: "bg-accent",
-												progress === "ongoing" &&
-													"ring-2 ring-primary motion-safe:animate-[pulse_3s_ease-in-out_infinite]",
 											)}
-											data-progress={progress}
 											key={group.id}
 										>
+											{progress === "ongoing" && (
+												<span
+													aria-hidden="true"
+													className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary motion-safe:animate-pulse"
+												/>
+											)}
 											<strong className="text-[14.5px]">
 												{group.subjectName}
 											</strong>
