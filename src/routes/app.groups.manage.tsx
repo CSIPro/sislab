@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import {
 	DescriptionItem,
@@ -16,7 +16,6 @@ import {
 } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
-import { ScrollArea, ScrollBar } from "../components/ui/scroll-area.tsx";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
@@ -75,30 +74,6 @@ function ManageGroupsPage() {
 	);
 	const clock = useSislabClock();
 	const todayWeekday = clock ? weekdayOf(clock.today) : null;
-	const weekRef = useRef<HTMLDivElement>(null);
-
-	// Bring today's column into view when the clock first reads, and again when
-	// the date rolls over. The 30 second ticks within a day leave the scroll alone.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: todayWeekday is the trigger, the effect reads it through the DOM.
-	useEffect(() => {
-		const column = weekRef.current?.querySelector<HTMLElement>(
-			"[data-today='true']",
-		);
-		const viewport = column?.closest<HTMLElement>(
-			"[data-slot='scroll-area-viewport']",
-		);
-		if (!column || !viewport) return;
-		const offset =
-			column.getBoundingClientRect().left -
-			viewport.getBoundingClientRect().left -
-			(viewport.clientWidth - column.offsetWidth) / 2;
-		viewport.scrollTo({
-			left: viewport.scrollLeft + offset,
-			behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-				? "auto"
-				: "smooth",
-		});
-	}, [todayWeekday]);
 
 	async function reload() {
 		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
@@ -169,70 +144,64 @@ function ManageGroupsPage() {
 				<CardTitle id="groups-week-title">
 					Tu semana en el laboratorio
 				</CardTitle>
-				<ScrollArea className="w-full">
-					<div className="flex gap-3 pb-3" ref={weekRef}>
-						{WEEK_DAYS.map((day) => {
-							const dayGroups = weekGroups.filter(
-								(group) => group.weekday === day,
-							);
-							return (
-								<div
-									className="flex w-44 shrink-0 flex-col gap-2"
-									data-today={day === todayWeekday}
-									key={day}
-								>
-									<span className="text-[13px] font-bold text-muted-foreground">
-										{weekdays[day]}
-									</span>
-									{dayGroups.length === 0 && (
-										<div className="flex min-h-[92px] flex-col justify-center rounded-md border border-dashed p-3 text-[13px] text-muted-foreground">
-											Sin laboratorio
-										</div>
-									)}
-									{dayGroups.map((group) => {
-										const progress = clock
-											? groupSessionProgress({ ...group, ...clock })
-											: "upcoming";
-										return (
-											<div
-												className={cn(
-													"relative flex min-h-[92px] flex-col gap-0.5 rounded-md p-3",
-													progress === "past"
-														? "border bg-muted/40 text-muted-foreground"
-														: "bg-accent",
-												)}
-												key={group.id}
-											>
-												{progress === "ongoing" && (
-													<span
-														aria-hidden="true"
-														className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary motion-safe:animate-pulse"
-													/>
-												)}
-												<strong className="text-[14.5px]">
-													{group.subjectName}
-												</strong>
+				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(130px,100%),1fr))] gap-3">
+					{WEEK_DAYS.map((day) => {
+						const dayGroups = weekGroups.filter(
+							(group) => group.weekday === day,
+						);
+						return (
+							<div className="flex flex-col gap-2" key={day}>
+								<span className="text-[13px] font-bold text-muted-foreground">
+									{weekdays[day]}
+									{day === todayWeekday && " · hoy"}
+								</span>
+								{dayGroups.length === 0 && (
+									<div className="flex min-h-[92px] flex-col justify-center rounded-md border border-dashed p-3 text-[13px] text-muted-foreground">
+										Sin laboratorio
+									</div>
+								)}
+								{dayGroups.map((group) => {
+									const progress = clock
+										? groupSessionProgress({ ...group, ...clock })
+										: "upcoming";
+									return (
+										<div
+											className={cn(
+												"relative flex min-h-[92px] flex-col gap-0.5 rounded-md p-3",
+												progress === "past"
+													? "border bg-muted/40 text-muted-foreground"
+													: "bg-accent",
+											)}
+											key={group.id}
+										>
+											{progress === "ongoing" && (
 												<span
-													className={cn(
-														"text-[13px] font-bold",
-														progress !== "past" && "text-primary-text",
-													)}
-												>
-													{groupLabel(group.number)}
-												</span>
-												<span className="mt-1 text-[13px] text-muted-foreground">
-													{timeRange(group.startTime, group.endTime)} ·{" "}
-													{group.labName}
-												</span>
-											</div>
-										);
-									})}
-								</div>
-							);
-						})}
-					</div>
-					<ScrollBar orientation="horizontal" />
-				</ScrollArea>
+													aria-hidden="true"
+													className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary motion-safe:animate-pulse"
+												/>
+											)}
+											<strong className="text-[14.5px]">
+												{group.subjectName}
+											</strong>
+											<span
+												className={cn(
+													"text-[13px] font-bold",
+													progress !== "past" && "text-primary-text",
+												)}
+											>
+												{groupLabel(group.number)}
+											</span>
+											<span className="mt-1 text-[13px] text-muted-foreground">
+												{timeRange(group.startTime, group.endTime)} ·{" "}
+												{group.labName}
+											</span>
+										</div>
+									);
+								})}
+							</div>
+						);
+					})}
+				</div>
 			</Card>
 
 			<section
