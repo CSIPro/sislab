@@ -8,8 +8,11 @@ Sislab schedules teaching in laboratories and helps staff prepare for lab exerci
 An interval of teaching identified by a year and term code, including regular and summer terms. The regular terms are `YEAR-1` and `YEAR-2`, and the summer term is `YEAR-V` ("Verano"), which falls between them. A period with official dates is current between those dates. Without dates, it is current during its half of the year.
 _Avoid_: Semester
 
+**Professor**:
+A person who registers groups and submits preparation requests. The interface labels the role **Docente**, while running copy says "profesor". Code and the `user_roles` table use `professor`.
+
 **Group**:
-A class assigned to one professor and a recurring laboratory slot during an academic period. Its number is unique among that professor's groups in the period. The slot lasts two hours by default, and the professor can set a different end time.
+A class assigned to one professor and a recurring laboratory slot during an academic period. Its number is unique among that professor's groups in the period. The slot lasts two hours by default, and the professor can set a different end time. The form leaves the suggested end time empty when two hours would end after 22:00.
 
 **Lab exercise**:
 A reusable description of work that a group can perform in a laboratory. The Spanish interface calls it a **práctica** ("Prácticas" in the navigation, "Elige la práctica" in the request form). Code, English docs, and the `lab_exercises` table keep "lab exercise".
