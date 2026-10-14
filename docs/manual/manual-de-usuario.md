@@ -247,10 +247,10 @@ Una solicitud anulada permanece en la lista con el estado **Anulada** y el nombr
 El ticket es el documento impreso que usa el personal para preparar las prácticas. Se genera por día.
 
 1. Elige el día con la lista de la semana o con el selector de fecha. El botón de la parte superior cambia para mostrar ese día.
-2. Pulsa **Ticket del [día] (PDF)**. Por ejemplo, **Ticket del miércoles 14 (PDF)**.
+2. Pulsa **Ticket del [día] (PDF)**. Por ejemplo, **Ticket del jueves 15 (PDF)**.
 3. Revisa el documento en el visor, que incluye herramientas para ampliar, imprimir y descargar.
 
-![Ticket del miércoles 14 en el visor de PDF](capturas/39-ticket-dialogo.png)
+![Ticket del jueves 15 en el visor de PDF](capturas/39-ticket-dialogo.png)
 
 El ticket incluye las solicitudes ordinarias y las excepciones aceptadas de ese día. No incluye las excepciones pendientes, las rechazadas ni las anuladas. Para cada práctica, el ticket muestra el número y el nombre, el grupo, el profesor, el número de equipos, la fecha, el horario, el laboratorio, los reactivos con sus cantidades, los reactivos omitidos, los materiales añadidos, el equipo y el tratamiento de los residuos.
 
