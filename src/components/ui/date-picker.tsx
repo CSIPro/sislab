@@ -155,6 +155,7 @@ function DatePicker({
 					}}
 					selected={selected}
 					startMonth={min ? toDate(min) : undefined}
+					weekStartsOn={0}
 				/>
 				{(footer || (clearable && value)) && (
 					<div className="flex flex-col items-start gap-2 border-t px-4 py-3 text-[13px] text-muted-foreground">
