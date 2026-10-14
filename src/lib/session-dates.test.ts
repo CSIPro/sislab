@@ -8,6 +8,7 @@ import {
 	groupSessionProgress,
 	sessionDateOption,
 	upcomingSessionDates,
+	weekdayOf,
 	weekRange,
 } from "./session-dates.ts";
 
@@ -160,4 +161,10 @@ test("today's session is upcoming, ongoing or past by the clock", () => {
 		"ongoing",
 	);
 	assert.equal(groupSessionProgress({ ...session, nowTime: "11:00" }), "past");
+});
+
+test("names the weekday of a date, Sunday as 0", () => {
+	assert.equal(weekdayOf("2026-10-11"), 0);
+	assert.equal(weekdayOf("2026-10-14"), 3);
+	assert.equal(weekdayOf("2026-10-17"), 6);
 });

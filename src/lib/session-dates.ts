@@ -22,6 +22,11 @@ export function sislabNowTime(instant: Date = new Date()): string {
 	}).format(instant);
 }
 
+/** The weekday of a YYYY-MM-DD date, Sunday as 0 like `weekdays`. */
+export function weekdayOf(date: string): number {
+	return toDate(date).getUTCDay();
+}
+
 export function addDays(date: string, days: number): string {
 	const value = toDate(date);
 	value.setUTCDate(value.getUTCDate() + days);
@@ -107,7 +112,7 @@ export function groupSessionProgress({
 	today: string;
 	nowTime: string;
 }): SessionProgress {
-	const todayWeekday = toDate(today).getUTCDay();
+	const todayWeekday = weekdayOf(today);
 	if (weekday < todayWeekday) return "past";
 	if (weekday > todayWeekday) return "upcoming";
 	if (nowTime >= endTime.slice(0, 5)) return "past";
