@@ -20,7 +20,12 @@ import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "../components/ui/toggle-group.tsx";
-import { groupLabel, timeRange } from "../lib/session-dates.ts";
+import { useSislabClock } from "../hooks/use-sislab-clock.ts";
+import {
+	groupLabel,
+	groupSessionProgress,
+	timeRange,
+} from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { cn } from "../lib/utils.ts";
 import { weekdays } from "../lib/weekdays.ts";
@@ -50,8 +55,8 @@ export const Route = createFileRoute("/app/groups/manage")({
 
 type Group = Awaited<ReturnType<typeof listMyGroupsFn>>[number];
 
-// Monday through Friday always show; weekend days only when a group meets then.
-const WORK_WEEK = [1, 2, 3, 4, 5];
+// The week runs Sunday through Saturday, matching the weekday numbers.
+const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 function ManageGroupsPage() {
 	const { groups: initialGroups, options } = Route.useLoaderData();
@@ -66,13 +71,7 @@ function ManageGroupsPage() {
 	const weekGroups = [...activeGroups].sort((a, b) =>
 		a.startTime.localeCompare(b.startTime),
 	);
-	const weekDays = [0, 1, 2, 3, 4, 5, 6]
-		.filter(
-			(day) =>
-				WORK_WEEK.includes(day) ||
-				weekGroups.some((group) => group.weekday === day),
-		)
-		.sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+	const clock = useSislabClock();
 
 	async function reload() {
 		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
@@ -144,7 +143,7 @@ function ManageGroupsPage() {
 					Tu semana en el laboratorio
 				</CardTitle>
 				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))] gap-3">
-					{weekDays.map((day) => {
+					{WEEK_DAYS.map((day) => {
 						const dayGroups = weekGroups.filter(
 							(group) => group.weekday === day,
 						);
@@ -158,23 +157,41 @@ function ManageGroupsPage() {
 										Sin laboratorio
 									</div>
 								)}
-								{dayGroups.map((group) => (
-									<div
-										className="flex min-h-[92px] flex-col gap-0.5 rounded-md bg-accent p-3"
-										key={group.id}
-									>
-										<strong className="text-[14.5px]">
-											{group.subjectName}
-										</strong>
-										<span className="text-[13px] font-bold text-primary-text">
-											{groupLabel(group.number)}
-										</span>
-										<span className="mt-1 text-[13px] text-muted-foreground">
-											{timeRange(group.startTime, group.endTime)} ·{" "}
-											{group.labName}
-										</span>
-									</div>
-								))}
+								{dayGroups.map((group) => {
+									const progress = clock
+										? groupSessionProgress({ ...group, ...clock })
+										: "upcoming";
+									return (
+										<div
+											className={cn(
+												"flex min-h-[92px] flex-col gap-0.5 rounded-md p-3",
+												progress === "past"
+													? "border border-dashed text-muted-foreground"
+													: "bg-accent",
+												progress === "ongoing" &&
+													"ring-2 ring-primary motion-safe:animate-[pulse_3s_ease-in-out_infinite]",
+											)}
+											data-progress={progress}
+											key={group.id}
+										>
+											<strong className="text-[14.5px]">
+												{group.subjectName}
+											</strong>
+											<span
+												className={cn(
+													"text-[13px] font-bold",
+													progress !== "past" && "text-primary-text",
+												)}
+											>
+												{groupLabel(group.number)}
+											</span>
+											<span className="mt-1 text-[13px] text-muted-foreground">
+												{timeRange(group.startTime, group.endTime)} ·{" "}
+												{group.labName}
+											</span>
+										</div>
+									);
+								})}
 							</div>
 						);
 					})}

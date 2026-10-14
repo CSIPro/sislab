@@ -118,6 +118,8 @@ SISLAB no reserva horarios. Si el laboratorio ya tiene otro grupo activo en el m
 
 **Mis grupos** muestra tu semana en el laboratorio y la lista de tus grupos.
 
+La semana va de domingo a sábado. Las sesiones que ya pasaron aparecen con borde punteado y sin color, las próximas conservan su color y la sesión en curso tiene un contorno que pulsa suavemente. SISLAB actualiza esto cada 30 segundos con la fecha y la hora del laboratorio.
+
 ![Mis grupos con la semana del profesor y la lista de grupos](capturas/25-mis-grupos.png)
 
 Cada grupo ofrece tres acciones:

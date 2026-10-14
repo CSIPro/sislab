@@ -87,6 +87,33 @@ export function sessionDateOption({
 	return { date, late: daysBetween(today, date) < minimumNoticeDays };
 }
 
+export type SessionProgress = "past" | "ongoing" | "upcoming";
+
+/**
+ * Where a group's session stands this week, which runs Sunday through
+ * Saturday. `today` is YYYY-MM-DD and `nowTime` is HH:MM, both in the SISLAB
+ * time zone.
+ */
+export function groupSessionProgress({
+	weekday,
+	startTime,
+	endTime,
+	today,
+	nowTime,
+}: {
+	weekday: number;
+	startTime: string;
+	endTime: string;
+	today: string;
+	nowTime: string;
+}): SessionProgress {
+	const todayWeekday = toDate(today).getUTCDay();
+	if (weekday < todayWeekday) return "past";
+	if (weekday > todayWeekday) return "upcoming";
+	if (nowTime >= endTime.slice(0, 5)) return "past";
+	return nowTime >= startTime.slice(0, 5) ? "ongoing" : "upcoming";
+}
+
 const dateFormats = {
 	/** "lun 12 oct" */
 	short: { weekday: "short", day: "numeric", month: "short" },

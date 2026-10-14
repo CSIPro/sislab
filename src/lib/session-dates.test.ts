@@ -5,6 +5,7 @@ import {
 	daysBetween,
 	defaultEndTime,
 	formatDateSpan,
+	groupSessionProgress,
 	sessionDateOption,
 	upcomingSessionDates,
 	weekRange,
@@ -114,4 +115,49 @@ test("offers no default end time when two hours would pass midnight", () => {
 
 test("offers no default end time while the start time is incomplete", () => {
 	assert.equal(defaultEndTime(""), null);
+});
+
+test("a group's session this week is past on earlier days and upcoming on later ones", () => {
+	// 2026-10-14 is a Wednesday, so the week runs Sunday 11 through Saturday 17.
+	const session = { startTime: "09:00:00", endTime: "11:00:00" };
+	const today = "2026-10-14";
+	const nowTime = "12:00";
+	assert.equal(
+		groupSessionProgress({ ...session, weekday: 0, today, nowTime }),
+		"past",
+	);
+	assert.equal(
+		groupSessionProgress({ ...session, weekday: 2, today, nowTime }),
+		"past",
+	);
+	assert.equal(
+		groupSessionProgress({ ...session, weekday: 4, today, nowTime }),
+		"upcoming",
+	);
+	assert.equal(
+		groupSessionProgress({ ...session, weekday: 6, today, nowTime }),
+		"upcoming",
+	);
+});
+
+test("today's session is upcoming, ongoing or past by the clock", () => {
+	const session = {
+		weekday: 3,
+		startTime: "09:00:00",
+		endTime: "11:00:00",
+		today: "2026-10-14",
+	};
+	assert.equal(
+		groupSessionProgress({ ...session, nowTime: "08:59" }),
+		"upcoming",
+	);
+	assert.equal(
+		groupSessionProgress({ ...session, nowTime: "09:00" }),
+		"ongoing",
+	);
+	assert.equal(
+		groupSessionProgress({ ...session, nowTime: "10:59" }),
+		"ongoing",
+	);
+	assert.equal(groupSessionProgress({ ...session, nowTime: "11:00" }), "past");
 });
