@@ -205,12 +205,12 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 										data-muted={!entry.active}
 										data-state={isSelected ? "selected" : undefined}
 										key={entry.id}
+										onClick={() => select(entry.id)}
 									>
 										<TableCell className="first:whitespace-normal">
 											<Button
 												aria-pressed={isSelected}
 												className="min-h-0 w-full justify-start rounded-sm px-0 text-left text-[13px] font-normal whitespace-normal text-inherit hover:bg-transparent hover:text-primary-text aria-pressed:font-bold"
-												onClick={() => select(entry.id)}
 												variant="ghost"
 											>
 												{entry.name}

@@ -212,13 +212,13 @@ function LabExercisesPage() {
 										data-muted={!exercise.active}
 										data-state={isSelected ? "selected" : undefined}
 										key={exercise.id}
+										onClick={() => select(exercise.id)}
 									>
 										<TableCell>{exercise.number}</TableCell>
 										<TableCell>
 											<Button
 												aria-pressed={isSelected}
 												className="min-h-0 w-full justify-start rounded-sm px-0 text-left text-[13px] font-normal whitespace-normal text-inherit hover:bg-transparent hover:text-primary-text aria-pressed:font-bold"
-												onClick={() => select(exercise.id)}
 												variant="ghost"
 											>
 												{exercise.name}

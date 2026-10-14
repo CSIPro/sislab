@@ -263,12 +263,12 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 									data-muted={!user.active}
 									data-state={user.id === selectedId ? "selected" : undefined}
 									key={user.id}
+									onClick={() => select(user.id)}
 								>
 									<TableCell className={personCell}>
 										<Button
 											aria-pressed={user.id === selectedId}
 											className="min-h-0 w-full flex-col items-start gap-0 rounded-sm px-0 text-left text-[14.5px] font-normal whitespace-normal text-inherit hover:bg-transparent hover:text-primary-text"
-											onClick={() => select(user.id)}
 											variant="ghost"
 										>
 											<strong>

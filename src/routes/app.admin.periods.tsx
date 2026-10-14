@@ -217,15 +217,15 @@ function AcademicPeriodsPage() {
 								<TableRow
 									data-state={isSelected ? "selected" : undefined}
 									key={period.code}
+									onClick={() => {
+										setSelectedCode(period.code);
+										setNotice(null);
+									}}
 								>
 									<TableCell>
 										<Button
 											aria-pressed={isSelected}
 											className="min-h-0 w-full justify-start rounded-sm px-0 text-left text-[13px] font-bold text-inherit hover:bg-transparent hover:text-primary-text"
-											onClick={() => {
-												setSelectedCode(period.code);
-												setNotice(null);
-											}}
 											variant="ghost"
 										>
 											{period.code}

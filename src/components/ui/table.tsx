@@ -34,13 +34,21 @@ function TableBody(props: React.ComponentProps<"tbody">) {
 	return <tbody data-slot="table-body" {...props} />;
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+/** A row with an `onClick` shows a pointer and a hover tint, so the whole row selects. */
+function TableRow({
+	className,
+	onClick,
+	...props
+}: React.ComponentProps<"tr">) {
 	return (
 		<tr
 			className={cn(
 				"data-[muted=true]:text-muted-foreground data-[state=selected]:bg-selected-surface",
+				onClick &&
+					"cursor-pointer not-data-[state=selected]:hover:bg-secondary",
 				className,
 			)}
+			onClick={onClick}
 			data-slot="table-row"
 			{...props}
 		/>
