@@ -106,7 +106,7 @@ El formulario pide estos datos:
 - **Número de grupo**. Déjalo vacío para que SISLAB asigne el siguiente número disponible. Ese número es tuyo dentro del período y no cambia aunque desactives el grupo.
 - **Laboratorio**, **Carrera** y **Materia**. Son listas de los catálogos que administra SISLAB.
 - **Estudiantes** y **Equipos**. Un grupo tiene entre 1 y 60 estudiantes, y el número de equipos no puede superar el número de estudiantes.
-- **Día de la semana**, **Hora de inicio** y **Hora de término**.
+- **Día de la semana**, **Hora de inicio** y **Hora de finalización**. Las horas se eligen en formato de 24 horas, entre las 06:00 y las 22:00. Por ejemplo, 14:00 son las 2:00 de la tarde.
 
 Completa el formulario y pulsa **Registrar grupo**.
 

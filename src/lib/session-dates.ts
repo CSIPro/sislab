@@ -169,16 +169,26 @@ const DEFAULT_SESSION_MINUTES = 120;
 
 /**
  * The end time to suggest for a session that starts at `startTime` (HH:MM).
- * Null when the start is incomplete or the session would run past midnight.
+ * Null when the start is incomplete, the session would run past midnight, or
+ * it would end after `latestEnd` (HH:MM, when given).
  */
-export function defaultEndTime(startTime: string): string | null {
-	const match = /^(\d{2}):(\d{2})/.exec(startTime);
-	if (!match) return null;
-	const endMinutes =
-		Number(match[1]) * 60 + Number(match[2]) + DEFAULT_SESSION_MINUTES;
+export function defaultEndTime(
+	startTime: string,
+	latestEnd?: string,
+): string | null {
+	const start = toMinutes(startTime);
+	if (start === null) return null;
+	const endMinutes = start + DEFAULT_SESSION_MINUTES;
 	if (endMinutes >= 24 * 60) return null;
+	const latest = latestEnd === undefined ? null : toMinutes(latestEnd);
+	if (latest !== null && endMinutes > latest) return null;
 	const pad = (value: number) => String(value).padStart(2, "0");
 	return `${pad(Math.floor(endMinutes / 60))}:${pad(endMinutes % 60)}`;
+}
+
+function toMinutes(time: string): number | null {
+	const match = /^(\d{2}):(\d{2})/.exec(time);
+	return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 }
 
 export function groupLabel(number: number): string {

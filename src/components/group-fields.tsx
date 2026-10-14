@@ -7,6 +7,10 @@ import { TimePicker } from "#/components/ui/time-picker.tsx";
 import { defaultEndTime } from "#/lib/session-dates.ts";
 import { weekdayOptions } from "#/lib/weekdays.ts";
 
+/** Sessions run between these times, so the pickers offer nothing outside them. */
+const EARLIEST_TIME = "06:00";
+const LATEST_TIME = "22:00";
+
 type CatalogChoice = { id: string; name: string };
 
 export type GroupFieldOptions = {
@@ -187,23 +191,28 @@ export function GroupFields({
 				<FieldLabel htmlFor={id("start")}>Hora de inicio</FieldLabel>
 				<TimePicker
 					defaultValue={group?.startTime.slice(0, 5)}
+					earliest={EARLIEST_TIME}
 					id={id("start")}
+					label="Hora de inicio"
+					latest={LATEST_TIME}
 					name="startTime"
-					onChange={(event) => {
-						if (endTimeFollowsStart)
-							setEndTime(defaultEndTime(event.target.value) ?? "");
+					onValueChange={(value) => {
+						if (endTimeFollowsStart) setEndTime(defaultEndTime(value) ?? "");
 					}}
 					required
 				/>
 			</Field>
 			<Field>
-				<FieldLabel htmlFor={id("end")}>Hora de término</FieldLabel>
+				<FieldLabel htmlFor={id("end")}>Hora de finalización</FieldLabel>
 				<TimePicker
+					earliest={EARLIEST_TIME}
 					id={id("end")}
+					label="Hora de finalización"
+					latest={LATEST_TIME}
 					name="endTime"
-					onChange={(event) => {
-						setEndTime(event.target.value);
-						setEndTimeFollowsStart(!group && event.target.value === "");
+					onValueChange={(value) => {
+						setEndTime(value);
+						setEndTimeFollowsStart(!group && value === "");
 					}}
 					required
 					value={endTime}

@@ -114,6 +114,12 @@ test("offers no default end time when two hours would pass midnight", () => {
 	assert.equal(defaultEndTime("23:15"), null);
 });
 
+test("offers no default end time later than the latest end the caller allows", () => {
+	assert.equal(defaultEndTime("20:00", "22:00"), "22:00");
+	assert.equal(defaultEndTime("20:01", "22:00"), null);
+	assert.equal(defaultEndTime("10:00", "22:00"), "12:00");
+});
+
 test("offers no default end time while the start time is incomplete", () => {
 	assert.equal(defaultEndTime(""), null);
 });

@@ -153,16 +153,23 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await page.getByLabel('Estudiantes').fill('20')
 	await page.getByLabel('Equipos').fill('4')
 	await pick(page, 'Día de la semana', 'Martes')
-	await page.getByLabel('Hora de inicio').fill('10:00')
-	await expect(page.getByLabel('Hora de término')).toHaveValue('12:00')
-	await page.getByLabel('Hora de inicio').fill('22:30')
-	await expect(page.getByLabel('Hora de término')).toHaveValue('')
-	await page.getByLabel('Hora de inicio').fill('10:00')
-	await expect(page.getByLabel('Hora de término')).toHaveValue('12:00')
-	await page.getByLabel('Hora de término').fill('11:00')
-	await page.getByLabel('Hora de inicio').fill('09:00')
-	await expect(page.getByLabel('Hora de término')).toHaveValue('11:00')
-	await page.getByLabel('Hora de inicio').fill('10:00')
+	await setTime(page, 'Hora de inicio', '10:00')
+	await expectTime(page, 'Hora de finalización', '12:00')
+	await page.getByLabel('Hora de inicio, hora').click()
+	await expect(page.getByRole('option')).toHaveCount(17)
+	await expect(page.getByRole('option', { name: '05', exact: true })).toHaveCount(0)
+	await expect(page.getByRole('option', { name: '06', exact: true })).toHaveCount(1)
+	await expect(page.getByRole('option', { name: '22', exact: true })).toHaveCount(1)
+	await expect(page.getByRole('option', { name: '23', exact: true })).toHaveCount(0)
+	await page.keyboard.press('Escape')
+	await setTime(page, 'Hora de inicio', '22:00')
+	await expectTime(page, 'Hora de finalización', '')
+	await setTime(page, 'Hora de inicio', '10:00')
+	await expectTime(page, 'Hora de finalización', '12:00')
+	await setTime(page, 'Hora de finalización', '11:00')
+	await setTime(page, 'Hora de inicio', '09:00')
+	await expectTime(page, 'Hora de finalización', '11:00')
+	await setTime(page, 'Hora de inicio', '10:00')
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
 	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el período ${periodCode}`))).toBeVisible()
 	await page.goto(`${base}/app/dashboard`)
@@ -401,6 +408,21 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 })
 
 /** Opens a Combobox or Select by its label and picks one option. */
+async function setTime(page: import('@playwright/test').Page, label: string, time: string) {
+	const [hour, minute] = time.split(':')
+	await page.getByLabel(`${label}, hora`).click()
+	await page.getByRole('option', { name: hour, exact: true }).click()
+	await page.getByLabel(`${label}, minutos`).click()
+	await page.getByRole('option', { name: minute, exact: true }).click()
+}
+
+/** An empty time shows the "--" placeholders. */
+async function expectTime(page: import('@playwright/test').Page, label: string, time: string) {
+	const [hour, minute] = time ? time.split(':') : ['--', '--']
+	await expect(page.getByLabel(`${label}, hora`)).toHaveText(hour)
+	await expect(page.getByLabel(`${label}, minutos`)).toHaveText(minute)
+}
+
 async function pick(page: import('@playwright/test').Page, label: string, option: string | RegExp) {
 	await page.getByLabel(label).click()
 	await page.getByRole('option', { name: option }).click()
