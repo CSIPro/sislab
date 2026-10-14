@@ -1,7 +1,7 @@
 import type { UserRole } from "../server/user-access.ts";
 
 export const roleLabels: Record<UserRole, string> = {
-	professor: "Profesor",
+	professor: "Docente",
 	staff: "Personal de laboratorio",
 	admin: "Administración",
 };

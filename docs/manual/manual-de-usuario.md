@@ -4,7 +4,7 @@ SISLAB, Sistema de Laboratorios, organiza los grupos de las prácticas de labora
 
 Este manual describe lo que ve cada persona usuaria en la pantalla, paso a paso. Las capturas provienen de un entorno de prueba con datos ficticios. Los nombres, correos y fechas no corresponden a personas reales, aunque la interfaz sí muestra los catálogos reales de laboratorios, carreras, materias y prácticas.
 
-SISLAB tiene tres roles: profesor, personal de laboratorio y administración. Una persona puede tener varios roles. La sección de cada rol explica sus pantallas y sus acciones.
+SISLAB tiene tres roles: docente, personal de laboratorio y administración. Una persona puede tener varios roles. La sección de cada rol explica sus pantallas y sus acciones.
 
 ## Índice
 
@@ -262,7 +262,7 @@ El menú lateral de un administrador muestra la sección **Administración**, co
 
 ![Tablero de administración con el menú de administración](capturas/05-tablero-administracion.png)
 
-Un administrador no es profesor de forma automática. Si esa persona también debe registrar grupos, otra persona administradora le asigna el rol Profesor en [Asignar y cambiar roles](#asignar-y-cambiar-roles).
+Un administrador no es profesor de forma automática. Si esa persona también debe registrar grupos, otra persona administradora le asigna el rol Docente en [Asignar y cambiar roles](#asignar-y-cambiar-roles).
 
 ### Administración de usuarios
 
@@ -283,7 +283,7 @@ Abre la pestaña **Solicitudes de acceso**. Antes de activar una cuenta, verific
 Para activar una cuenta:
 
 1. Marca la casilla **Verifiqué su identidad fuera de SISLAB**.
-2. Elige al menos un rol: **Profesor**, **Personal de laboratorio** o **Administración**. El rol Profesor viene marcado por defecto.
+2. Elige al menos un rol: **Docente**, **Personal de laboratorio** o **Administración**. El rol Docente viene marcado por defecto.
 3. Pulsa **Activar cuenta**.
 
 Los botones se habilitan cuando marcas la verificación y eliges al menos un rol. La cuenta queda activa de inmediato.
@@ -306,11 +306,11 @@ La pestaña **Usuarios** lista las cuentas activas. Escribe en el campo **Buscar
 
 #### Asignar y cambiar roles
 
-Con la cuenta seleccionada, pulsa **Editar roles**. Marca o desmarca **Profesor**, **Personal de laboratorio** o **Administración**, y pulsa **Guardar roles**.
+Con la cuenta seleccionada, pulsa **Editar roles**. Marca o desmarca **Docente**, **Personal de laboratorio** o **Administración**, y pulsa **Guardar roles**.
 
 ![Edición de roles de una cuenta](capturas/43-editar-roles.png)
 
-El rol Administración incluye los permisos del personal de laboratorio, así que no hace falta marcar también Personal de laboratorio. Un usuario puede tener varios roles, por ejemplo Profesor y Personal de laboratorio.
+El rol Administración incluye los permisos del personal de laboratorio, así que no hace falta marcar también Personal de laboratorio. Un usuario puede tener varios roles, por ejemplo Docente y Personal de laboratorio.
 
 #### Restablecer contraseña
 

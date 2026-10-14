@@ -401,7 +401,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(userCard.getByRole('checkbox')).toHaveCount(0)
 	await userCard.getByRole('button', { name: 'Editar roles' }).click()
 	const rolesDialog = page.getByRole('dialog', { name: 'Editar roles' })
-	await expect(rolesDialog.getByRole('checkbox', { name: 'Profesor' })).toBeChecked()
+	await expect(rolesDialog.getByRole('checkbox', { name: 'Docente' })).toBeChecked()
 	await rolesDialog.getByRole('button', { name: 'Cancelar' }).click()
 	await userCard.getByRole('button', { name: 'Restablecer contraseña' }).click()
 	await expect(page.getByRole('dialog', { name: 'Restablecer contraseña' }).getByLabel('Contraseña nueva')).toBeVisible()
