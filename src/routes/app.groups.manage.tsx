@@ -192,7 +192,9 @@ function ManageGroupsPage() {
 												{groupLabel(group.number)}
 											</span>
 											<span className="mt-1 text-[13px] text-muted-foreground">
-												{timeRange(group.startTime, group.endTime)} ·{" "}
+												{timeRange(group.startTime, group.endTime)}
+											</span>
+											<span className="text-[13px] text-muted-foreground">
 												{group.labName}
 											</span>
 										</div>
