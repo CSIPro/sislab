@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, isNull, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, isNull, lte, ne, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../db/schema.ts";
@@ -13,6 +13,7 @@ import {
 	users,
 	type WasteItem,
 } from "../db/schema.ts";
+import { sislabNowTime, sislabToday } from "../lib/session-dates.ts";
 import { byPeriodCode } from "./academic-periods.ts";
 import { listActiveLabExercises } from "./lab-exercises.ts";
 
@@ -32,6 +33,12 @@ export type RequestListRow = {
 	professor: { id: string; name: string; surname: string };
 	voidedBy: { name: string; surname: string } | null;
 };
+
+/** A request that still stands, as in the week strip: not voided, and not a declined late exception. */
+const stillStands = and(
+	ne(preparationRequests.status, "voided"),
+	isNull(preparationRequests.lateDeclinedAt),
+);
 
 export async function getPreparationRequestOptions(
 	database: Database,
@@ -177,12 +184,31 @@ export async function listRequestDates(
 			and(
 				gte(preparationRequests.sessionDate, fromDate),
 				lte(preparationRequests.sessionDate, throughDate),
-				ne(preparationRequests.status, "voided"),
-				isNull(preparationRequests.lateDeclinedAt),
+				stillStands,
 			),
 		)
 		.orderBy(asc(preparationRequests.sessionDate));
 	return rows.map((row) => row.date);
+}
+
+/**
+ * Today's requests that still stand and whose session has not ended by `now`,
+ * in the SISLAB time zone. A session in progress still counts.
+ */
+export async function countRemainingRequestsToday(
+	database: Database,
+	actor: RequestActor,
+	now: Date = new Date(),
+): Promise<number> {
+	requireStaff(actor);
+	return database.$count(
+		preparationRequests,
+		and(
+			eq(preparationRequests.sessionDate, sislabToday(now)),
+			gt(preparationRequests.endTime, sislabNowTime(now)),
+			stillStands,
+		),
+	);
 }
 
 export async function submitPreparationRequest(

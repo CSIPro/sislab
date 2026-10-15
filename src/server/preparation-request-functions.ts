@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
 import { requireRole } from "./auth.server.ts";
 import {
+	countRemainingRequestsToday,
 	decideLateException,
 	getDailyTicketRequests,
 	getMinimumNoticeDays,
@@ -62,6 +63,12 @@ export const listAllPreparationRequestsFn = createServerFn({ method: "GET" })
 			data.throughDate,
 		),
 	);
+
+export const countRemainingRequestsTodayFn = createServerFn({
+	method: "GET",
+}).handler(async () =>
+	countRemainingRequestsToday(db, await requireRole("staff")),
+);
 
 export const listRequestDatesFn = createServerFn({ method: "GET" })
 	.validator((input: unknown) => {

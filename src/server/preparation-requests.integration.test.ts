@@ -16,7 +16,10 @@ import {
 	userRoles,
 	users,
 } from "../db/schema.ts";
-import { listRequestDates } from "./preparation-requests.ts";
+import {
+	countRemainingRequestsToday,
+	listRequestDates,
+} from "./preparation-requests.ts";
 
 const connectionString = process.env.DATABASE_URL_TEST;
 if (!connectionString) {
@@ -101,6 +104,9 @@ async function fixture() {
 	return {
 		professor,
 		day: (monthDay: string) => `${year}-${monthDay}`,
+		/** An instant on that day at that wall-clock time in Hermosillo, which is UTC-7 all year. */
+		at: (monthDay: string, time: string) =>
+			new Date(`${year}-${monthDay}T${time}:00-07:00`),
 		addGroup,
 		async addRequest(
 			monthDay: string,
@@ -216,6 +222,88 @@ test("only staff and admins can list the request dates", async () => {
 			"2026-03-01",
 			"2026-03-31",
 		),
+		/Staff access is required/,
+	);
+});
+
+test("counts today's requests whose session has not ended", async () => {
+	const data = await fixture();
+	try {
+		const [second, third] = [await data.addGroup(), await data.addGroup()];
+		await data.addRequest("03-05", { startTime: "08:00", endTime: "10:00" });
+		await data.addRequest("03-05", {
+			groupId: second,
+			startTime: "10:00",
+			endTime: "12:00",
+		});
+		await data.addRequest("03-05", {
+			groupId: third,
+			startTime: "13:00",
+			endTime: "15:00",
+		});
+		await data.addRequest("03-04", { startTime: "13:00", endTime: "15:00" });
+		await data.addRequest("03-06", { startTime: "13:00", endTime: "15:00" });
+		assert.equal(
+			await countRemainingRequestsToday(
+				database,
+				staff,
+				data.at("03-05", "10:30"),
+			),
+			2,
+		);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("leaves voided requests and declined exceptions out of the remaining count", async () => {
+	const data = await fixture();
+	try {
+		const by = data.professor.id;
+		const late = { lateReason: "Cambio de horario" };
+		const [declined, pending, accepted] = [
+			await data.addGroup(),
+			await data.addGroup(),
+			await data.addGroup(),
+		];
+		await data.addRequest("03-05", {
+			status: "voided",
+			voidReason: "Duplicada",
+			voidedBy: by,
+			voidedAt: new Date(),
+		});
+		await data.addRequest("03-05", {
+			...late,
+			groupId: declined,
+			lateDeclinedBy: by,
+			lateDeclinedAt: new Date(),
+		});
+		await data.addRequest("03-05", { ...late, groupId: pending });
+		await data.addRequest("03-05", {
+			...late,
+			groupId: accepted,
+			lateAcceptedBy: by,
+			lateAcceptedAt: new Date(),
+		});
+		assert.equal(
+			await countRemainingRequestsToday(
+				database,
+				staff,
+				data.at("03-05", "07:00"),
+			),
+			2,
+		);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("only staff and admins can count the remaining requests", async () => {
+	await assert.rejects(
+		countRemainingRequestsToday(database, {
+			id: randomUUID(),
+			roles: ["professor"],
+		}),
 		/Staff access is required/,
 	);
 });

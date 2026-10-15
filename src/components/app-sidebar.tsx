@@ -67,9 +67,11 @@ const adminItems = (accessRequestCount: number): NavItem[] => [
 	{ to: "/app/admin/settings", label: "Configuración", icon: Settings2 },
 ];
 
+type NavCounts = { accessRequestCount: number; remainingRequestCount: number };
+
 function navGroups(
 	roles: AuthUser["roles"],
-	accessRequestCount: number,
+	{ accessRequestCount, remainingRequestCount }: NavCounts,
 ): NavGroup[] {
 	const admin = roles.includes("admin");
 	const groups: NavGroup[] = [
@@ -113,6 +115,10 @@ function navGroups(
 					to: "/app/requests/all",
 					label: "Todas las solicitudes",
 					icon: ClipboardList,
+					badge: {
+						count: remainingRequestCount,
+						labels: ["solicitud restante hoy", "solicitudes restantes hoy"],
+					},
 				},
 				...(admin ? adminItems(accessRequestCount) : []),
 			],
@@ -126,13 +132,12 @@ const menuButton =
 
 export function AppSidebar({
 	user,
-	accessRequestCount,
 	onSignOut,
+	...counts
 }: {
 	user: AuthUser;
-	accessRequestCount: number;
 	onSignOut: () => void;
-}) {
+} & NavCounts) {
 	const { pathname } = useLocation();
 	const { setOpenMobile } = useSidebar();
 	const closeMobile = () => setOpenMobile(false);
@@ -168,7 +173,7 @@ export function AppSidebar({
 			<SidebarContent className="overflow-hidden">
 				<ScrollArea className="min-h-0 flex-1">
 					<nav aria-label="Navegación principal" className="px-2 pt-2 pb-3">
-						{navGroups(user.roles, accessRequestCount).map((group) => (
+						{navGroups(user.roles, counts).map((group) => (
 							<SidebarGroup className="py-0" key={group.caption ?? "main"}>
 								{group.caption && (
 									<SidebarGroupLabel className="mt-4 mb-1 h-auto px-3 text-[12.5px] font-bold text-muted-foreground">

@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { Fragment, lazy, Suspense, useRef, useState } from "react";
 import { Notice } from "../components/notice.tsx";
@@ -102,6 +102,7 @@ export const Route = createFileRoute("/app/requests/all")({
 });
 
 function AllPreparationRequestsPage() {
+	const router = useRouter();
 	const initial = Route.useLoaderData();
 	const { periodCode } = Route.useRouteContext();
 	const [requests, setRequests] = useState(initial.requests);
@@ -111,7 +112,7 @@ function AllPreparationRequestsPage() {
 	const latestLoad = useRef(0);
 	const [requestDates, setRequestDates] = useState<string[]>([]);
 	const latestDatesLoad = useRef(0);
-	const [range, setRange] = useState<Range>("week");
+	const [range, setRange] = useState<Range>("day");
 	const [labFilter, setLabFilter] = useState("all");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [message, setMessage] = useState("");
@@ -195,7 +196,11 @@ function AllPreparationRequestsPage() {
 		setMessage("");
 		try {
 			await action();
-			await load(latestDate.current);
+			// Voiding or deciding a request can change the sidebar's count for today.
+			await Promise.all([
+				load(latestDate.current),
+				router.invalidate({ filter: (match) => match.routeId === "/app" }),
+			]);
 		} catch (error) {
 			setMessage(
 				userFacingError(

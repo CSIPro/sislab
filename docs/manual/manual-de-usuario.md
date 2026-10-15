@@ -197,13 +197,13 @@ El personal de laboratorio prepara las prácticas con el ticket diario. Para eso
 
 ### Solicitudes
 
-Las solicitudes de todos los profesores están en **Todas las solicitudes**, en la sección **Laboratorio** del menú lateral. El Tablero del personal también muestra las solicitudes de los próximos siete días, con un enlace a la vista completa.
+Las solicitudes de todos los profesores están en **Todas las solicitudes**, en la sección **Laboratorio** del menú lateral. Una insignia amarilla junto al enlace indica cuántas solicitudes de hoy faltan. Una sesión en curso cuenta hasta su hora de fin. Las solicitudes anuladas y las excepciones rechazadas no cuentan. El Tablero del personal también muestra las solicitudes de los próximos siete días, con un enlace a la vista completa.
 
 ![Tablero del personal con solicitudes próximas](capturas/35-tablero-personal.png)
 
 #### Ver la lista de solicitudes
 
-La vista **Todas las solicitudes** comienza con la semana actual.
+La vista **Todas las solicitudes** comienza con las solicitudes de hoy. La franja de días muestra la semana actual.
 
 - **Día** y **Semana** cambian el alcance de la lista.
 - Las flechas avanzan o retroceden un día o una semana.
