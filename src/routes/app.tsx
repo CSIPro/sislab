@@ -43,7 +43,7 @@ function AppLayout() {
 		<SidebarProvider
 			onOpenChange={() => {}}
 			open
-			style={{ "--sidebar-width": "264px" } as CSSProperties}
+			style={{ "--sidebar-width": "288px" } as CSSProperties}
 		>
 			<AppSidebar
 				accessRequestCount={accessRequestCount}
