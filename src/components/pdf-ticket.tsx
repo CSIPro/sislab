@@ -263,7 +263,7 @@ function ticketDocument(exercises: TicketExercise[], date: string) {
 						<Exercise key={exercise.id} exercise={exercise} />
 					))}
 					<View style={styles.footer}>
-						<Text>https://sislab.unison.mx</Text>
+						<Text>https://sislab.unison.mx/v2</Text>
 					</View>
 				</View>
 			</Page>
