@@ -41,7 +41,11 @@ A preparation request that lab staff or an admin marked as a mistaken submission
 A preparation request submitted with less than the configured notice period. The professor provides a reason, and laboratory staff decide whether to accept the short notice.
 
 **Ticket**:
-The printable daily document laboratory staff use to track preparation requests on paper.
+The printable daily document laboratory staff use to track preparation requests on paper. It lists a day's preparation requests except voided ones and late exceptions that staff have not accepted. A ticket printed from a report follows the same rule.
+
+**Report**:
+An admin's view of the preparation requests in one or more academic periods, with totals and exports. It reads request history and changes nothing.
+_Avoid_: Statistics, analytics
 
 **Lab staff**:
 People who use preparation requests and daily tickets to prepare laboratory exercises.
