@@ -293,7 +293,10 @@ export function MobileTopBar() {
 					<Menu aria-hidden="true" size={20} />
 				)}
 			</Button>
-			<strong className="text-lg tracking-[0.02em]">SISLAB</strong>
+			<span className="flex items-center gap-2.5">
+				<img alt="" className="size-8" src={withBase("/images/logo.svg")} />
+				<strong className="text-lg tracking-[0.02em]">SISLAB</strong>
+			</span>
 		</header>
 	);
 }
