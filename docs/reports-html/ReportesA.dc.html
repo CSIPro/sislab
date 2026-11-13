@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SISLAB · Reportes (variante)</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+<script>
+(function(){var K='sislab-theme',d=document.documentElement,t=null;try{t=localStorage.getItem(K)}catch(e){}
+if(t!=='dark'&&t!=='light'){try{t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){t='light'}}
+d.setAttribute('data-theme',t);
+addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'||e.newValue==='light'))d.setAttribute('data-theme',e.newValue)});})();
+</script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500&amp;family=Nunito:wght@300;400;500;700&amp;display=swap">
+<style>
+:root{--green:#00c795;--green-strong:#00a97e;--on-green:#363537;--ink:#363537;--ink-2:#4d4c4e;--muted-fg:#5f5e60;--primary-text:#007a5c;--border:#e4e4e4;--secondary:#f5f5f5;--accent:#e9f9f4;--page:#fafafa;--surface:#ffffff;--focus:#008f6c;--ok-bg:#e1f5ec;--ok-fg:#076b49;--tint-1:#f2fcf9;--tint-2:#d6f4ea;--tint-border:#b9ebdb;--placeholder:#6b6a6c;--warn-bg:#fff8d6;--warn-border:#f0d54c;--off-bg:#efefef;--dash:#d4d4d4;--danger:#a8231a;--danger-bg:#fdeceb;--info-bg:#e8f0f8;--info-fg:#1f4f7a;--faint:#8a898b;--csi:#6c2f86;--photo-bg:#dfe5e3;color-scheme:light}
+:root[data-theme="dark"]{--on-green:#363537;--ink:#ececee;--ink-2:#c4c3c6;--muted-fg:#a5a4a7;--primary-text:#3dd9ac;--border:#38383b;--secondary:#262628;--accent:#143a30;--page:#121213;--surface:#1b1b1d;--focus:#3dd9ac;--ok-bg:#14392e;--ok-fg:#5fe0b8;--tint-1:#1a2b25;--tint-2:#1d4a3c;--tint-border:#276150;--placeholder:#8f8e91;--warn-bg:#3a3312;--warn-border:#8a7620;--off-bg:#2e2e31;--dash:#4c4c50;--danger:#ff8f85;--danger-bg:#3b1b19;--info-bg:#1b2b3d;--info-fg:#92c1ef;--faint:#8f8e93;--csi:#c99ce2;--photo-bg:#2a3431;color-scheme:dark}
+.theme-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer}
+.theme-btn:hover{background:var(--secondary)}
+.nav-btn{width:100%;border:0;background:transparent;font:inherit;font-size:14.5px;font-weight:500;text-align:left;cursor:pointer}
+.i-sun,.t-light{display:none}
+:root[data-theme="dark"] .i-sun{display:inline-block}
+:root[data-theme="dark"] .t-light{display:inline}
+:root[data-theme="dark"] .i-moon,:root[data-theme="dark"] .t-dark{display:none}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:var(--page);font-size:16px;line-height:1.5}
+a{color:var(--primary-text)}a:hover{color:#00a97e}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.nav{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;color:var(--ink);text-decoration:none;font-size:15.5px;font-weight:500}
+.nav svg{flex:none;color:var(--muted-fg)}
+.nav:hover{background:var(--secondary);color:var(--ink)}
+.nav[aria-current=page]{background:var(--accent);font-weight:700}
+.nav[aria-current=page] svg{color:var(--primary-text)}
+.cap{margin:16px 12px 4px;font-size:12.5px;font-weight:700;color:var(--muted-fg)}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border:0;border-radius:12px;background:#00c795;color:var(--on-green);font:inherit;font-size:16px;font-weight:500;text-decoration:none;cursor:pointer}
+.btn-primary:hover{background:#00a97e;color:var(--on-green)}
+.btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px;font-weight:500;text-decoration:none;cursor:pointer}
+.btn-outline:hover{background:var(--secondary);color:var(--ink)}
+.btn-sm{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.btn-sm:hover{background:var(--secondary)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:4px;font-size:13px;font-weight:700;white-space:nowrap;font-family:'Nunito',system-ui,sans-serif}
+.st-ok{background:var(--ok-bg);color:var(--ok-fg)}
+.st-off{background:var(--off-bg);color:var(--ink-2)}
+.role{display:inline-flex;padding:2px 9px;border:1px solid var(--dash);border-radius:4px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--surface);white-space:nowrap;font-family:'Nunito',system-ui,sans-serif}
+.field{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:0 14px;font:inherit;font-size:15px;color:var(--ink)}
+.field::placeholder{color:var(--placeholder)}
+.check{display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;font-size:15px}
+.check input{width:20px;height:20px;accent-color:#00a97e;flex:none}
+th{text-align:left;font-size:13px;font-weight:700;color:var(--muted-fg);padding:12px 16px;background:var(--secondary);white-space:nowrap}
+td{padding:10px 16px;border-top:1px solid var(--border);font-size:14.5px;vertical-align:middle}
+tr.sel td{background:var(--tint-1)}
+tr.off td{color:var(--muted-fg)}
+
+.seg{min-height:44px;padding:0 18px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;font-weight:500;cursor:pointer}
+.st-wait{background:#ffe066;color:var(--on-green)}
+.st-void{background:var(--danger-bg);color:var(--danger)}
+.st-info{background:var(--info-bg);color:var(--info-fg)}
+.sub{color:var(--muted-fg);font-size:13.5px}
+.mono{font-family:'Fira Mono',ui-monospace,monospace;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+td{padding:2px 14px}
+tbody tr:hover td{background:var(--tint-1)}
+.rowbtn{display:block;width:100%;min-height:44px;padding:0;border:0;background:transparent;font:inherit;font-size:14.5px;font-weight:700;text-align:left;color:var(--ink);cursor:pointer}
+.rowbtn:hover{text-decoration:underline}
+.tog{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer}
+.tog[aria-pressed=true]{background:var(--accent);border-color:var(--tint-border);font-weight:700}
+.pop{position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:290px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.16);padding:10px 16px 14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat b{font-family:'Fira Mono',ui-monospace,monospace;font-size:32px;line-height:1.1;font-weight:500;font-variant-numeric:tabular-nums}
+progress{width:100%;height:10px;accent-color:#00c795}
+.btn-primary:disabled,.btn-outline:disabled,.btn-sm:disabled{opacity:.5;cursor:not-allowed}
+dt{color:var(--muted-fg);font-size:14px}
+dd{margin:0;font-size:15px}
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 100vh">
+
+  <aside style="flex: 1 1 264px; min-width: 0; box-sizing: border-box; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 16px 16px">
+    <a href="Main.dc.html" aria-label="SISLAB, ir a la página de inicio" style="display: flex; align-items: center; gap: 10px; padding: 0 12px 16px; margin-bottom: 8px; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--ink)">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#00c795" aria-hidden="true"><path d="M21 3v2c0 9.627-5.373 14-12 14H7.098c.212-3.012 1.15-4.835 3.598-7.001 1.204-1.065 1.102-1.68.509-1.327-4.084 2.43-6.112 5.714-6.202 10.958L5 22H3c0-1.363.116-2.6.346-3.732C3.116 16.974 3 15.218 3 13 3 7.477 7.477 3 13 3c2 0 4 1 8 0z"></path></svg>
+      <span style="display: grid; line-height: 1.1"><strong style="font-size: 21px; letter-spacing: 0.02em">SISLAB</strong><span style="font-size: 12px; color: var(--muted-fg); margin-top: 3px">Sistema de Laboratorios</span></span>
+    </a>
+    <nav aria-label="Navegación principal" style="display: flex; flex-direction: column; gap: 2px">
+      <a class="nav" href="Tablero.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>Tablero</a>
+      <p class="cap">Grupos</p>
+      <a class="nav" href="Grupos.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Mis grupos</a>
+      <p class="cap">Solicitudes</p>
+      <a class="nav" href="NuevaSolicitud.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>Nueva solicitud</a>
+      <a class="nav" href="MisSolicitudes.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>Mis solicitudes</a>
+      <p class="cap">Administración</p>
+      <a class="nav" href="Solicitudes.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>Todas las solicitudes</a>
+      <a class="nav" href="ReportesA.dc.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M8 13h2"></path><path d="M14 13h2"></path><path d="M8 17h2"></path><path d="M14 17h2"></path></svg>Reportes</a>
+      <a class="nav" href="Cuentas.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m16 11 2 2 4-4"></path></svg>Cuentas</a>
+      <a class="nav" href="Usuarios.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>Usuarios</a>
+      <a class="nav" href="Practicas.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"></path><path d="M8.5 2h7"></path><path d="M7 16h10"></path></svg>Prácticas</a>
+      <a class="nav" href="Periodos.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>Períodos</a>
+      <a class="nav" href="Catalogos.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg>Catálogos</a>
+      <a class="nav" href="Configuracion.dc.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4h-7"></path><path d="M10 4H3"></path><path d="M21 12h-9"></path><path d="M8 12H3"></path><path d="M21 20h-5"></path><path d="M12 20H3"></path><path d="M14 2v4"></path><path d="M8 10v4"></path><path d="M16 18v4"></path></svg>Configuración</a>
+    </nav>
+    <div style="margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 4px; border-top: 1px solid var(--border)">
+        <span aria-hidden="true" style="width: 40px; height: 40px; flex: none; border-radius: 999px; background: var(--accent); color: var(--primary-text); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700">ED</span>
+        <span style="display: grid; line-height: 1.25; min-width: 0"><strong style="font-size: 14.5px">Dra. Elena Duarte</strong><span style="font-size: 12.5px; color: var(--muted-fg)">Profesora · Administradora</span></span>
+      </div>
+      <a class="nav" href="Main.dc.html" style="font-size: 14.5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Página de inicio</a>
+      <button class="nav nav-btn" type="button" onClick="{{toggleTheme}}"><svg class="i-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg><svg class="i-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2m-7.07-2.93 1.41-1.41m11.32-11.32 1.41-1.41M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41"></path></svg><span class="t-dark">Tema oscuro</span><span class="t-light">Tema claro</span></button>
+      <a class="btn-outline" href="Main.dc.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>Cerrar sesión</a>
+    </div>
+  </aside>
+
+
+  <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 40px 40px 56px">
+    <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 20px 32px">
+        <div style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 36px; line-height: 1.2; font-weight: 700">Reportes</h1>
+        <p style="margin: 0; color: var(--muted-fg); max-width: 720px; text-wrap: pretty">Revisa las solicitudes de preparación por período y descarga lo que necesites. Esta sección solo consulta: no cambia ninguna solicitud.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end">
+            <button class="btn-primary" type="button" disabled="{{zipDisabled}}" onClick="{{startZip}}" style="min-height: 52px; font-size: 17px; padding: 0 26px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path><path d="M12 15V3"></path></svg>{{zipLabel}}</button>
+            <button class="btn-outline" type="button" disabled="{{xlBusy}}" onClick="{{downloadXlsx}}" style="min-height: 48px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path><path d="M12 15V3"></path></svg>{{xlLabel}}</button>
+          </div>
+          <span class="sub" style="max-width: 420px; text-align: right">{{zipHint}}</span>
+          <span class="sub" style="max-width: 420px; text-align: right">{{xlHint}}</span>
+        </div>
+      </div>
+
+          <sc-if value="{{xlBusy}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding: 14px 18px; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; display: flex; flex-direction: column; gap: 8px"><span style="font-weight: 700">Generando {{xlsxName}}…</span><progress aria-label="Generando archivo XLSX"></progress></div>
+          </sc-if>
+          <sc-if value="{{zipBusy}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding: 14px 18px; border: 1px solid var(--border); background: var(--surface); border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+              <span style="font-weight: 700">{{zipText}}</span>
+              <progress aria-label="Progreso de tickets" value="{{zipN}}" max="{{zipM}}"></progress>
+              <div><button class="btn-outline" type="button" onClick="{{cancelZip}}">Cancelar</button></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasMsg}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="padding: 14px 18px; border: 1px solid var(--tint-border); background: var(--accent); border-radius: 12px; font-weight: 700">{{msg}}</div>
+          </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px 24px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px">
+        <div style="position: relative; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; font-weight: 700">Períodos</span>
+          <button class="tog" type="button" aria-expanded="{{popOpen}}" aria-haspopup="true" onClick="{{togglePop}}" style="min-width: 220px; justify-content: space-between">{{periodLabel}}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <sc-if value="{{popOpen}}" hint-placeholder-val="{{ false }}">
+            <div class="pop" role="group" aria-label="Elegir períodos">
+              <sc-for list="{{periods}}" as="p" hint-placeholder-count="4">
+                <label class="check"><input type="checkbox" checked="{{p.checked}}" onChange="{{p.toggle}}">{{p.label}}</label>
+              </sc-for>
+              <p class="sub" style="margin: 6px 0 0">Si no eliges ninguno, se usa el período actual.</p>
+              <button class="btn-sm" type="button" onClick="{{closePop}}" style="margin-top: 10px">Listo</button>
+            </div>
+          </sc-if>
+        </div>
+        <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; font-weight: 700">Estado</span>
+          <div role="group" aria-label="Filtrar por estado" style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{statuses}}" as="st" hint-placeholder-count="5">
+              <button class="tog" type="button" aria-pressed="{{st.pressed}}" onClick="{{st.toggle}}">{{st.label}} <span class="sub">{{st.count}}</span></button>
+            </sc-for>
+          </div>
+          <sc-if value="{{hasHidden}}" hint-placeholder-val="{{ true }}"><span class="sub">{{hiddenText}}</span></sc-if>
+          <sc-if value="{{emptied}}" hint-placeholder-val="{{ false }}"><span class="sub">No elegiste períodos, así que se muestra el actual.</span></sc-if>
+        </div>
+      </div>
+
+      <section aria-label="Totales" style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px">
+          <div class="stat"><span class="sub" style="font-size: 14px">Solicitudes</span><b>{{total}}</b></div>
+          <div class="stat"><span class="sub" style="font-size: 14px">Excepciones aceptadas</span><b>{{nAcc}}</b></div>
+          <div class="stat"><span class="sub" style="font-size: 14px">Excepciones rechazadas</span><b>{{nRej}}</b></div>
+          <div class="stat"><span class="sub" style="font-size: 14px">Anuladas</span><b>{{nVoi}}</b></div>
+        </div>
+        <h2 style="margin: 12px 0 0; font-size: 18px; font-weight: 700">Por laboratorio</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px">
+          <sc-for list="{{labs}}" as="l" hint-placeholder-count="4">
+            <div class="stat" style="border-color: var(--tint-border); background: var(--tint-1); gap: 6px">
+              <span style="display: flex; align-items: center; gap: 8px; color: var(--primary-text); font-weight: 700"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"></path><path d="M8.5 2h7"></path><path d="M7 16h10"></path></svg><span class="mono" style="font-size: 15px">{{l.lab}}</span></span>
+              <b style="font-size: 40px">{{l.n}}</b>
+              <span class="sub" style="font-size: 14px">solicitudes en los períodos elegidos</span>
+            </div>
+          </sc-for>
+        </div>
+        <span class="sub">Los totales cuentan todas las solicitudes de los períodos elegidos, sin importar el filtro de estado.</span>
+      </section>
+
+      <section aria-label="Solicitudes" style="display: flex; flex-direction: column; gap: 14px">
+            <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; padding: 32px 16px; text-align: center; border: 1px dashed var(--dash); border-radius: 12px; color: var(--muted-fg)">Ninguna solicitud coincide con el filtro de estado en los períodos elegidos.</p>
+            </sc-if>
+        <sc-if value="{{hasRows}}" hint-placeholder-val="{{ true }}">
+            <div style="border: 1px solid var(--border); border-radius: 16px 16px 12px 12px; background: var(--surface); overflow-x: auto">
+              <table style="width: 100%; min-width: 980px; border-collapse: collapse">
+                <thead><tr><th scope="col" style="border-top-left-radius: 16px">Fecha</th><th scope="col">Hora</th><th scope="col">Lab.</th><th scope="col">Profesor</th><th scope="col">Grupo</th><th scope="col">Práctica</th><th scope="col">Estado</th><th scope="col" style="display: {{periodDisp}}; border-top-right-radius: 16px">Período</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                    <tr>
+                      <td class="mono">{{r.date}}</td>
+                      <td class="mono">{{r.time}}</td>
+                      <td class="mono">{{r.lab}}</td>
+                      <td>{{r.prof}}</td>
+                      <td>{{r.group}}</td>
+                      <td style="min-width: 190px"><button class="rowbtn" type="button" aria-label="{{r.aria}}" onClick="{{r.pick}}">{{r.prac}}</button></td>
+                      <td><span class="{{r.chip}}">{{r.stText}}</span></td>
+                      <td class="mono" style="display: {{periodDisp}}">{{r.per}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div></sc-if>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+              <span class="sub" style="font-size: 14px">{{rangeText}}</span>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+                <span class="sub" style="font-size: 14px">{{pageText}}</span>
+                <button class="btn-sm" type="button" disabled="{{noPrev}}" onClick="{{prev}}">Anterior</button>
+                <button class="btn-sm" type="button" disabled="{{noNext}}" onClick="{{next}}">Siguiente</button>
+              </div>
+            </div>
+      </section>
+    </div>
+  </main>
+
+  <sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end">
+      <button type="button" aria-label="Cerrar detalle" onClick="{{closeDetail}}" style="position: absolute; inset: 0; border: 0; background: rgba(20,20,22,0.45); cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="dt" onKeyDown="{{onKey}}" style="position: relative; width: min(460px, 100%); height: 100%; box-sizing: border-box; overflow: auto; background: var(--surface); border-left: 1px solid var(--border); padding: 28px 28px 32px; display: flex; flex-direction: column; gap: 22px">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span class="sub">Detalle de la solicitud · solo lectura</span>
+              <h2 id="dt" style="margin: 0; font-size: 22px; line-height: 1.25; font-weight: 700">{{d.prac}}</h2>
+              <div><span class="{{d.chip}}">{{d.stText}}</span></div>
+            </div>
+            <dl style="margin: 0; display: grid; grid-template-columns: 120px 1fr; gap: 10px 16px">
+              <dt>Fecha y hora</dt><dd class="mono" style="font-size: 14px; white-space: normal">{{d.when}}</dd>
+              <dt>Laboratorio</dt><dd>{{d.lab}}</dd>
+              <dt>Profesor</dt><dd>{{d.prof}}</dd>
+              <dt>Grupo</dt><dd>{{d.group}}</dd>
+              <dt>Período</dt><dd>{{d.per}}</dd>
+              <dt>Equipos</dt><dd>{{d.teams}}</dd>
+            </dl>
+            <sc-if value="{{d.hasNote}}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 0; padding: 12px 14px; border: 1px solid var(--border); background: var(--secondary); border-radius: 8px; font-size: 14.5px; text-wrap: pretty">{{d.note}}</p>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700">Reactivos y equipo</h3>
+              <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14.5px">
+                <sc-for list="{{d.mats}}" as="m" hint-placeholder-count="4"><li>{{m.text}}</li></sc-for>
+              </ul>
+            </div>
+            <p class="sub" style="margin: 0">Reportes solo permite consultar. Para aceptar, rechazar o anular solicitudes usa Todas las solicitudes.</p>
+            <div><button class="btn-outline" type="button" onClick="{{closeDetail}}" style="min-height: 48px">Cerrar</button></div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3300}}'>
+const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const STAT = { reg: 'Registrada', pen: 'Excepción pendiente', acc: 'Excepción aceptada', rej: 'Excepción rechazada', voi: 'Anulada' };
+const CHIP = { reg: 'chip st-ok', pen: 'chip st-wait', acc: 'chip st-info', rej: 'chip st-void', voi: 'chip st-off' };
+const KEYS = ['reg', 'pen', 'acc', 'rej', 'voi'];
+const TODAY = '2026-11-12';
+const PERIODS = [
+  { code: '2027-1', start: '2027-01-25', end: '2027-05-21', cur: false, n: 0, seed: 7 },
+  { code: '2026-2', start: '2026-08-24', end: '2026-12-04', cur: true, n: 118, seed: 11 },
+  { code: '2026-1', start: '2026-01-26', end: '2026-05-22', cur: false, n: 96, seed: 23 },
+  { code: '2025-2', start: '2025-08-25', end: '2025-12-05', cur: false, n: 84, seed: 41 }
+];
+const LABS = ['SN-105', 'SN-110', 'SN-201', 'SN-203'];
+const PROF = ['Dra. Elena Duarte', 'Dr. Ricardo Valenzuela', 'Dr. Luis Espinoza', 'Mtra. Carmen Ibarra', 'Dr. Jorge Ochoa'];
+const SUBJ = ['Química General', 'Química Orgánica I', 'Análisis Instrumental', 'Fisicoquímica', 'Bioquímica'];
+const PRAC = ['Titulación ácido-base', 'Cromatografía en capa fina', 'Síntesis de ácido acetilsalicílico', 'Destilación simple', 'Reacciones de oxidación-reducción', 'Determinación de pH', 'Extracción líquido-líquido', 'Espectrofotometría UV-Vis'];
+const SLOTS = [['07:00', '09:00'], ['09:00', '11:00'], ['11:00', '13:00'], ['13:00', '15:00'], ['15:00', '17:00'], ['17:00', '19:00']];
+const MATS = ['Ácido clorhídrico 0.1 M · 50 mL por equipo', 'Hidróxido de sodio 0.1 M · 50 mL por equipo', 'Fenolftaleína · 5 mL en total', 'Matraz Erlenmeyer 250 mL · 2 por equipo', 'Bureta 50 mL · 1 por equipo', 'Etanol 96% · 100 mL en total', 'Placa de sílica gel · 4 por equipo', 'Parrilla de calentamiento · 1 por equipo'];
+const REASONS = ['Reprogramación por suspensión de clases.', 'El grupo cambió de horario esta semana.', 'Se adelantó la práctica por un examen.'];
+const VOIDS = ['La práctica se canceló por falta de reactivo.', 'El profesor anuló la solicitud para pedir otra fecha.', 'Se duplicó la solicitud por error.'];
+function rng(seed) { let x = seed; return () => { x = (x * 1664525 + 1013904223) % 4294967296; return x / 4294967296; }; }
+function gen(p) {
+  const rnd = rng(p.seed); const out = []; const days = [];
+  for (let d = new Date(p.start + 'T00:00:00Z'); d <= new Date(p.end + 'T00:00:00Z'); d = new Date(d.getTime() + 86400000)) { const w = d.getUTCDay(); if (w > 0 && w < 6) days.push(d.toISOString().slice(0, 10)); }
+  for (let i = 0; i < p.n; i++) {
+    const d = days[Math.floor(rnd() * days.length)]; const u = rnd(); let st;
+    if (d > TODAY) st = u < 0.7 ? 'reg' : u < 0.92 ? 'pen' : 'voi'; else st = u < 0.74 ? 'reg' : u < 0.83 ? 'acc' : u < 0.9 ? 'rej' : 'voi';
+    const sl = SLOTS[Math.floor(rnd() * SLOTS.length)];
+    const mats = []; for (let k = 0; k < 4; k++) { const m = MATS[Math.floor(rnd() * MATS.length)]; if (mats.indexOf(m) < 0) mats.push(m); }
+    out.push({ id: p.code + '-' + i, p: p.code, d: d, t0: sl[0], t1: sl[1], lab: LABS[Math.floor(rnd() * LABS.length)], prof: PROF[Math.floor(rnd() * PROF.length)],
+      subj: SUBJ[Math.floor(rnd() * SUBJ.length)], gpo: '0' + (1 + Math.floor(rnd() * 4)), prac: PRAC[Math.floor(rnd() * PRAC.length)], st: st,
+      teams: 6 + Math.floor(rnd() * 7), lateDays: 1 + Math.floor(rnd() * 6), why: REASONS[Math.floor(rnd() * REASONS.length)], vwhy: VOIDS[Math.floor(rnd() * VOIDS.length)], mats: mats });
+  }
+  return out;
+}
+const ALL = [].concat.apply([], PERIODS.map(gen));
+const fmtD = (iso) => { const d = new Date(iso + 'T00:00:00Z'); return DIA[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MES[d.getUTCMonth()]; };
+const fmtL = (iso) => fmtD(iso) + ' ' + iso.slice(0, 4);
+
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const defCode = (PERIODS.find((p) => p.cur) || PERIODS[0]).code;
+    const picked = s.per || [defCode];
+    const per = picked.length ? picked : [defCode];
+    const emptied = picked.length === 0;
+    const stSel = s.st || ['reg', 'pen', 'acc'];
+    const inPer = ALL.filter((r) => per.indexOf(r.p) >= 0);
+    const cnt = (k) => inPer.filter((r) => r.st === k).length;
+    const shown = inPer.filter((r) => stSel.indexOf(r.st) >= 0).sort((a, b) => ((a.d + a.t0) < (b.d + b.t0) ? 1 : (a.d + a.t0) > (b.d + b.t0) ? -1 : 0));
+    const pages = Math.max(1, Math.ceil(shown.length / 50));
+    const page = Math.min(s.page || 1, pages);
+    const from = (page - 1) * 50;
+    const multi = per.length > 1;
+    const sortedCodes = per.slice().sort().join('_');
+    const xlsxName = 'sislab-reporte-' + sortedCodes + '.xlsx';
+    const zipName = 'sislab-tickets-' + sortedCodes + '.zip';
+    const dayKeys = {}; inPer.forEach((r) => { if (r.st === 'reg' || r.st === 'acc') dayKeys[r.p + '|' + r.d] = 1; });
+    const M = Object.keys(dayKeys).length;
+    const zip = s.zip || null;
+    const periods = PERIODS.map((p) => ({
+      code: p.code, label: p.code + (p.cur ? ' (actual)' : ''), checked: per.indexOf(p.code) >= 0,
+      toggle: () => { const next = picked.slice(); const i = next.indexOf(p.code); if (i >= 0) next.splice(i, 1); else next.push(p.code); this.setState({ per: next, page: 1 }); }
+    }));
+    const statuses = KEYS.map((k) => ({
+      key: k, label: STAT[k], count: String(cnt(k)), pressed: stSel.indexOf(k) >= 0, checked: stSel.indexOf(k) >= 0,
+      toggle: () => { const next = stSel.indexOf(k) >= 0 ? stSel.filter((x) => x !== k) : stSel.concat(k); this.setState({ st: next, page: 1 }); }
+    }));
+    const hidden = KEYS.filter((k) => stSel.indexOf(k) < 0).map((k) => STAT[k]);
+    const labs = LABS.map((l) => ({ lab: l, n: String(inPer.filter((r) => r.lab === l).length) }));
+    const rows = shown.slice(from, from + 50).map((r) => ({
+      date: fmtD(r.d), time: r.t0 + '–' + r.t1, lab: r.lab, prof: r.prof, group: r.subj + ' · Gpo. ' + r.gpo, prac: r.prac, per: r.p,
+      chip: CHIP[r.st], stText: STAT[r.st], aria: 'Ver detalle de ' + r.prac + ', ' + fmtL(r.d), pick: () => this.setState({ sel: r.id })
+    }));
+    const selR = s.sel ? ALL.find((r) => r.id === s.sel) : null;
+    let d = null;
+    if (selR) {
+      let note = '';
+      if (selR.st === 'pen' || selR.st === 'acc' || selR.st === 'rej') note = 'Aviso corto: se pidió con ' + selR.lateDays + (selR.lateDays === 1 ? ' día' : ' días') + ' de anticipación y el mínimo es 7. Motivo: ' + selR.why;
+      if (selR.st === 'voi') note = 'Anulada por la persona que la registró. ' + selR.vwhy;
+      d = { prac: selR.prac, chip: CHIP[selR.st], stText: STAT[selR.st], when: fmtL(selR.d) + ', ' + selR.t0 + '–' + selR.t1, lab: selR.lab, prof: selR.prof,
+        group: selR.subj + ' · Gpo. ' + selR.gpo, per: selR.p, teams: String(selR.teams), note: note, hasNote: !!note, mats: selR.mats.map((x) => ({ text: x })) };
+    }
+    const closeDetail = () => this.setState({ sel: null });
+    const startZip = () => {
+      if (M === 0 || zip) return;
+      this._n = 1; this._run = true; this.setState({ zip: { n: 1, m: M }, msg: '' });
+      const tick = () => {
+        if (!this._run) return;
+        this._n += 1;
+        if (this._n > M) { this._run = false; this.setState({ zip: null, msg: 'Se descargó ' + zipName + '.' }); return; }
+        this.setState({ zip: { n: this._n, m: M } }); this._tm = setTimeout(tick, 120);
+      };
+      this._tm = setTimeout(tick, 120);
+    };
+    const cancelZip = () => { this._run = false; clearTimeout(this._tm); this.setState({ zip: null, msg: 'Se canceló la descarga. No se guardó ningún archivo.' }); };
+    const startXlsx = () => { if (s.xl) return; this.setState({ xl: true, msg: '' }); setTimeout(() => this.setState({ xl: false, msg: 'Se descargó ' + xlsxName + '.' }), 1200); };
+    const pageBtn = (delta) => () => this.setState({ page: Math.max(1, Math.min(pages, page + delta)) });
+    const common = {
+      periods: periods, statuses: statuses, labs: labs, rows: rows, d: d, hasSel: !!selR, closeDetail: closeDetail,
+      onKey: (e) => { if (e && e.key === 'Escape') closeDetail(); },
+      periodLabel: per.slice().sort().reverse().map((c) => c + (c === defCode ? ' (actual)' : '')).join(', '),
+      emptied: emptied, hasHidden: hidden.length > 0, hiddenText: 'Ocultas en la tabla: ' + hidden.join(' y ') + '. Los totales sí las cuentan.',
+      total: String(inPer.length), nAcc: String(cnt('acc')), nRej: String(cnt('rej')), nVoi: String(cnt('voi')),
+      periodDisp: multi ? 'table-cell' : 'none', hasRows: rows.length > 0, isEmpty: rows.length === 0,
+      rangeText: shown.length ? (from + 1) + '–' + Math.min(from + 50, shown.length) + ' de ' + shown.length + ' solicitudes' : 'Sin solicitudes',
+      pageText: 'Página ' + page + ' de ' + pages, noPrev: page <= 1, noNext: page >= pages, prev: pageBtn(-1), next: pageBtn(1),
+      xlsxName: xlsxName, zipName: zipName, xlBusy: !!s.xl, xlLabel: s.xl ? 'Generando archivo…' : 'Descargar XLSX', downloadXlsx: startXlsx,
+      xlHint: shown.length + (shown.length === 1 ? ' fila' : ' filas') + ' en ' + per.length + (per.length === 1 ? ' hoja' : ' hojas') + '. Sigue el filtro de estado.',
+      zipBusy: !!zip, zipDisabled: M === 0 || !!zip, zipLabel: 'Descargar tickets (.zip)', startZip: startZip, cancelZip: cancelZip,
+      zipN: zip ? zip.n : 0, zipM: zip ? zip.m : 1, zipText: zip ? 'Generando ticket ' + zip.n + ' de ' + zip.m + '…' : '',
+      noDays: M === 0, zipHint: M === 0 ? 'Ningún día de los períodos elegidos tiene solicitudes por imprimir.' : M + (M === 1 ? ' día con tickets' : ' días con tickets') + ' en ' + per.length + (per.length === 1 ? ' carpeta' : ' carpetas') + '. Ignora el filtro de estado.',
+      hasMsg: !!s.msg, msg: s.msg || '',
+      popOpen: !!s.pop, togglePop: () => this.setState({ pop: !s.pop }), closePop: () => this.setState({ pop: false })
+    };
+    return Object.assign({
+      toggleTheme: () => { const d = document.documentElement; const n = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; d.setAttribute('data-theme', n); try { localStorage.setItem('sislab-theme', n); } catch (e) {} },
+    }, common);
+  }
+}
+</script>
+</body>
+</html>
