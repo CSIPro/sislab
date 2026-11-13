@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
+import ExcelJS from 'exceljs'
 import { Pool } from 'pg'
 import { currentAcademicPeriodCode } from '../../src/lib/academic-period.ts'
 import { sislabToday } from '../../src/lib/session-dates.ts'
@@ -246,7 +247,7 @@ test('staff sees the days with requests marked in the date picker', async ({ pag
 	}
 })
 
-test('admin opens Reportes on the current period, sees its requests and opens one read-only', async ({ page, browser }) => {
+test('admin opens Reportes on the current period, sees its requests, downloads the XLSX and opens one read-only', async ({ page, browser }) => {
 	const currentCode = currentAcademicPeriodCode()
 	const exerciseName = `Reporte Exercise ${suffix}`
 	const materials = { reagents: [], equipment: [], waste: [] }
@@ -285,6 +286,16 @@ test('admin opens Reportes on the current period, sees its requests and opens on
 		const row = page.getByRole('row').filter({ hasText: exerciseName })
 		await expect(row).toBeVisible()
 		await expect(page.getByRole('region', { name: 'Totales' })).toContainText('Solicitudes')
+		const downloadPromise = page.waitForEvent('download')
+		await page.getByRole('button', { name: 'Descargar Excel (XLSX)' }).click()
+		const download = await downloadPromise
+		expect(download.suggestedFilename()).toBe(`sislab-reporte-${currentCode}.xlsx`)
+		const workbook = new ExcelJS.Workbook()
+		await workbook.xlsx.readFile(await download.path())
+		const sheet = workbook.getWorksheet(currentCode)
+		expect(sheet?.getRow(1).getCell(1).value).toBe('Fecha')
+		const exported = sheet?.getSheetValues().flat().filter((value) => value === exerciseName)
+		expect(exported).toHaveLength(1)
 		await page.getByLabel('Estado').click()
 		await page.getByRole('option', { name: 'Anulada' }).click()
 		await expect(page).toHaveURL(/status=/)

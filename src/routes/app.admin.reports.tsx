@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Download, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { Notice } from "../components/notice.tsx";
 import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
@@ -35,6 +36,7 @@ import {
 	currentAcademicPeriodCode,
 	defaultReportPeriodCode,
 } from "../lib/academic-period.ts";
+import { downloadReportWorkbook } from "../lib/download-report-workbook.ts";
 import {
 	type PreparationRequestStatusKey,
 	requestStatusKey,
@@ -46,6 +48,7 @@ import {
 	sislabToday,
 	timeRange,
 } from "../lib/session-dates.ts";
+import { userFacingError } from "../lib/user-facing-error.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import { getPreparationRequestReportFn } from "../server/preparation-request-functions.ts";
@@ -146,6 +149,8 @@ function ReportsPage() {
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const [detail, setDetail] = useState<RequestListRow | null>(null);
+	const [exporting, setExporting] = useState(false);
+	const [message, setMessage] = useState("");
 	const statuses = search.status ?? defaultStatuses;
 	const manyPeriods = selected.length > 1;
 
@@ -179,12 +184,46 @@ function ReportsPage() {
 			search: (current) => ({ ...current, page: next > 1 ? next : undefined }),
 		});
 
+	async function exportWorkbook() {
+		setExporting(true);
+		setMessage("");
+		try {
+			await downloadReportWorkbook(selected, filtered);
+		} catch (error) {
+			setMessage(
+				userFacingError(error, "No se pudo generar el archivo de Excel."),
+			);
+		} finally {
+			setExporting(false);
+		}
+	}
+
 	return (
 		<Page size="compact">
 			<PageHeader
 				description={`Solicitudes de preparación por período académico: ${selected.join(", ")}.`}
 				title="Reportes"
-			/>
+			>
+				<Button
+					aria-busy={exporting}
+					disabled={exporting}
+					onClick={exportWorkbook}
+					size="lg"
+				>
+					{exporting ? (
+						<LoaderCircle
+							aria-hidden="true"
+							className="animate-spin"
+							size={18}
+						/>
+					) : (
+						<Download aria-hidden="true" size={18} strokeWidth={2} />
+					)}
+					{exporting ? "Generando Excel…" : "Descargar Excel (XLSX)"}
+				</Button>
+			</PageHeader>
+
+			{message && <Notice tone="error">{message}</Notice>}
 
 			<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
 				<div className="flex flex-wrap items-center gap-3">
