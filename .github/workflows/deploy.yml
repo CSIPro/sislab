@@ -110,6 +110,11 @@ jobs:
             HostName $PRODUCTION_HOSTNAME
             User $PRODUCTION_USERNAME
             ProxyJump bridge
+            # Every step reuses one connection, so the job logs in to the
+            # bridge and the server once instead of once per command.
+            ControlMaster auto
+            ControlPath ~/.ssh/control-%C
+            ControlPersist 15m
 
           Host *
             IdentityFile ~/.ssh/deploy_key
@@ -117,6 +122,7 @@ jobs:
             StrictHostKeyChecking yes
             UserKnownHostsFile ~/.ssh/known_hosts
             ConnectTimeout 20
+            ServerAliveInterval 15
           EOF
           chmod 600 ~/.ssh/config
 
@@ -147,6 +153,8 @@ jobs:
         run: |
           ssh production bash -s -- "'$DEPLOY_PATH'" "'$RELEASE'" "'$PM2_APP_NAME'" "'$PORT'" "'$NODE_BIN'" "'$PM2_BIN'" < scripts/deploy/activate-release.sh
 
-      - name: Remove SSH key
+      - name: Close SSH connection and remove key
         if: always()
-        run: rm -f ~/.ssh/deploy_key
+        run: |
+          ssh -O exit production 2>/dev/null || true
+          rm -f ~/.ssh/deploy_key
