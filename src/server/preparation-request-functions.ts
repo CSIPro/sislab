@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db/index.ts";
+import { validateAcademicPeriodCode } from "../lib/academic-period.ts";
 import { requireRole } from "./auth.server.ts";
 import {
 	countRemainingRequestsToday,
@@ -7,6 +8,7 @@ import {
 	getDailyTicketRequests,
 	getMinimumNoticeDays,
 	getPreparationRequestOptions,
+	getPreparationRequestReport,
 	listAllPreparationRequests,
 	listMyPreparationRequests,
 	listRequestDates,
@@ -130,6 +132,22 @@ export const getDailyTicketRequestsFn = createServerFn({ method: "GET" })
 	.validator((input: unknown) => ({ date: dateValue(record(input).date) }))
 	.handler(async ({ data }) =>
 		getDailyTicketRequests(db, await requireRole("staff"), data.date),
+	);
+
+export const getPreparationRequestReportFn = createServerFn({ method: "GET" })
+	.validator((input: unknown) => {
+		const periods = record(input).periods;
+		if (
+			!Array.isArray(periods) ||
+			periods.length === 0 ||
+			periods.length > 50 ||
+			!periods.every((code) => typeof code === "string")
+		)
+			throw new Error("Choose at least one academic period.");
+		return { periods: periods.map(validateAcademicPeriodCode) };
+	})
+	.handler(async ({ data }) =>
+		getPreparationRequestReport(db, await requireRole("admin"), data.periods),
 	);
 
 function parseSubmission(input: unknown) {

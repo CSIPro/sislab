@@ -4,6 +4,7 @@ import {
 	CirclePlus,
 	CircleUserRound,
 	ClipboardList,
+	FileSpreadsheet,
 	FileText,
 	FlaskConical,
 	House,
@@ -63,6 +64,7 @@ const adminItems = (accessRequestCount: number): NavItem[] => [
 	},
 	{ to: "/app/admin/exercises", label: "Prácticas", icon: FlaskConical },
 	{ to: "/app/admin/periods", label: "Períodos", icon: CalendarDays },
+	{ to: "/app/admin/reports", label: "Reportes", icon: FileSpreadsheet },
 	{ to: "/app/admin/catalogs", label: "Catálogos", icon: Layers },
 	{ to: "/app/admin/settings", label: "Configuración", icon: Settings2 },
 ];

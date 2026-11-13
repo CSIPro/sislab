@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
 	academicPeriodStatus,
 	compareAcademicPeriodCodes,
+	defaultReportPeriodCode,
 	suggestedAcademicPeriodCode,
 	validateAcademicPeriodCode,
 } from "./academic-period.ts";
@@ -101,4 +102,68 @@ test("suggests no period when none is current", () => {
 		null,
 	);
 	assert.equal(suggestedAcademicPeriodCode([], "2026-10-12", "2026-2"), null);
+});
+
+const dated = (code: string, startsOn: string, endsOn: string) => ({
+	code,
+	startsOn,
+	endsOn,
+});
+
+test("the report opens on the period whose dates include today", () => {
+	const periods = [
+		dated("2026-1", "2026-01-12", "2026-06-05"),
+		dated("2026-V", "2026-06-08", "2026-07-17"),
+		dated("2026-2", "2026-08-10", "2026-12-04"),
+	];
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-03-02", "2026-1"),
+		"2026-1",
+	);
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-07-10", "2026-2"),
+		"2026-V",
+	);
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-12-04", "2026-2"),
+		"2026-2",
+	);
+});
+
+test("between dated periods the report opens on the latest one that has started", () => {
+	const periods = [
+		dated("2025-2", "2025-08-11", "2025-12-05"),
+		dated("2026-1", "2026-01-12", "2026-06-05"),
+		dated("2026-2", "2026-08-10", "2026-12-04"),
+	];
+	// The code for today is 2026-2, but that period has not started yet.
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-07-30", "2026-2"),
+		"2026-1",
+	);
+	// After the last period ends, it is still the most recent one.
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-12-20", "2026-2"),
+		"2026-2",
+	);
+});
+
+test("periods without dates follow the code for today", () => {
+	const periods = ["2025-2", "2026-1", "2026-2", "2027-1"].map((code) => ({
+		code,
+		...undated,
+	}));
+	assert.equal(
+		defaultReportPeriodCode(periods, "2026-10-12", "2026-2"),
+		"2026-2",
+	);
+	// No period exists for the current term, so the latest earlier one is used.
+	const gap = ["2025-2", "2026-2"].map((code) => ({ code, ...undated }));
+	assert.equal(defaultReportPeriodCode(gap, "2026-03-02", "2026-1"), "2025-2");
+});
+
+test("the report has no default when no period has started", () => {
+	const upcoming = [{ code: "2027-1", ...undated }];
+	assert.equal(defaultReportPeriodCode(upcoming, "2026-10-12", "2026-2"), null);
+	assert.equal(defaultReportPeriodCode([], "2026-10-12", "2026-2"), null);
 });
