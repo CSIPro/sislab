@@ -316,7 +316,7 @@ function ReportsPage() {
 
 			<ActionNotice notice={notice} />
 
-			<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+			<div className="flex flex-wrap items-start gap-x-6 gap-y-3">
 				<div className="flex flex-wrap items-center gap-3">
 					<Label htmlFor="report-periods">Períodos</Label>
 					<MultiCombobox
@@ -406,9 +406,9 @@ function ReportsPage() {
 									Sin solicitudes en estos períodos.
 								</p>
 							) : (
-								<ul className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-x-6 gap-y-1">
+								<ul className="flex flex-wrap gap-x-8 gap-y-1">
 									{totals.byLab.map(({ labName, count }) => (
-										<li className="flex justify-between gap-3" key={labName}>
+										<li className="flex items-baseline gap-2" key={labName}>
 											<span>{labName}</span>
 											<strong>{count}</strong>
 										</li>
