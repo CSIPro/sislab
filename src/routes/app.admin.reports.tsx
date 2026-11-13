@@ -256,23 +256,6 @@ function ReportsPage() {
 				title="Reportes"
 			>
 				<Button
-					aria-busy={exporting}
-					disabled={exporting || !hasSelection}
-					onClick={exportWorkbook}
-					size="lg"
-				>
-					{exporting ? (
-						<LoaderCircle
-							aria-hidden="true"
-							className="animate-spin"
-							size={18}
-						/>
-					) : (
-						<Download aria-hidden="true" size={18} strokeWidth={2} />
-					)}
-					{exporting ? "Generando Excel…" : "Descargar Excel (XLSX)"}
-				</Button>
-				<Button
 					aria-busy={archive !== null}
 					aria-describedby={
 						ticketPlan.entries.length === 0 ? "ticket-archive-note" : undefined
@@ -280,7 +263,6 @@ function ReportsPage() {
 					disabled={archive !== null || ticketPlan.entries.length === 0}
 					onClick={exportTickets}
 					size="lg"
-					variant="outline"
 				>
 					{archive ? (
 						<LoaderCircle
@@ -304,6 +286,24 @@ function ReportsPage() {
 						Cancelar
 					</Button>
 				)}
+				<Button
+					aria-busy={exporting}
+					disabled={exporting || !hasSelection}
+					onClick={exportWorkbook}
+					size="lg"
+					variant="outline"
+				>
+					{exporting ? (
+						<LoaderCircle
+							aria-hidden="true"
+							className="animate-spin"
+							size={18}
+						/>
+					) : (
+						<Download aria-hidden="true" size={18} strokeWidth={2} />
+					)}
+					{exporting ? "Generando Excel…" : "Descargar Excel (XLSX)"}
+				</Button>
 			</PageHeader>
 
 			{hasSelection && ticketPlan.entries.length === 0 && (
