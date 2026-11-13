@@ -1,0 +1,152 @@
+name: Deploy to production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Never run two deploys at once, and never cancel one halfway through.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # The build and the server must run the same Node major version.
+  NODE_MAJOR: 24
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Build
+        run: pnpm build
+
+      # Nitro bundles the server and its dependencies into .output, so the
+      # server needs Node and nothing else: no source, no pnpm install.
+      - name: Package release
+        run: tar -czf release.tar.gz -C .output .
+
+      - name: Upload release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PM2_APP_NAME: ${{ vars.PM2_APP_NAME || 'sislab-v2' }}
+      PORT: ${{ vars.PORT || '3000' }}
+      NODE_BIN: ${{ vars.NODE_BIN }}
+      PM2_BIN: ${{ vars.PM2_BIN }}
+      RELEASE: ${{ github.run_number }}.${{ github.run_attempt }}-${{ github.sha }}
+
+    steps:
+      - name: Checkout deploy script
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: scripts/deploy
+
+      - name: Download release
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ vars.SSH_KNOWN_HOSTS }}
+          BRIDGE_HOSTNAME: ${{ vars.BRIDGE_HOSTNAME }}
+          BRIDGE_USERNAME: ${{ vars.BRIDGE_USERNAME }}
+          PRODUCTION_HOSTNAME: ${{ vars.PRODUCTION_HOSTNAME }}
+          PRODUCTION_USERNAME: ${{ vars.PRODUCTION_USERNAME }}
+        run: |
+          install -d -m 700 ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host bridge
+            HostName $BRIDGE_HOSTNAME
+            User $BRIDGE_USERNAME
+
+          Host production
+            HostName $PRODUCTION_HOSTNAME
+            User $PRODUCTION_USERNAME
+            ProxyJump bridge
+
+          Host *
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 20
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Check Node on the server
+        run: |
+          version=$(ssh production "'$NODE_BIN' --version")
+          echo "$NODE_BIN is $version"
+          if [[ $version != "v$NODE_MAJOR."* ]]; then
+            echo "::error::The server's Node is $version, but the build uses Node $NODE_MAJOR"
+            exit 1
+          fi
+
+      - name: Upload release
+        run: |
+          ssh production "mkdir -p '$DEPLOY_PATH/releases/$RELEASE' && tar -xzf - -C '$DEPLOY_PATH/releases/$RELEASE'" < release.tar.gz
+          ssh production "cat > '$DEPLOY_PATH/ecosystem.config.cjs'" < scripts/deploy/ecosystem.config.cjs
+
+      # The secret travels on stdin, so it never shows up in a process list.
+      # Each deploy rewrites the file, so GitHub stays the source of truth.
+      - name: Write environment file
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          printf 'DATABASE_URL="%s"\nPORT="%s"\n' "$DATABASE_URL" "$PORT" |
+            ssh production "umask 077 && mkdir -p '$DEPLOY_PATH/shared' && cat > '$DEPLOY_PATH/shared/.env.next' && mv -f '$DEPLOY_PATH/shared/.env.next' '$DEPLOY_PATH/shared/.env'"
+
+      - name: Activate release
+        run: |
+          ssh production bash -s -- "'$DEPLOY_PATH'" "'$RELEASE'" "'$PM2_APP_NAME'" "'$PORT'" "'$NODE_BIN'" "'$PM2_BIN'" < scripts/deploy/activate-release.sh
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
