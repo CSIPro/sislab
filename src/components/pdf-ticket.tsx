@@ -249,7 +249,8 @@ export default function PDFTicket({
 	);
 }
 
-function ticketDocument(exercises: TicketExercise[], date: string) {
+/** The PDF document of a day's ticket. The archive export renders it without the viewer. */
+export function ticketDocument(exercises: TicketExercise[], date: string) {
 	return (
 		<Document title={ticketTitle(date)} author="SISLAB" language="es">
 			<Page size="A4" style={styles.page}>

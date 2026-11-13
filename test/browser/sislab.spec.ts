@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
+import ExcelJS from 'exceljs'
+import { unzipSync } from 'fflate'
+import { readFileSync } from 'node:fs'
 import { Pool } from 'pg'
+import { currentAcademicPeriodCode } from '../../src/lib/academic-period.ts'
 import { sislabToday } from '../../src/lib/session-dates.ts'
 import { hashPassword } from '../../src/server/auth.server.ts'
 
@@ -242,6 +246,81 @@ test('staff sees the days with requests marked in the date picker', async ({ pag
 	} finally {
 		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
 		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
+})
+
+test('admin opens Reportes on the current period, sees its requests, downloads the XLSX and ticket archive and opens one read-only', async ({ page, browser }) => {
+	const currentCode = currentAcademicPeriodCode()
+	const exerciseName = `Reporte Exercise ${suffix}`
+	const materials = { reagents: [], equipment: [], waste: [] }
+	const owner = await pool.query('SELECT id FROM users WHERE email = $1', [professor.email])
+	const professorId = owner.rows[0].id as string
+	const lab = await pool.query('SELECT id FROM labs WHERE name = $1', [labName])
+	const labId = lab.rows[0].id as string
+	const career = await pool.query('SELECT id FROM careers WHERE name = $1', [careerName])
+	const subject = await pool.query('SELECT id FROM subjects WHERE name = $1', [subjectName])
+	const insertedPeriod = await pool.query('INSERT INTO periods (code) VALUES ($1) ON CONFLICT (code) DO NOTHING', [currentCode])
+	const group = await pool.query(
+		`INSERT INTO groups (professor_id, period_code, number, lab_id, lab_name, career_id, career_name, subject_id, subject_name, students, teams, weekday, start_time, end_time)
+		VALUES ($1, $2, 90, $3, $4, $5, $6, $7, $8, 20, 5, 1, '08:00', '10:00') RETURNING id`,
+		[professorId, currentCode, labId, labName, career.rows[0].id, careerName, subject.rows[0].id, subjectName],
+	)
+	const exercise = await pool.query('INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id', ['1', exerciseName, materials])
+	const exerciseId = exercise.rows[0].id as string
+	await pool.query(
+		`INSERT INTO preparation_requests
+			(group_id, professor_id, exercise_id, exercise_number, exercise_name, session_date, lab_id, lab_name, start_time, end_time, materials)
+		VALUES ($1, $2, $3, '1', $4, $5, $6, $7, '08:00', '10:00', $8)`,
+		[group.rows[0].id, professorId, exerciseId, exerciseName, sislabToday(), labId, labName, { ...materials, omittedReagents: [], addedReagents: [], addedEquipment: [], addedWaste: [] }],
+	)
+	try {
+		const staffPage = await (await browser.newContext()).newPage()
+		await signIn(staffPage, staff.email)
+		await expect(staffPage.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Reportes' })).toHaveCount(0)
+		await staffPage.goto(`${base}/app/admin/reports`)
+		await expect(staffPage).toHaveURL(/\/app\/dashboard$/)
+		await staffPage.context().close()
+
+		await signIn(page, admin.email)
+		await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Reportes' }).click()
+		await expect(page.getByRole('heading', { name: 'Reportes' })).toBeVisible()
+		await expect(page.getByLabel('Períodos')).toContainText('(actual)')
+		const row = page.getByRole('row').filter({ hasText: exerciseName })
+		await expect(row).toBeVisible()
+		await expect(page.getByRole('region', { name: 'Totales' })).toContainText('Solicitudes')
+		const downloadPromise = page.waitForEvent('download')
+		await page.getByRole('button', { name: 'Descargar Excel (XLSX)' }).click()
+		const download = await downloadPromise
+		expect(download.suggestedFilename()).toBe(`sislab-reporte-${currentCode}.xlsx`)
+		const workbook = new ExcelJS.Workbook()
+		await workbook.xlsx.readFile(await download.path())
+		const sheet = workbook.getWorksheet(currentCode)
+		expect(sheet?.getRow(1).getCell(1).value).toBe('Fecha')
+		const exported = sheet?.getSheetValues().flat().filter((value) => value === exerciseName)
+		expect(exported).toHaveLength(1)
+		const archivePromise = page.waitForEvent('download')
+		await page.getByRole('button', { name: 'Descargar tickets (ZIP)' }).click()
+		const archive = await archivePromise
+		expect(archive.suggestedFilename()).toBe(`sislab-tickets-${currentCode}.zip`)
+		const files = unzipSync(new Uint8Array(readFileSync(await archive.path())))
+		const pdfPath = `${currentCode}/sislab-${sislabToday()}.pdf`
+		expect(Object.keys(files)).toContain(pdfPath)
+		expect(Buffer.from(files[pdfPath] ?? []).subarray(0, 5).toString()).toBe('%PDF-')
+		await expect(page.getByText('Si quitas todos los estados, se vuelven a mostrar los predeterminados.')).toBeVisible()
+		await page.getByLabel('Estado').click()
+		await page.getByRole('option', { name: 'Anulada' }).click()
+		await expect(page).toHaveURL(/status=/)
+		await page.keyboard.press('Escape')
+		await expect(row).toBeVisible()
+		await row.click()
+		const details = page.getByRole('dialog', { name: exerciseName })
+		await expect(details).toContainText('Reactivos')
+		await expect(details.getByRole('button', { name: /Aceptar|Rechazar|Anular/ })).toHaveCount(0)
+	} finally {
+		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+		await pool.query('DELETE FROM groups WHERE id = $1', [group.rows[0].id])
+		if (insertedPeriod.rowCount) await pool.query('DELETE FROM periods WHERE code = $1', [currentCode])
 	}
 })
 

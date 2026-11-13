@@ -1,4 +1,17 @@
-import { and, asc, eq, gt, gte, isNull, lte, ne, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	gt,
+	gte,
+	inArray,
+	isNotNull,
+	isNull,
+	lte,
+	ne,
+	or,
+} from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import type * as schema from "../db/schema.ts";
@@ -13,6 +26,10 @@ import {
 	users,
 	type WasteItem,
 } from "../db/schema.ts";
+import {
+	type PreparationRequestStatusKey,
+	requestStatusKey,
+} from "../lib/preparation-request-status.ts";
 import { sislabNowTime, sislabToday } from "../lib/session-dates.ts";
 import { byPeriodCode } from "./academic-periods.ts";
 import { listActiveLabExercises } from "./lab-exercises.ts";
@@ -29,9 +46,31 @@ export type RequestCustomization = {
 };
 export type RequestListRow = {
 	request: typeof preparationRequests.$inferSelect;
-	group: { id: string; number: number; subjectName: string; teams: number };
+	group: {
+		id: string;
+		number: number;
+		subjectName: string;
+		teams: number;
+		periodCode: string;
+	};
 	professor: { id: string; name: string; surname: string };
 	voidedBy: { name: string; surname: string } | null;
+};
+export type ReportLabTotal = { labName: string; count: number };
+export type ReportTotals = {
+	total: number;
+	acceptedLate: number;
+	declinedLate: number;
+	voided: number;
+	byLab: ReportLabTotal[];
+};
+export type PreparationRequestReport = {
+	/** Every request in the periods, newest first. A row's period is `group.periodCode`. */
+	rows: RequestListRow[];
+	/** Counted over every request in the periods, whatever its status. */
+	totals: ReportTotals;
+	/** For each period, the dates with at least one request that goes on the ticket. */
+	ticketDays: Record<string, string[]>;
 };
 
 /** A request that still stands, as in the week strip: not voided, and not a declined late exception. */
@@ -39,6 +78,40 @@ const stillStands = and(
 	ne(preparationRequests.status, "voided"),
 	isNull(preparationRequests.lateDeclinedAt),
 );
+
+/**
+ * A request that goes on the daily ticket: not voided, and either an ordinary
+ * request or a late exception that staff accepted.
+ */
+const onTicket = and(
+	ne(preparationRequests.status, "voided"),
+	or(
+		isNull(preparationRequests.lateReason),
+		isNotNull(preparationRequests.lateAcceptedAt),
+	),
+);
+
+/** A request with its group, professor and, once voided, the user who voided it. */
+function selectRequestRows(database: Database) {
+	const voidingUsers = alias(users, "voiding_users");
+	return database
+		.select({
+			request: preparationRequests,
+			group: {
+				id: groups.id,
+				number: groups.number,
+				subjectName: groups.subjectName,
+				teams: groups.teams,
+				periodCode: groups.periodCode,
+			},
+			professor: { id: users.id, name: users.name, surname: users.surname },
+			voidedBy: { name: voidingUsers.name, surname: voidingUsers.surname },
+		})
+		.from(preparationRequests)
+		.innerJoin(groups, eq(groups.id, preparationRequests.groupId))
+		.innerJoin(users, eq(users.id, preparationRequests.professorId))
+		.leftJoin(voidingUsers, eq(voidingUsers.id, preparationRequests.voidedBy));
+}
 
 export async function getPreparationRequestOptions(
 	database: Database,
@@ -102,23 +175,7 @@ export async function listMyPreparationRequests(
 	actor: RequestActor,
 ): Promise<RequestListRow[]> {
 	requireProfessor(actor);
-	const voidingUsers = alias(users, "voiding_users");
-	return database
-		.select({
-			request: preparationRequests,
-			group: {
-				id: groups.id,
-				number: groups.number,
-				subjectName: groups.subjectName,
-				teams: groups.teams,
-			},
-			professor: { id: users.id, name: users.name, surname: users.surname },
-			voidedBy: { name: voidingUsers.name, surname: voidingUsers.surname },
-		})
-		.from(preparationRequests)
-		.innerJoin(groups, eq(groups.id, preparationRequests.groupId))
-		.innerJoin(users, eq(users.id, preparationRequests.professorId))
-		.leftJoin(voidingUsers, eq(voidingUsers.id, preparationRequests.voidedBy))
+	return selectRequestRows(database)
 		.where(eq(preparationRequests.professorId, actor.id))
 		.orderBy(
 			asc(preparationRequests.sessionDate),
@@ -135,23 +192,7 @@ export async function listAllPreparationRequests(
 	requireStaff(actor);
 	if (!isDate(fromDate) || !isDate(throughDate) || fromDate > throughDate)
 		throw new Error("Choose a valid date range.");
-	const voidingUsers = alias(users, "voiding_users");
-	return database
-		.select({
-			request: preparationRequests,
-			group: {
-				id: groups.id,
-				number: groups.number,
-				subjectName: groups.subjectName,
-				teams: groups.teams,
-			},
-			professor: { id: users.id, name: users.name, surname: users.surname },
-			voidedBy: { name: voidingUsers.name, surname: voidingUsers.surname },
-		})
-		.from(preparationRequests)
-		.innerJoin(groups, eq(groups.id, preparationRequests.groupId))
-		.innerJoin(users, eq(users.id, preparationRequests.professorId))
-		.leftJoin(voidingUsers, eq(voidingUsers.id, preparationRequests.voidedBy))
+	return selectRequestRows(database)
 		.where(
 			and(
 				gte(preparationRequests.sessionDate, fromDate),
@@ -395,6 +436,70 @@ export async function voidPreparationRequest(
 	});
 }
 
+/**
+ * The requests of the given academic periods, for an admin's report. A request
+ * belongs to its group's period, whatever its session date. Status filters are
+ * the caller's job: the totals here count every request.
+ */
+export async function getPreparationRequestReport(
+	database: Database,
+	actor: RequestActor,
+	periodCodes: readonly string[],
+): Promise<PreparationRequestReport> {
+	requireAdmin(actor);
+	const codes = [...new Set(periodCodes)];
+	if (codes.length === 0)
+		return { rows: [], totals: reportTotals([]), ticketDays: {} };
+	const [rows, ticketDayRows] = await Promise.all([
+		selectRequestRows(database)
+			.where(inArray(groups.periodCode, codes))
+			.orderBy(
+				desc(preparationRequests.sessionDate),
+				desc(preparationRequests.startTime),
+				desc(preparationRequests.createdAt),
+			),
+		database
+			.selectDistinct({
+				periodCode: groups.periodCode,
+				date: preparationRequests.sessionDate,
+			})
+			.from(preparationRequests)
+			.innerJoin(groups, eq(groups.id, preparationRequests.groupId))
+			.where(and(inArray(groups.periodCode, codes), onTicket))
+			.orderBy(asc(preparationRequests.sessionDate)),
+	]);
+	const ticketDays: Record<string, string[]> = Object.fromEntries(
+		codes.map((code) => [code, []]),
+	);
+	for (const { periodCode, date } of ticketDayRows)
+		ticketDays[periodCode]?.push(date);
+	return { rows, totals: reportTotals(rows), ticketDays };
+}
+
+function reportTotals(rows: RequestListRow[]): ReportTotals {
+	const counts: Record<PreparationRequestStatusKey, number> = {
+		open: 0,
+		pending: 0,
+		accepted: 0,
+		declined: 0,
+		voided: 0,
+	};
+	const labs = new Map<string, number>();
+	for (const { request } of rows) {
+		counts[requestStatusKey(request)] += 1;
+		labs.set(request.labName, (labs.get(request.labName) ?? 0) + 1);
+	}
+	return {
+		total: rows.length,
+		acceptedLate: counts.accepted,
+		declinedLate: counts.declined,
+		voided: counts.voided,
+		byLab: [...labs]
+			.map(([labName, count]) => ({ labName, count }))
+			.sort((a, b) => a.labName.localeCompare(b.labName, "es-MX")),
+	};
+}
+
 export async function getDailyTicketRequests(
 	database: Database,
 	actor: RequestActor,
@@ -402,30 +507,8 @@ export async function getDailyTicketRequests(
 ): Promise<RequestListRow[]> {
 	requireStaff(actor);
 	if (!isDate(date)) throw new Error("Choose a valid ticket date.");
-	const voidingUsers = alias(users, "voiding_users");
-	return database
-		.select({
-			request: preparationRequests,
-			group: {
-				id: groups.id,
-				number: groups.number,
-				subjectName: groups.subjectName,
-				teams: groups.teams,
-			},
-			professor: { id: users.id, name: users.name, surname: users.surname },
-			voidedBy: { name: voidingUsers.name, surname: voidingUsers.surname },
-		})
-		.from(preparationRequests)
-		.innerJoin(groups, eq(groups.id, preparationRequests.groupId))
-		.innerJoin(users, eq(users.id, preparationRequests.professorId))
-		.leftJoin(voidingUsers, eq(voidingUsers.id, preparationRequests.voidedBy))
-		.where(
-			and(
-				eq(preparationRequests.sessionDate, date),
-				ne(preparationRequests.status, "voided"),
-				sql`(${preparationRequests.lateReason} IS NULL OR ${preparationRequests.lateAcceptedAt} IS NOT NULL)`,
-			),
-		)
+	return selectRequestRows(database)
+		.where(and(eq(preparationRequests.sessionDate, date), onTicket))
 		.orderBy(
 			asc(preparationRequests.exerciseName),
 			asc(users.surname),

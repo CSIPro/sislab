@@ -95,3 +95,23 @@ export function academicPeriodStatus(
 	if (order === 0) return 'current'
 	return order > 0 ? 'upcoming' : 'concluded'
 }
+
+/**
+ * The period a report opens on: the current one, or when none is current (a gap
+ * between dated periods), the most recent one that has already started. Null
+ * when no period has started.
+ */
+export function defaultReportPeriodCode(
+	periods: DatedPeriod[],
+	today: string,
+	currentCode: string,
+): string | null {
+	const status = (period: DatedPeriod) =>
+		academicPeriodStatus(period, today, currentCode)
+	const current = periods.find((period) => status(period) === 'current')
+	if (current) return current.code
+	const started = periods
+		.filter((period) => status(period) === 'concluded')
+		.sort((a, b) => compareAcademicPeriodCodes(b.code, a.code))
+	return started[0]?.code ?? null
+}
