@@ -58,9 +58,19 @@ import { userFacingError } from "../lib/user-facing-error.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import { getPreparationRequestReportFn } from "../server/preparation-request-functions.ts";
-import type { RequestListRow } from "../server/preparation-requests.ts";
+import type {
+	PreparationRequestReport,
+	RequestListRow,
+} from "../server/preparation-requests.ts";
 
 const PAGE_SIZE = 50;
+
+/** What the page shows while no period is selected, such as when every period is still upcoming. */
+const emptyReport: PreparationRequestReport = {
+	rows: [],
+	totals: { total: 0, acceptedLate: 0, declinedLate: 0, voided: 0, byLab: [] },
+	ticketDays: {},
+};
 
 /** The statuses shown until the admin picks others: requests that still stand. */
 const defaultStatuses: PreparationRequestStatusKey[] = [
@@ -126,7 +136,7 @@ export const Route = createFileRoute("/app/admin/reports")({
 			report:
 				selected.length > 0
 					? await getPreparationRequestReportFn({ data: { periods: selected } })
-					: null,
+					: emptyReport,
 		};
 	},
 	component: ReportsPage,
@@ -165,16 +175,7 @@ function ReportsPage() {
 	const statuses = search.status ?? defaultStatuses;
 	const manyPeriods = selected.length > 1;
 
-	if (!report) {
-		return (
-			<Page size="compact">
-				<PageHeader title="Reportes" />
-				<EmptyState>
-					Aún no hay períodos académicos con solicitudes. Agrégalos en Períodos.
-				</EmptyState>
-			</Page>
-		);
-	}
+	const hasSelection = selected.length > 0;
 
 	const filtered = report.rows.filter((item) =>
 		statuses.includes(requestStatusKey(item.request)),
@@ -247,12 +248,16 @@ function ReportsPage() {
 	return (
 		<Page size="compact">
 			<PageHeader
-				description={`Solicitudes de preparación por período académico: ${selected.join(", ")}.`}
+				description={
+					hasSelection
+						? `Solicitudes de preparación por período académico: ${selected.join(", ")}.`
+						: "Solicitudes de preparación por período académico."
+				}
 				title="Reportes"
 			>
 				<Button
 					aria-busy={exporting}
-					disabled={exporting}
+					disabled={exporting || !hasSelection}
 					onClick={exportWorkbook}
 					size="lg"
 				>
@@ -301,7 +306,7 @@ function ReportsPage() {
 				)}
 			</PageHeader>
 
-			{ticketPlan.entries.length === 0 && (
+			{hasSelection && ticketPlan.entries.length === 0 && (
 				<p className="text-sm text-muted-foreground" id="ticket-archive-note">
 					Estos períodos no tienen días con tickets que imprimir. Los tickets
 					omiten las solicitudes anuladas y las excepciones que nadie ha
@@ -334,116 +339,137 @@ function ReportsPage() {
 						values={selected}
 					/>
 				</div>
-				<div className="flex flex-wrap items-center gap-3">
-					<Label htmlFor="report-status">Estado</Label>
-					<MultiCombobox
-						className="w-auto min-w-52"
-						id="report-status"
-						onValuesChange={(next) =>
-							navigate({
-								search: (current) => ({
-									...current,
-									status:
-										next.length > 0 ? (next as typeof statuses) : undefined,
-									page: undefined,
-								}),
-							})
-						}
-						options={statusOptions}
-						placeholder="Elige estados"
-						search={false}
-						values={statuses}
-					/>
+				<div className="flex flex-col gap-1.5">
+					<div className="flex flex-wrap items-center gap-3">
+						<Label htmlFor="report-status">Estado</Label>
+						<MultiCombobox
+							className="w-auto min-w-52"
+							aria-describedby="report-status-note"
+							id="report-status"
+							onValuesChange={(next) =>
+								navigate({
+									search: (current) => ({
+										...current,
+										status:
+											next.length > 0 ? (next as typeof statuses) : undefined,
+										page: undefined,
+									}),
+								})
+							}
+							options={statusOptions}
+							placeholder="Elige estados"
+							search={false}
+							values={statuses}
+						/>
+					</div>
+					<p className="text-sm text-muted-foreground" id="report-status-note">
+						Si quitas todos los estados, se vuelven a mostrar los
+						predeterminados.
+					</p>
 				</div>
 			</div>
 
-			<Card aria-labelledby="report-totals-title">
-				<CardHeader className="items-baseline">
-					<CardTitle id="report-totals-title">Totales</CardTitle>
-					<span className="text-sm text-muted-foreground">
-						Cuentan todas las solicitudes de los períodos, sin importar el
-						filtro de estado.
-					</span>
-				</CardHeader>
-				<dl className="grid grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))] gap-3">
-					{stats.map(([term, count]) => (
-						<div className="rounded-md bg-accent p-3" key={term}>
-							<dt className="text-sm text-muted-foreground">{term}</dt>
-							<dd className="text-[28px] leading-[1.1] font-bold">{count}</dd>
-						</div>
-					))}
-				</dl>
-				<div className="flex flex-col gap-2">
-					<h3 className="text-sm font-bold text-muted-foreground">
-						Por laboratorio
-					</h3>
-					{totals.byLab.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							Sin solicitudes en estos períodos.
-						</p>
-					) : (
-						<ul className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-x-6 gap-y-1">
-							{totals.byLab.map(({ labName, count }) => (
-								<li className="flex justify-between gap-3" key={labName}>
-									<span>{labName}</span>
-									<strong>{count}</strong>
-								</li>
-							))}
-						</ul>
-					)}
-				</div>
-			</Card>
-
-			{filtered.length < report.rows.length && (
-				<Notice>
-					Se muestran {filtered.length} de {report.rows.length} solicitudes
-					según el filtro de estado.
-				</Notice>
+			{!hasSelection && (
+				<EmptyState>
+					{periodOptions.length === 0
+						? "Aún no hay períodos académicos. Agrégalos en Períodos."
+						: "Ningún período ha comenzado todavía. Elige uno en la lista de períodos para ver sus solicitudes."}
+				</EmptyState>
 			)}
 
-			<Table className={manyPeriods ? "min-w-[1180px]" : "min-w-[1080px]"}>
-				<TableHeader>
-					<TableRow>
-						<TableHead>Fecha y hora</TableHead>
-						{manyPeriods && <TableHead>Período</TableHead>}
-						<TableHead>Práctica</TableHead>
-						<TableHead>Profesor</TableHead>
-						<TableHead>Grupo</TableHead>
-						<TableHead>Lab.</TableHead>
-						<TableHead>Estado</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{visible.map((item) => (
-						<ReportRow
-							item={item}
-							key={item.request.id}
-							onOpen={() => setDetail(item)}
-							showPeriod={manyPeriods}
-						/>
-					))}
-					{visible.length === 0 && (
-						<TableEmpty colSpan={manyPeriods ? 7 : 6}>
-							No hay solicitudes con este filtro.
-						</TableEmpty>
-					)}
-				</TableBody>
-			</Table>
+			{hasSelection && (
+				<>
+					<Card aria-labelledby="report-totals-title">
+						<CardHeader className="items-baseline">
+							<CardTitle id="report-totals-title">Totales</CardTitle>
+							<span className="text-sm text-muted-foreground">
+								Cuentan todas las solicitudes de los períodos, sin importar el
+								filtro de estado.
+							</span>
+						</CardHeader>
+						<dl className="grid grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))] gap-3">
+							{stats.map(([term, count]) => (
+								<div className="rounded-md bg-accent p-3" key={term}>
+									<dt className="text-sm text-muted-foreground">{term}</dt>
+									<dd className="text-[28px] leading-[1.1] font-bold">
+										{count}
+									</dd>
+								</div>
+							))}
+						</dl>
+						<div className="flex flex-col gap-2">
+							<h3 className="text-sm font-bold text-muted-foreground">
+								Por laboratorio
+							</h3>
+							{totals.byLab.length === 0 ? (
+								<p className="text-sm text-muted-foreground">
+									Sin solicitudes en estos períodos.
+								</p>
+							) : (
+								<ul className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-x-6 gap-y-1">
+									{totals.byLab.map(({ labName, count }) => (
+										<li className="flex justify-between gap-3" key={labName}>
+											<span>{labName}</span>
+											<strong>{count}</strong>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+					</Card>
 
-			{filtered.length > PAGE_SIZE && (
-				<Pagination>
-					<PaginationPrevious
-						disabled={page <= 1}
-						onClick={() => showPage(page - 1)}
-					/>
-					<span className="text-sm text-muted-foreground">
-						Página {page} de {pageCount}
-					</span>
-					<PaginationNext
-						disabled={page >= pageCount}
-						onClick={() => showPage(page + 1)}
-					/>
-				</Pagination>
+					{filtered.length < report.rows.length && (
+						<Notice>
+							Se muestran {filtered.length} de {report.rows.length} solicitudes
+							según el filtro de estado.
+						</Notice>
+					)}
+
+					<Table className={manyPeriods ? "min-w-[1180px]" : "min-w-[1080px]"}>
+						<TableHeader>
+							<TableRow>
+								<TableHead>Fecha y hora</TableHead>
+								{manyPeriods && <TableHead>Período</TableHead>}
+								<TableHead>Práctica</TableHead>
+								<TableHead>Profesor</TableHead>
+								<TableHead>Grupo</TableHead>
+								<TableHead>Lab.</TableHead>
+								<TableHead>Estado</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{visible.map((item) => (
+								<ReportRow
+									item={item}
+									key={item.request.id}
+									onOpen={() => setDetail(item)}
+									showPeriod={manyPeriods}
+								/>
+							))}
+							{visible.length === 0 && (
+								<TableEmpty colSpan={manyPeriods ? 7 : 6}>
+									No hay solicitudes con este filtro.
+								</TableEmpty>
+							)}
+						</TableBody>
+					</Table>
+
+					{filtered.length > PAGE_SIZE && (
+						<Pagination>
+							<PaginationPrevious
+								disabled={page <= 1}
+								onClick={() => showPage(page - 1)}
+							/>
+							<span className="text-sm text-muted-foreground">
+								Página {page} de {pageCount}
+							</span>
+							<PaginationNext
+								disabled={page >= pageCount}
+								onClick={() => showPage(page + 1)}
+							/>
+						</Pagination>
+					)}
+				</>
 			)}
 
 			<Footnote>

@@ -306,6 +306,7 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		const pdfPath = `${currentCode}/sislab-${sislabToday()}.pdf`
 		expect(Object.keys(files)).toContain(pdfPath)
 		expect(Buffer.from(files[pdfPath] ?? []).subarray(0, 5).toString()).toBe('%PDF-')
+		await expect(page.getByText('Si quitas todos los estados, se vuelven a mostrar los predeterminados.')).toBeVisible()
 		await page.getByLabel('Estado').click()
 		await page.getByRole('option', { name: 'Anulada' }).click()
 		await expect(page).toHaveURL(/status=/)
