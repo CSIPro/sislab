@@ -1,7 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Download, LoaderCircle } from "lucide-react";
-import { useState } from "react";
-import { Notice } from "../components/notice.tsx";
+import { Archive, Download, LoaderCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+	ActionNotice,
+	Notice,
+	type NoticeState,
+} from "../components/notice.tsx";
 import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { RequestDetails, StatusChip } from "../components/request-parts.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -37,6 +41,7 @@ import {
 	defaultReportPeriodCode,
 } from "../lib/academic-period.ts";
 import { downloadReportWorkbook } from "../lib/download-report-workbook.ts";
+import { downloadTicketArchive } from "../lib/download-ticket-archive.ts";
 import {
 	type PreparationRequestStatusKey,
 	requestStatusKey,
@@ -48,6 +53,7 @@ import {
 	sislabToday,
 	timeRange,
 } from "../lib/session-dates.ts";
+import { planTicketArchive } from "../lib/ticket-archive.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
@@ -150,7 +156,12 @@ function ReportsPage() {
 	const navigate = Route.useNavigate();
 	const [detail, setDetail] = useState<RequestListRow | null>(null);
 	const [exporting, setExporting] = useState(false);
-	const [message, setMessage] = useState("");
+	const [notice, setNotice] = useState<NoticeState>(null);
+	const [archive, setArchive] = useState<{
+		current: number;
+		total: number;
+	} | null>(null);
+	const archiveController = useRef<AbortController | null>(null);
 	const statuses = search.status ?? defaultStatuses;
 	const manyPeriods = selected.length > 1;
 
@@ -184,17 +195,52 @@ function ReportsPage() {
 			search: (current) => ({ ...current, page: next > 1 ? next : undefined }),
 		});
 
+	// Tickets follow the ticket rule, not the status filter, so they use the whole report.
+	const ticketPlan = planTicketArchive(selected, report.ticketDays);
+
 	async function exportWorkbook() {
 		setExporting(true);
-		setMessage("");
+		setNotice(null);
 		try {
 			await downloadReportWorkbook(selected, filtered);
 		} catch (error) {
-			setMessage(
-				userFacingError(error, "No se pudo generar el archivo de Excel."),
-			);
+			setNotice({
+				text: userFacingError(error, "No se pudo generar el archivo de Excel."),
+				error: true,
+			});
 		} finally {
 			setExporting(false);
+		}
+	}
+
+	async function exportTickets() {
+		const controller = new AbortController();
+		archiveController.current = controller;
+		setArchive({ current: 0, total: ticketPlan.entries.length });
+		setNotice(null);
+		try {
+			await downloadTicketArchive(ticketPlan, {
+				signal: controller.signal,
+				onProgress: (current, total) => setArchive({ current, total }),
+			});
+		} catch (error) {
+			setNotice(
+				controller.signal.aborted
+					? {
+							text: "Se canceló la descarga de tickets. No se guardó ningún archivo.",
+							error: false,
+						}
+					: {
+							text: userFacingError(
+								error,
+								"No se pudieron generar los tickets.",
+							),
+							error: true,
+						},
+			);
+		} finally {
+			archiveController.current = null;
+			setArchive(null);
 		}
 	}
 
@@ -221,9 +267,49 @@ function ReportsPage() {
 					)}
 					{exporting ? "Generando Excel…" : "Descargar Excel (XLSX)"}
 				</Button>
+				<Button
+					aria-busy={archive !== null}
+					aria-describedby={
+						ticketPlan.entries.length === 0 ? "ticket-archive-note" : undefined
+					}
+					disabled={archive !== null || ticketPlan.entries.length === 0}
+					onClick={exportTickets}
+					size="lg"
+					variant="outline"
+				>
+					{archive ? (
+						<LoaderCircle
+							aria-hidden="true"
+							className="animate-spin"
+							size={18}
+						/>
+					) : (
+						<Archive aria-hidden="true" size={18} strokeWidth={2} />
+					)}
+					{archive
+						? `Generando ticket ${Math.max(archive.current, 1)} de ${archive.total}…`
+						: "Descargar tickets (ZIP)"}
+				</Button>
+				{archive && (
+					<Button
+						onClick={() => archiveController.current?.abort()}
+						size="lg"
+						variant="outline"
+					>
+						Cancelar
+					</Button>
+				)}
 			</PageHeader>
 
-			{message && <Notice tone="error">{message}</Notice>}
+			{ticketPlan.entries.length === 0 && (
+				<p className="text-sm text-muted-foreground" id="ticket-archive-note">
+					Estos períodos no tienen días con tickets que imprimir. Los tickets
+					omiten las solicitudes anuladas y las excepciones que nadie ha
+					aceptado.
+				</p>
+			)}
+
+			<ActionNotice notice={notice} />
 
 			<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
 				<div className="flex flex-wrap items-center gap-3">

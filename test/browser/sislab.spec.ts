@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 import ExcelJS from 'exceljs'
+import { unzipSync } from 'fflate'
+import { readFileSync } from 'node:fs'
 import { Pool } from 'pg'
 import { currentAcademicPeriodCode } from '../../src/lib/academic-period.ts'
 import { sislabToday } from '../../src/lib/session-dates.ts'
@@ -247,7 +249,7 @@ test('staff sees the days with requests marked in the date picker', async ({ pag
 	}
 })
 
-test('admin opens Reportes on the current period, sees its requests, downloads the XLSX and opens one read-only', async ({ page, browser }) => {
+test('admin opens Reportes on the current period, sees its requests, downloads the XLSX and ticket archive and opens one read-only', async ({ page, browser }) => {
 	const currentCode = currentAcademicPeriodCode()
 	const exerciseName = `Reporte Exercise ${suffix}`
 	const materials = { reagents: [], equipment: [], waste: [] }
@@ -296,6 +298,14 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		expect(sheet?.getRow(1).getCell(1).value).toBe('Fecha')
 		const exported = sheet?.getSheetValues().flat().filter((value) => value === exerciseName)
 		expect(exported).toHaveLength(1)
+		const archivePromise = page.waitForEvent('download')
+		await page.getByRole('button', { name: 'Descargar tickets (ZIP)' }).click()
+		const archive = await archivePromise
+		expect(archive.suggestedFilename()).toBe(`sislab-tickets-${currentCode}.zip`)
+		const files = unzipSync(new Uint8Array(readFileSync(await archive.path())))
+		const pdfPath = `${currentCode}/sislab-${sislabToday()}.pdf`
+		expect(Object.keys(files)).toContain(pdfPath)
+		expect(Buffer.from(files[pdfPath] ?? []).subarray(0, 5).toString()).toBe('%PDF-')
 		await page.getByLabel('Estado').click()
 		await page.getByRole('option', { name: 'Anulada' }).click()
 		await expect(page).toHaveURL(/status=/)
