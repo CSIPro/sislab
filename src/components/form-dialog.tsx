@@ -23,6 +23,8 @@ export function FormDialog({
 	notice = null,
 	submitLabel,
 	busy,
+	destructive = false,
+	submitDisabled = false,
 	onSubmit,
 	onClose,
 	className,
@@ -34,6 +36,10 @@ export function FormDialog({
 	notice?: NoticeState;
 	submitLabel: string;
 	busy: boolean;
+	/** Draws the submit button in the destructive style, for an action that voids or removes something. */
+	destructive?: boolean;
+	/** Keeps the submit button off until the form holds what it needs. */
+	submitDisabled?: boolean;
 	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 	onClose: () => void;
 	/** Sizes the dialog, for example `sm:max-w-2xl` for a long form. */
@@ -79,7 +85,12 @@ export function FormDialog({
 						>
 							Cancelar
 						</Button>
-						<Button disabled={busy} size="lg" type="submit">
+						<Button
+							disabled={busy || submitDisabled}
+							size="lg"
+							type="submit"
+							variant={destructive ? "destructive" : "default"}
+						>
 							{submitLabel}
 						</Button>
 					</DialogFooter>
