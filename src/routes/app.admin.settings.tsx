@@ -104,7 +104,7 @@ function SettingsPage() {
 								<Minus aria-hidden="true" size={20} />
 							</Button>
 							<Input
-								className="w-24 px-0 text-center text-xl font-bold"
+								className="w-24 appearance-none px-0 text-center text-xl font-bold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 								id="min-notice-days"
 								max={MAX_NOTICE_DAYS}
 								min="0"
