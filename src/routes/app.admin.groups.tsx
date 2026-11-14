@@ -60,6 +60,7 @@ function AdminGroupsPage() {
 
 	async function save({ group, professor }: AdminGroup, input: GroupInput) {
 		setBusyId(group.id);
+		setNotice(null);
 		setDialogNotice(null);
 		try {
 			await updateAnyGroupFn({ data: { groupId: group.id, input } });

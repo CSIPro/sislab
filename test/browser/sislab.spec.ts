@@ -307,7 +307,7 @@ test('staff voids a request through a dialog that asks for the reason', async ({
 		await row.getByRole('button', { name: 'Anular', exact: true }).click()
 		const dialog = page.getByRole('dialog', { name: 'Anular solicitud' })
 		await expect(dialog).toContainText(exerciseName)
-		await expect(dialog).toContainText(`${subjectName} · Grupo 01`)
+		await expect(dialog).toContainText('Grupo 01')
 		await expect(page.getByLabel('Motivo de la anulación')).toHaveCount(1)
 		const submit = dialog.getByRole('button', { name: 'Anular solicitud' })
 		await expect(submit).toBeDisabled()

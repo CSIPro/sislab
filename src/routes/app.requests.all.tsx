@@ -598,7 +598,7 @@ function VoidRequestDialog({
 	return (
 		<FormDialog
 			busy={busy}
-			description={`${request.exerciseName} · ${group.subjectName} · ${groupLabel(group.number)} · ${formatSessionDate(request.sessionDate, "short")}`}
+			description={`${request.exerciseName} · ${groupLabel(group.number)} · ${formatSessionDate(request.sessionDate, "short")}`}
 			destructive
 			notice={notice}
 			onClose={onClose}

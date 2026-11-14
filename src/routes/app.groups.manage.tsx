@@ -84,6 +84,7 @@ function ManageGroupsPage() {
 
 	async function save(group: Group, input: GroupInput) {
 		setBusyId(group.id);
+		setNotice(null);
 		setDialogNotice(null);
 		try {
 			await updateMyGroupFn({ data: { groupId: group.id, input } });
