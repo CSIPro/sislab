@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ScrollArea } from "#/components/ui/scroll-area.tsx";
 import { cn } from "#/lib/utils.ts";
 
 const pageSizes = {
@@ -88,5 +89,30 @@ export function PeriodPill({ code }: { code: string }) {
 		<span className="inline-flex min-h-11 items-center rounded-lg border bg-card px-4 text-sm font-bold">
 			Período {code}
 		</span>
+	);
+}
+
+/**
+ * The card beside a list page's table. From `xl` up, where the two sit side
+ * by side, it sticks to the top of the window while the table scrolls, and a
+ * card taller than the window scrolls on its own. Pass the flex sizing that
+ * places it next to the table.
+ */
+export function DetailPanel({
+	className,
+	children,
+}: {
+	className?: string;
+	children: ReactNode;
+}) {
+	return (
+		<ScrollArea
+			className={cn(
+				"min-w-0 rounded-lg xl:sticky! xl:top-6 xl:[&>[data-slot=scroll-area-viewport]]:max-h-[calc(100svh-3rem)] [&>[data-slot=scroll-area-viewport]>div]:block!",
+				className,
+			)}
+		>
+			{children}
+		</ScrollArea>
 	);
 }

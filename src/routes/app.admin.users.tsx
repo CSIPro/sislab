@@ -14,7 +14,13 @@ import {
 import { FormDialog } from "../components/form-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
-import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
+import {
+	DetailPanel,
+	EmptyState,
+	Footnote,
+	Page,
+	PageHeader,
+} from "../components/page.tsx";
 import { PersonAvatar } from "../components/person-avatar.tsx";
 import { RoleCheckboxes } from "../components/role-checkboxes.tsx";
 import { Badge } from "../components/ui/badge.tsx";
@@ -301,62 +307,61 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 				</section>
 
 				{selected && (
-					<Card
-						aria-labelledby="user-detail-title"
-						className="max-w-[420px] flex-[1_1_320px]"
-					>
-						{!draft && <ActionNotice notice={notice} />}
-						<div className="flex items-center gap-3.5">
-							<PersonAvatar accent className="size-12" person={selected} />
-							<div className="flex min-w-0 flex-1 flex-col">
-								<CardTitle className="text-xl" id="user-detail-title">
-									{selected.name} {selected.surname}
-								</CardTitle>
-								<span className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
-									{selected.email}
-								</span>
+					<DetailPanel className="max-w-[420px] flex-[1_1_320px]">
+						<Card aria-labelledby="user-detail-title">
+							{!draft && <ActionNotice notice={notice} />}
+							<div className="flex items-center gap-3.5">
+								<PersonAvatar accent className="size-12" person={selected} />
+								<div className="flex min-w-0 flex-1 flex-col">
+									<CardTitle className="text-xl" id="user-detail-title">
+										{selected.name} {selected.surname}
+									</CardTitle>
+									<span className="text-sm [overflow-wrap:anywhere] text-muted-foreground">
+										{selected.email}
+									</span>
+								</div>
+								<ActiveBadge active={selected.active} />
 							</div>
-							<ActiveBadge active={selected.active} />
-						</div>
 
-						<DescriptionList>
-							<DescriptionItem term="Roles">
-								<span className="mt-1 flex flex-wrap gap-1.5">
-									{selected.roles.map((role) => (
-										<Badge key={role} variant="outline">
-											{roleLabels[role]}
-										</Badge>
-									))}
-								</span>
-							</DescriptionItem>
-						</DescriptionList>
+							<DescriptionList>
+								<DescriptionItem term="Roles">
+									<span className="mt-1 flex flex-wrap gap-1.5">
+										{selected.roles.map((role) => (
+											<Badge key={role} variant="outline">
+												{roleLabels[role]}
+											</Badge>
+										))}
+									</span>
+								</DescriptionItem>
+							</DescriptionList>
 
-						<CardFooter>
-							<Button
-								disabled={busy}
-								onClick={() => open({ mode: "roles", roles: selected.roles })}
-								size="lg"
-							>
-								Editar roles
-							</Button>
-							<Button
-								disabled={busy}
-								onClick={() => open({ mode: "password", password: "" })}
-								size="lg"
-								variant="outline"
-							>
-								Restablecer contraseña
-							</Button>
-							<Button
-								disabled={busy}
-								onClick={() => void toggleActive(selected)}
-								size="lg"
-								variant="outline"
-							>
-								{selected.active ? "Desactivar cuenta" : "Reactivar cuenta"}
-							</Button>
-						</CardFooter>
-					</Card>
+							<CardFooter>
+								<Button
+									disabled={busy}
+									onClick={() => open({ mode: "roles", roles: selected.roles })}
+									size="lg"
+								>
+									Editar roles
+								</Button>
+								<Button
+									disabled={busy}
+									onClick={() => open({ mode: "password", password: "" })}
+									size="lg"
+									variant="outline"
+								>
+									Restablecer contraseña
+								</Button>
+								<Button
+									disabled={busy}
+									onClick={() => void toggleActive(selected)}
+									size="lg"
+									variant="outline"
+								>
+									{selected.active ? "Desactivar cuenta" : "Reactivar cuenta"}
+								</Button>
+							</CardFooter>
+						</Card>
+					</DetailPanel>
 				)}
 			</div>
 

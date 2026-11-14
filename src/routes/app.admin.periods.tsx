@@ -7,7 +7,13 @@ import {
 } from "../components/description-list.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
 import { Notice, type NoticeState } from "../components/notice.tsx";
-import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
+import {
+	DetailPanel,
+	EmptyState,
+	Footnote,
+	Page,
+	PageHeader,
+} from "../components/page.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
@@ -246,32 +252,31 @@ function AcademicPeriodsPage() {
 					</TableBody>
 				</Table>
 
-				<Card
-					aria-labelledby="period-panel-title"
-					className="max-w-[400px] flex-[1_1_300px]"
-				>
-					{selected ? (
-						<PeriodDetail
-							busy={busy}
-							onEdit={() =>
-								open({
-									editing: true,
-									code: selected.code,
-									startsOn: selected.startsOn ?? "",
-									endsOn: selected.endsOn ?? "",
-								})
-							}
-							period={selected}
-							status={academicPeriodStatus(selected, today, currentCode)}
-						/>
-					) : (
-						<EmptyState id="period-panel-title">
-							{periods.length === 0
-								? "Aún no hay períodos. Agrega el primero con Agregar período."
-								: "Elige un período para ver su detalle."}
-						</EmptyState>
-					)}
-				</Card>
+				<DetailPanel className="max-w-[400px] flex-[1_1_300px]">
+					<Card aria-labelledby="period-panel-title">
+						{selected ? (
+							<PeriodDetail
+								busy={busy}
+								onEdit={() =>
+									open({
+										editing: true,
+										code: selected.code,
+										startsOn: selected.startsOn ?? "",
+										endsOn: selected.endsOn ?? "",
+									})
+								}
+								period={selected}
+								status={academicPeriodStatus(selected, today, currentCode)}
+							/>
+						) : (
+							<EmptyState id="period-panel-title">
+								{periods.length === 0
+									? "Aún no hay períodos. Agrega el primero con Agregar período."
+									: "Elige un período para ver su detalle."}
+							</EmptyState>
+						)}
+					</Card>
+				</DetailPanel>
 			</div>
 
 			<Footnote>
