@@ -53,3 +53,31 @@ test("lab exercises list in numeric order of their labels", async () => {
 			.where(like(labExercises.name, `%${suffix}`));
 	}
 });
+
+test("lab exercises that share a label list in numeric order of their names", async () => {
+	const suffix = randomUUID();
+	const materials = { reagents: [], equipment: [], waste: [] };
+	const names = ["10", "2", "1", "10B", "0"].map(
+		(number) => `${number} Exercise ${suffix}`,
+	);
+	await database
+		.insert(labExercises)
+		.values(names.map((name) => ({ number: "QGs", name, materials })));
+
+	try {
+		const expected = ["0", "1", "2", "10", "10B"].map(
+			(number) => `${number} Exercise ${suffix}`,
+		);
+		const all = await listLabExercises(database, admin);
+		assert.deepEqual(
+			all
+				.filter((exercise) => exercise.name.endsWith(suffix))
+				.map((e) => e.name),
+			expected,
+		);
+	} finally {
+		await database
+			.delete(labExercises)
+			.where(like(labExercises.name, `%${suffix}`));
+	}
+});

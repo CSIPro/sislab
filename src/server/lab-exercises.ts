@@ -1,7 +1,7 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
-import { labExercises, type ExerciseMaterials } from "../db/schema.ts";
+import { type ExerciseMaterials, labExercises } from "../db/schema.ts";
 
 export type LabExerciseDatabase = NodePgDatabase<typeof schema>;
 export type LabExercise = typeof labExercises.$inferSelect;
@@ -13,24 +13,30 @@ export type LabExerciseInput = {
 export type LabExerciseActor = { roles: string[] };
 
 /**
- * Exercise numbers are labels such as "10B", so text order would put "10"
- * before "2". The leading digits sort as a number, then the whole label, and
- * labels without leading digits come last.
+ * Admins use the number as a label, such as "10B" or "QGs", and sometimes put
+ * the exercise number in the name instead. Both compare digits as numbers, so
+ * "2" comes before "10" in either field, and labels that start with digits
+ * come before labels that start with letters.
  */
-const exerciseOrder = [
-	sql`substring(${labExercises.number} from '^[0-9]+')::numeric`,
-	asc(labExercises.number),
-	asc(labExercises.name),
-];
+const collator = new Intl.Collator("es", {
+	numeric: true,
+	sensitivity: "base",
+});
+
+function byExerciseOrder(a: LabExercise, b: LabExercise): number {
+	return (
+		collator.compare(a.number, b.number) || collator.compare(a.name, b.name)
+	);
+}
 
 export async function listActiveLabExercises(
 	database: LabExerciseDatabase,
 ): Promise<LabExercise[]> {
-	return database
+	const rows = await database
 		.select()
 		.from(labExercises)
-		.where(eq(labExercises.active, true))
-		.orderBy(...exerciseOrder);
+		.where(eq(labExercises.active, true));
+	return rows.sort(byExerciseOrder);
 }
 
 export async function listLabExercises(
@@ -38,10 +44,8 @@ export async function listLabExercises(
 	actor: LabExerciseActor,
 ): Promise<LabExercise[]> {
 	requireAdmin(actor);
-	return database
-		.select()
-		.from(labExercises)
-		.orderBy(...exerciseOrder);
+	const rows = await database.select().from(labExercises);
+	return rows.sort(byExerciseOrder);
 }
 
 export async function createLabExercise(

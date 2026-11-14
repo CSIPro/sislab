@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
@@ -22,6 +22,11 @@ import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import { Field, FieldLabel } from "../components/ui/field.tsx";
 import { Input } from "../components/ui/input.tsx";
 import {
+	Pagination,
+	PaginationNext,
+	PaginationPrevious,
+} from "../components/ui/pagination.tsx";
+import {
 	Table,
 	TableBody,
 	TableCell,
@@ -41,7 +46,14 @@ import {
 } from "../server/lab-exercise-functions.ts";
 import type { LabExercise } from "../server/lab-exercises.ts";
 
+/** Rows per table page. The request form's dropdown always lists every exercise. */
+const PAGE_SIZE = 15;
+
 export const Route = createFileRoute("/app/admin/exercises")({
+	validateSearch: (search: Record<string, unknown>): { page?: number } => {
+		const page = Number(search.page);
+		return Number.isInteger(page) && page > 1 ? { page } : {};
+	},
 	loader: async () => {
 		const user = await getCurrentSessionFn();
 		if (!user) throw redirect({ to: "/sign-in" });
@@ -80,20 +92,29 @@ const draftFrom = (exercise: LabExercise): ExerciseDraft => ({
 
 function LabExercisesPage() {
 	const initial = Route.useLoaderData();
+	const search = Route.useSearch();
+	const navigate = useNavigate({ from: Route.fullPath });
 	const [exercises, setExercises] = useState(initial);
 	const [selectedId, setSelectedId] = useState(
 		(initial.find(({ active }) => active) ?? initial[0])?.id ?? null,
 	);
 	/** The lab exercise open in the form dialog. */
 	const [draft, setDraft] = useState<ExerciseDraft | null>(null);
-	const [search, setSearch] = useState("");
+	const [filter, setFilter] = useState("");
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busy, setBusy] = useState(false);
 
-	const query = searchable(search.trim());
-	const visible = exercises.filter((exercise) =>
+	const query = searchable(filter.trim());
+	const matching = exercises.filter((exercise) =>
 		searchable(`${exercise.number} ${exercise.name}`).includes(query),
 	);
+	const pageCount = Math.max(1, Math.ceil(matching.length / PAGE_SIZE));
+	const page = Math.min(search.page ?? 1, pageCount);
+	const visible = matching.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+	const showPage = (next: number) =>
+		navigate({
+			search: (current) => ({ ...current, page: next > 1 ? next : undefined }),
+		});
 	const selected = exercises.find(({ id }) => id === selectedId) ?? null;
 
 	function open(next: ExerciseDraft | null) {
@@ -187,10 +208,13 @@ function LabExercisesPage() {
 						<FieldLabel htmlFor="exercises-search">Buscar</FieldLabel>
 						<Input
 							id="exercises-search"
-							onChange={(event) => setSearch(event.target.value)}
+							onChange={(event) => {
+								setFilter(event.target.value);
+								if (page > 1) showPage(1);
+							}}
 							placeholder="Nombre o número de práctica"
 							type="search"
-							value={search}
+							value={filter}
 						/>
 					</Field>
 					<Table className="min-w-[620px]">
@@ -242,6 +266,21 @@ function LabExercisesPage() {
 							)}
 						</TableBody>
 					</Table>
+					{matching.length > PAGE_SIZE && (
+						<Pagination>
+							<PaginationPrevious
+								disabled={page <= 1}
+								onClick={() => showPage(page - 1)}
+							/>
+							<span className="text-sm text-muted-foreground">
+								Página {page} de {pageCount}
+							</span>
+							<PaginationNext
+								disabled={page >= pageCount}
+								onClick={() => showPage(page + 1)}
+							/>
+						</Pagination>
+					)}
 					<Footnote>
 						El número es solo una etiqueta y puede repetirse. Las prácticas
 						inactivas siguen visibles en las solicitudes que ya las usaron.
