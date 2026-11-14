@@ -186,8 +186,30 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByRole('radio', { name: 'Activos · 1' })).toBeChecked()
 	const groupCard = page.locator('article').filter({ hasText: subjectName })
 	await expect(groupCard).toContainText('Grupo 01')
+	await expect(groupCard.getByLabel('Estudiantes')).toHaveCount(0)
+	const cardHeight = (await groupCard.boundingBox())?.height
 	await groupCard.getByRole('button', { name: 'Editar' }).click()
-	await expect(groupCard.getByLabel('Estudiantes')).toHaveValue('20')
+	const editDialog = page.getByRole('dialog', { name: 'Editar grupo' })
+	await expect(editDialog).toContainText(`${subjectName} · Grupo 01`)
+	await expect(editDialog.getByLabel('Estudiantes')).toHaveValue('20')
+	expect((await groupCard.boundingBox())?.height).toBe(cardHeight)
+
+	await editDialog.getByLabel('Estudiantes').fill('25')
+	await editDialog.getByRole('button', { name: 'Cancelar' }).click()
+	await expect(editDialog).toHaveCount(0)
+	await expect(groupCard).toContainText(/Estudiantes\s*20/)
+	await groupCard.getByRole('button', { name: 'Editar' }).click()
+	await expect(editDialog.getByLabel('Estudiantes')).toHaveValue('20')
+	await page.keyboard.press('Escape')
+	await expect(editDialog).toHaveCount(0)
+
+	await groupCard.getByRole('button', { name: 'Editar' }).click()
+	await editDialog.getByLabel('Estudiantes').fill('25')
+	await editDialog.getByRole('button', { name: 'Guardar cambios' }).click()
+	await expect(editDialog).toHaveCount(0)
+	await expect(page.getByRole('status')).toContainText('Se actualizó el grupo 1.')
+	await expect(groupCard).toContainText(/Estudiantes\s*25/)
+	await expect(groupCard.getByRole('button', { name: 'Desactivar' })).toBeVisible()
 	await groupCard.getByRole('link', { name: 'Solicitar preparación' }).click()
 	await expect(page).toHaveURL(/\/app\/requests\/new\?group=/)
 	await expect(page.getByRole('radio', { name: new RegExp(`${subjectName} · Grupo 01`) })).toBeChecked()
@@ -243,6 +265,72 @@ test('staff sees the days with requests marked in the date picker', async ({ pag
 		await page.getByRole('button', { name: /^Fecha:/ }).click()
 		const calendar = page.getByRole('dialog')
 		await expect(calendar.getByRole('button', { name: /seleccionado/ })).toHaveAccessibleName(/, con solicitudes$/)
+	} finally {
+		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
+})
+
+test('staff voids a request through a dialog that asks for the reason', async ({ page }) => {
+	const group = await pool.query(
+		'SELECT g.id, g.professor_id, g.lab_id, g.lab_name FROM groups g JOIN users u ON u.id = g.professor_id WHERE u.email = $1',
+		[professor.email],
+	)
+	const { id: groupId, professor_id: professorId, lab_id: labId, lab_name: groupLabName } = group.rows[0]
+	const materials = { reagents: [], equipment: [], waste: [] }
+	const exerciseName = `Anular Exercise ${suffix}`
+	const exercise = await pool.query(
+		'INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id',
+		['1', exerciseName, materials],
+	)
+	const exerciseId = exercise.rows[0].id as string
+	const request = await pool.query(
+		`INSERT INTO preparation_requests
+			(group_id, professor_id, exercise_id, exercise_number, exercise_name, session_date, lab_id, lab_name, start_time, end_time, materials)
+		VALUES ($1, $2, $3, '1', $4, $5, $6, $7, '08:00', '10:00', $8) RETURNING id`,
+		[
+			groupId,
+			professorId,
+			exerciseId,
+			exerciseName,
+			sislabToday(),
+			labId,
+			groupLabName,
+			{ ...materials, omittedReagents: [], addedReagents: [], addedEquipment: [], addedWaste: [] },
+		],
+	)
+	const requestId = request.rows[0].id as string
+	try {
+		await signIn(page, staff.email)
+		await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Todas las solicitudes' }).click()
+		const row = page.getByRole('row').filter({ hasText: exerciseName })
+		await row.getByRole('button', { name: 'Anular', exact: true }).click()
+		const dialog = page.getByRole('dialog', { name: 'Anular solicitud' })
+		await expect(dialog).toContainText(exerciseName)
+		await expect(dialog).toContainText('Grupo 01')
+		await expect(page.getByLabel('Motivo de la anulación')).toHaveCount(1)
+		const submit = dialog.getByRole('button', { name: 'Anular solicitud' })
+		await expect(submit).toBeDisabled()
+		await dialog.getByLabel('Motivo de la anulación').fill('Se registró por error')
+		await expect(submit).toBeEnabled()
+
+		// Another person voids it first, so this attempt fails and the dialog stays open.
+		await pool.query(
+			"UPDATE preparation_requests SET status = 'voided', void_reason = 'Anulada antes', voided_by = (SELECT id FROM users WHERE email = $2), voided_at = NOW() WHERE id = $1",
+			[requestId, staff.email],
+		)
+		await submit.click()
+		await expect(dialog.getByRole('alert')).toBeVisible()
+		await expect(dialog.getByLabel('Motivo de la anulación')).toHaveValue('Se registró por error')
+
+		await pool.query(
+			"UPDATE preparation_requests SET status = 'open', void_reason = NULL, voided_by = NULL, voided_at = NULL WHERE id = $1",
+			[requestId],
+		)
+		await submit.click()
+		await expect(dialog).toHaveCount(0)
+		await expect(row).toContainText('Anulada')
+		await expect(row.getByRole('button', { name: 'Anular', exact: true })).toHaveCount(0)
 	} finally {
 		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
 		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
@@ -394,12 +482,18 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Grupos', exact: true })).toHaveCount(0)
 	await page.goto(`${base}/app/admin/groups`)
 	await page.waitForLoadState('networkidle')
-	const group = page.locator('article').filter({ hasText: `${periodCode} · Grupo 1` })
+	const group = page.locator('article').filter({ hasText: 'Grupo 01' }).filter({ hasText: professor.email })
 	await expect(group).toBeVisible()
-	await group.getByLabel('Estudiantes').fill('21')
-	await group.getByRole('button', { name: 'Guardar cambios' }).click()
+	await expect(group).toContainText(/Estudiantes\s*25/)
+	await expect(group).toContainText(`${professor.name} ${professor.surname}`)
+	await expect(group.getByLabel('Estudiantes')).toHaveCount(0)
+	await group.getByRole('button', { name: 'Editar' }).click()
+	const editGroupDialog = page.getByRole('dialog', { name: 'Editar grupo' })
+	await editGroupDialog.getByLabel('Estudiantes').fill('21')
+	await editGroupDialog.getByRole('button', { name: 'Guardar cambios' }).click()
+	await expect(editGroupDialog).toHaveCount(0)
 	await expect(page.getByRole('status')).toContainText('Se actualizó el grupo 1 de Browser.')
-	await expect(group.getByLabel('Estudiantes')).toHaveValue('21')
+	await expect(group).toContainText(/Estudiantes\s*21/)
 
 	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Períodos', exact: true }).click()
 	await page.waitForLoadState('networkidle')

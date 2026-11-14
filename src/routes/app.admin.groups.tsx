@@ -1,11 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
-import { ActiveBadge } from "../components/active-badge.tsx";
-import { GroupFields, readGroupFields } from "../components/group-fields.tsx";
+import { useState } from "react";
+import { GroupCard } from "../components/group-card.tsx";
+import {
+	GroupEditDialog,
+	type GroupInput,
+} from "../components/group-edit-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
-import { Card, CardTitle } from "../components/ui/card.tsx";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
@@ -34,12 +36,20 @@ export const Route = createFileRoute("/app/admin/groups")({
 	component: AdminGroupsPage,
 });
 
+type AdminGroup = Awaited<ReturnType<typeof listAllGroupsFn>>[number];
+
 function AdminGroupsPage() {
 	const { groups: initialGroups, options } = Route.useLoaderData();
+	const { periodCode } = Route.useRouteContext();
 	const [groups, setGroups] = useState(initialGroups);
 	const [includeInactive, setIncludeInactive] = useState(true);
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [dialogNotice, setDialogNotice] = useState<NoticeState>(null);
+	const editing = groups.find(
+		({ group }) => group.id === editingId && group.active,
+	);
 
 	async function showGroups(showInactive: boolean) {
 		setIncludeInactive(showInactive);
@@ -48,27 +58,20 @@ function AdminGroupsPage() {
 		);
 	}
 
-	async function save(event: FormEvent<HTMLFormElement>, groupId: string) {
-		event.preventDefault();
-		const fields = readGroupFields(new FormData(event.currentTarget));
-		const current = groups.find(({ group }) => group.id === groupId);
-		if (!current) return;
-		setBusyId(groupId);
+	async function save({ group, professor }: AdminGroup, input: GroupInput) {
+		setBusyId(group.id);
 		setNotice(null);
+		setDialogNotice(null);
 		try {
-			await updateAnyGroupFn({
-				data: {
-					groupId,
-					input: { ...fields, number: fields.number ?? current.group.number },
-				},
-			});
+			await updateAnyGroupFn({ data: { groupId: group.id, input } });
 			setNotice({
-				text: `Se actualizó el grupo ${current.group.number} de ${current.professor.name}.`,
+				text: `Se actualizó el grupo ${group.number} de ${professor.name}.`,
 				error: false,
 			});
+			setEditingId(null);
 			await showGroups(includeInactive);
 		} catch (error) {
-			setNotice({
+			setDialogNotice({
 				text: userFacingError(error, "No se pudo actualizar este grupo."),
 				error: true,
 			});
@@ -95,7 +98,7 @@ function AdminGroupsPage() {
 	}
 
 	return (
-		<Page size="narrow">
+		<Page>
 			<PageHeader
 				description="Consulta y corrige los datos de los grupos de todo el profesorado. Cada persona sigue como responsable de sus grupos."
 				title="Grupos del profesorado"
@@ -119,56 +122,46 @@ function AdminGroupsPage() {
 			{groups.length === 0 && (
 				<EmptyState>No hay grupos para mostrar.</EmptyState>
 			)}
-			<div className="flex flex-col gap-5">
+			<div className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] gap-5">
 				{groups.map(({ group, professor }) => (
-					<Card asChild key={group.id}>
-						<article>
-							<div className="flex flex-wrap items-center justify-between gap-3">
-								<div>
-									<CardTitle className="text-xl">
-										{group.periodCode} · Grupo {group.number}
-									</CardTitle>
-									<p className="text-sm text-muted-foreground">
-										{professor.name} {professor.surname} · {professor.email}
-									</p>
-								</div>
-								<div className="flex items-center gap-3">
-									<ActiveBadge
-										active={group.active}
-										labels={["Activo", "Inactivo"]}
-									/>
-									<Button
-										disabled={busyId === group.id}
-										onClick={() => void changeActivity(group.id, group.active)}
-										variant={group.active ? "destructive" : "outline"}
-									>
-										{group.active ? "Desactivar" : "Reactivar"}
-									</Button>
-								</div>
-							</div>
-							<form
-								className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-3.5"
-								onSubmit={(event) => void save(event, group.id)}
+					<GroupCard
+						currentPeriodCode={periodCode}
+						group={group}
+						key={group.id}
+						professor={professor}
+					>
+						{group.active && (
+							<Button
+								onClick={() => {
+									setDialogNotice(null);
+									setEditingId(group.id);
+								}}
+								variant="outline"
 							>
-								<GroupFields
-									group={group}
-									idPrefix={`group-${group.id}`}
-									options={options}
-								/>
-								<div className="col-span-full">
-									<Button
-										disabled={busyId === group.id}
-										size="lg"
-										type="submit"
-									>
-										{busyId === group.id ? "Guardando…" : "Guardar cambios"}
-									</Button>
-								</div>
-							</form>
-						</article>
-					</Card>
+								Editar
+							</Button>
+						)}
+						<Button
+							disabled={busyId === group.id}
+							onClick={() => void changeActivity(group.id, group.active)}
+							variant={group.active ? "destructive" : "outline"}
+						>
+							{group.active ? "Desactivar" : "Reactivar"}
+						</Button>
+					</GroupCard>
 				))}
 			</div>
+
+			{editing && (
+				<GroupEditDialog
+					busy={busyId === editing.group.id}
+					group={editing.group}
+					notice={dialogNotice}
+					onClose={() => setEditingId(null)}
+					onSave={(input) => void save(editing, input)}
+					options={options}
+				/>
+			)}
 		</Page>
 	);
 }

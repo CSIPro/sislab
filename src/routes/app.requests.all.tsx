@@ -1,7 +1,8 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { Fragment, lazy, Suspense, useRef, useState } from "react";
-import { Notice } from "../components/notice.tsx";
+import { FormDialog } from "../components/form-dialog.tsx";
+import { Notice, type NoticeState } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { Footnote, Page, PageHeader } from "../components/page.tsx";
 import {
@@ -117,6 +118,8 @@ function AllPreparationRequestsPage() {
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [message, setMessage] = useState("");
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [voidingId, setVoidingId] = useState<string | null>(null);
+	const [voidNotice, setVoidNotice] = useState<NoticeState>(null);
 	const [ticket, setTicket] = useState<{
 		date: string;
 		exercises: TicketExercise[];
@@ -124,6 +127,7 @@ function AllPreparationRequestsPage() {
 	const labs = [
 		...new Set(requests.map(({ request }) => request.labName)),
 	].sort((a, b) => a.localeCompare(b, "es-MX"));
+	const voiding = requests.find(({ request }) => request.id === voidingId);
 	const week = weekRange(date);
 	// The week is always loaded, so the strip has every day's count in day view too.
 	const visible =
@@ -187,6 +191,13 @@ function AllPreparationRequestsPage() {
 		}
 	}
 
+	// Voiding or deciding a request can change the sidebar's count for today.
+	const refresh = () =>
+		Promise.all([
+			load(latestDate.current),
+			router.invalidate({ filter: (match) => match.routeId === "/app" }),
+		]);
+
 	async function act(
 		requestId: string,
 		fallback: string,
@@ -196,11 +207,7 @@ function AllPreparationRequestsPage() {
 		setMessage("");
 		try {
 			await action();
-			// Voiding or deciding a request can change the sidebar's count for today.
-			await Promise.all([
-				load(latestDate.current),
-				router.invalidate({ filter: (match) => match.routeId === "/app" }),
-			]);
+			await refresh();
 		} catch (error) {
 			setMessage(
 				userFacingError(
@@ -217,10 +224,36 @@ function AllPreparationRequestsPage() {
 		act(requestId, "No se pudo guardar la decisión.", () =>
 			decideLateExceptionFn({ data: { requestId, decision } }),
 		);
-	const voidRequest = (requestId: string, reason: string) =>
-		act(requestId, "No se pudo anular la solicitud.", () =>
-			voidPreparationRequestFn({ data: { requestId, reason } }),
-		);
+	async function voidRequest(requestId: string, reason: string) {
+		setBusyId(requestId);
+		setVoidNotice(null);
+		try {
+			await voidPreparationRequestFn({ data: { requestId, reason } });
+		} catch (error) {
+			setVoidNotice({
+				text: userFacingError(
+					error,
+					error instanceof Error
+						? error.message
+						: "No se pudo anular la solicitud.",
+				),
+				error: true,
+			});
+			setBusyId(null);
+			return;
+		}
+		setVoidingId(null);
+		setMessage("");
+		try {
+			await refresh();
+		} catch (error) {
+			setMessage(
+				userFacingError(error, "No se pudieron cargar las solicitudes."),
+			);
+		} finally {
+			setBusyId(null);
+		}
+	}
 
 	async function printTicket() {
 		setMessage("");
@@ -390,7 +423,10 @@ function AllPreparationRequestsPage() {
 							item={item}
 							key={item.request.id}
 							onDecide={decide}
-							onVoid={voidRequest}
+							onVoid={(id) => {
+								setVoidNotice(null);
+								setVoidingId(id);
+							}}
 						/>
 					))}
 					{filtered.length === 0 && (
@@ -406,6 +442,16 @@ function AllPreparationRequestsPage() {
 				del día. Las excepciones sin decisión, las rechazadas y las anuladas no
 				aparecen.
 			</Footnote>
+
+			{voiding && (
+				<VoidRequestDialog
+					busy={busyId === voiding.request.id}
+					item={voiding}
+					notice={voidNotice}
+					onClose={() => setVoidingId(null)}
+					onVoid={(reason) => void voidRequest(voiding.request.id, reason)}
+				/>
+			)}
 
 			<Dialog
 				onOpenChange={(open) => {
@@ -440,14 +486,11 @@ function StaffRequestRow({
 	item: RequestListRow;
 	busy: boolean;
 	onDecide: (id: string, decision: "accepted" | "declined") => void;
-	onVoid: (id: string, reason: string) => void;
+	onVoid: (id: string) => void;
 }) {
 	const { request, group, professor } = item;
-	const [reason, setReason] = useState("");
-	const [panel, setPanel] = useState<"details" | "void" | null>(null);
+	const [detailsOpen, setDetailsOpen] = useState(false);
 	const voided = request.status === "voided";
-	const toggle = (next: "details" | "void") =>
-		setPanel((current) => (current === next ? null : next));
 	return (
 		<Fragment>
 			<TableRow data-muted={voided}>
@@ -506,8 +549,8 @@ function StaffRequestRow({
 							</>
 						)}
 						<Button
-							aria-expanded={panel === "details"}
-							onClick={() => toggle("details")}
+							aria-expanded={detailsOpen}
+							onClick={() => setDetailsOpen((open) => !open)}
 							size="sm"
 							variant="outline"
 						>
@@ -515,9 +558,8 @@ function StaffRequestRow({
 						</Button>
 						{!voided && (
 							<Button
-								aria-expanded={panel === "void"}
 								disabled={busy}
-								onClick={() => toggle("void")}
+								onClick={() => onVoid(request.id)}
 								size="sm"
 								variant="destructive"
 							>
@@ -527,49 +569,59 @@ function StaffRequestRow({
 					</div>
 				</TableCell>
 			</TableRow>
-			{panel === "details" && (
+			{detailsOpen && (
 				<TableRow>
 					<TableCell className="bg-background font-sans text-sm" colSpan={7}>
 						<RequestDetails item={item} />
 					</TableCell>
 				</TableRow>
 			)}
-			{panel === "void" && !voided && (
-				<TableRow>
-					<TableCell className="bg-background font-sans text-sm" colSpan={7}>
-						<form
-							className="flex max-w-[600px] flex-col gap-3"
-							onSubmit={(event) => {
-								event.preventDefault();
-								onVoid(request.id, reason);
-							}}
-						>
-							<Field>
-								<FieldLabel htmlFor={`void-reason-${request.id}`}>
-									Motivo de la anulación
-								</FieldLabel>
-								<Textarea
-									id={`void-reason-${request.id}`}
-									onChange={(event) => setReason(event.target.value)}
-									required
-									value={reason}
-								/>
-							</Field>
-							<div>
-								<Button
-									disabled={busy || !reason.trim()}
-									size="sm"
-									type="submit"
-									variant="destructive"
-								>
-									Confirmar anulación
-								</Button>
-							</div>
-						</form>
-					</TableCell>
-				</TableRow>
-			)}
 		</Fragment>
+	);
+}
+
+function VoidRequestDialog({
+	item,
+	busy,
+	notice,
+	onVoid,
+	onClose,
+}: {
+	item: RequestListRow;
+	busy: boolean;
+	notice: NoticeState;
+	onVoid: (reason: string) => void;
+	onClose: () => void;
+}) {
+	const { request, group } = item;
+	const [reason, setReason] = useState("");
+	return (
+		<FormDialog
+			busy={busy}
+			description={`${request.exerciseName} · ${groupLabel(group.number)} · ${formatSessionDate(request.sessionDate, "short")}`}
+			destructive
+			notice={notice}
+			onClose={onClose}
+			onSubmit={(event) => {
+				event.preventDefault();
+				onVoid(reason);
+			}}
+			submitDisabled={!reason.trim()}
+			submitLabel="Anular solicitud"
+			title="Anular solicitud"
+		>
+			<Field>
+				<FieldLabel htmlFor={`void-reason-${request.id}`}>
+					Motivo de la anulación
+				</FieldLabel>
+				<Textarea
+					id={`void-reason-${request.id}`}
+					onChange={(event) => setReason(event.target.value)}
+					required
+					value={reason}
+				/>
+			</Field>
+		</FormDialog>
 	);
 }
 

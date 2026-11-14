@@ -1,12 +1,11 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { type FormEvent, useState } from "react";
-import { ActiveBadge } from "../components/active-badge.tsx";
+import { useState } from "react";
+import { GroupCard } from "../components/group-card.tsx";
 import {
-	DescriptionItem,
-	DescriptionList,
-} from "../components/description-list.tsx";
-import { GroupFields, readGroupFields } from "../components/group-fields.tsx";
+	GroupEditDialog,
+	type GroupInput,
+} from "../components/group-edit-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
 import {
 	EmptyState,
@@ -15,7 +14,7 @@ import {
 	PeriodPill,
 } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
-import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
+import { Card, CardTitle } from "../components/ui/card.tsx";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
@@ -66,8 +65,12 @@ function ManageGroupsPage() {
 	const [includeInactive, setIncludeInactive] = useState(false);
 	const [notice, setNotice] = useState<NoticeState>(null);
 	const [busyId, setBusyId] = useState<string | null>(null);
-	const [openId, setOpenId] = useState<string | null>(null);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [dialogNotice, setDialogNotice] = useState<NoticeState>(null);
 	const activeGroups = groups.filter((group) => group.active);
+	const editingGroup = groups.find(
+		(group) => group.id === editingId && group.active,
+	);
 	const visibleGroups = includeInactive ? groups : activeGroups;
 	const weekGroups = [...activeGroups].sort((a, b) =>
 		a.startTime.localeCompare(b.startTime),
@@ -79,26 +82,20 @@ function ManageGroupsPage() {
 		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
 	}
 
-	async function save(event: FormEvent<HTMLFormElement>, group: Group) {
-		event.preventDefault();
-		const fields = readGroupFields(new FormData(event.currentTarget));
+	async function save(group: Group, input: GroupInput) {
 		setBusyId(group.id);
 		setNotice(null);
+		setDialogNotice(null);
 		try {
-			await updateMyGroupFn({
-				data: {
-					groupId: group.id,
-					input: { ...fields, number: fields.number ?? group.number },
-				},
-			});
+			await updateMyGroupFn({ data: { groupId: group.id, input } });
 			setNotice({
 				text: `Se actualizó el grupo ${group.number}.`,
 				error: false,
 			});
-			setOpenId(null);
+			setEditingId(null);
 			await reload();
 		} catch (error) {
-			setNotice({
+			setDialogNotice({
 				text: userFacingError(error, "No se pudo actualizar este grupo."),
 				error: true,
 			});
@@ -242,104 +239,51 @@ function ManageGroupsPage() {
 				)}
 				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] gap-5">
 					{visibleGroups.map((group) => (
-						<Card
-							asChild
-							className={cn(!group.active && "bg-background")}
+						<GroupCard
+							currentPeriodCode={periodCode}
+							group={group}
 							key={group.id}
 						>
-							<article>
-								<header className="flex items-start justify-between gap-3">
-									<div>
-										<CardTitle
-											as="h3"
-											className={cn(
-												"text-[21px]",
-												group.active ? "text-primary-text" : "text-off-text",
-											)}
-										>
-											{group.subjectName}
-										</CardTitle>
-										<p className="mt-0.5 text-sm text-muted-foreground">
-											{group.careerName}
-											{group.periodCode !== periodCode &&
-												` · Período ${group.periodCode}`}
-										</p>
-									</div>
-									<div className="flex flex-wrap items-center justify-end gap-2 text-[13px] font-bold">
-										<span>{groupLabel(group.number)}</span>
-										<ActiveBadge
-											active={group.active}
-											labels={["Activo", "Inactivo"]}
-										/>
-									</div>
-								</header>
-								<DescriptionList columns={2}>
-									<DescriptionItem term="Día y hora">
-										{weekdays[group.weekday]},{" "}
-										{timeRange(group.startTime, group.endTime)}
-									</DescriptionItem>
-									<DescriptionItem term="Laboratorio">
-										{group.labName}
-									</DescriptionItem>
-									<DescriptionItem term="Estudiantes">
-										{group.students}
-									</DescriptionItem>
-									<DescriptionItem term="Equipos">
-										{group.teams}
-									</DescriptionItem>
-								</DescriptionList>
-								<CardFooter className="pt-4">
-									{group.active && (
-										<Button asChild variant="outline">
-											<Link search={{ group: group.id }} to="/app/requests/new">
-												Solicitar preparación
-											</Link>
-										</Button>
-									)}
-									<Button
-										aria-expanded={openId === group.id}
-										onClick={() =>
-											setOpenId(openId === group.id ? null : group.id)
-										}
-										variant="outline"
-									>
-										{group.active ? "Editar" : "Ver detalle"}
-									</Button>
-								</CardFooter>
-								{openId === group.id && (
-									<form
-										className="grid grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] gap-3.5 border-t pt-4"
-										onSubmit={(event) => void save(event, group)}
-									>
-										<GroupFields
-											group={group}
-											idPrefix={`group-${group.id}`}
-											options={options}
-										/>
-										<div className="col-span-full flex flex-wrap gap-3">
-											<Button
-												disabled={busyId === group.id}
-												size="lg"
-												type="submit"
-											>
-												{busyId === group.id ? "Guardando…" : "Guardar cambios"}
-											</Button>
-											<Button
-												disabled={busyId === group.id}
-												onClick={() => void changeActivity(group)}
-												size="lg"
-												variant={group.active ? "destructive" : "outline"}
-											>
-												{group.active ? "Desactivar" : "Reactivar"}
-											</Button>
-										</div>
-									</form>
-								)}
-							</article>
-						</Card>
+							{group.active && (
+								<Button asChild variant="outline">
+									<Link search={{ group: group.id }} to="/app/requests/new">
+										Solicitar preparación
+									</Link>
+								</Button>
+							)}
+							{group.active && (
+								<Button
+									onClick={() => {
+										setDialogNotice(null);
+										setEditingId(group.id);
+									}}
+									variant="outline"
+								>
+									Editar
+								</Button>
+							)}
+							<Button
+								disabled={busyId === group.id}
+								onClick={() => void changeActivity(group)}
+								variant={group.active ? "destructive" : "outline"}
+							>
+								{group.active ? "Desactivar" : "Reactivar"}
+							</Button>
+						</GroupCard>
 					))}
 				</div>
 			</section>
+
+			{editingGroup && (
+				<GroupEditDialog
+					busy={busyId === editingGroup.id}
+					group={editingGroup}
+					notice={dialogNotice}
+					onClose={() => setEditingId(null)}
+					onSave={(input) => void save(editingGroup, input)}
+					options={options}
+				/>
+			)}
 		</Page>
 	);
 }
