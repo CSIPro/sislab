@@ -16,7 +16,13 @@ import {
 	wasteItems,
 } from "../components/materials.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
-import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
+import {
+	DetailPanel,
+	EmptyState,
+	Footnote,
+	Page,
+	PageHeader,
+} from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import { Field, FieldLabel } from "../components/ui/field.tsx";
@@ -287,26 +293,25 @@ function LabExercisesPage() {
 					</Footnote>
 				</section>
 
-				<Card
-					aria-labelledby="exercise-panel-title"
-					className="max-w-[460px] flex-[1_1_340px]"
-				>
-					{!draft && <ActionNotice notice={notice} />}
-					{selected ? (
-						<ExerciseDetail
-							busy={busy}
-							exercise={selected}
-							onEdit={() => open(draftFrom(selected))}
-							onRetire={() => void retire(selected)}
-						/>
-					) : (
-						<EmptyState id="exercise-panel-title">
-							{exercises.length === 0
-								? "Aún no hay prácticas. Agrega la primera con Nueva práctica."
-								: "Elige una práctica para ver sus materiales."}
-						</EmptyState>
-					)}
-				</Card>
+				<DetailPanel className="max-w-[460px] flex-[1_1_340px]">
+					<Card aria-labelledby="exercise-panel-title">
+						{!draft && <ActionNotice notice={notice} />}
+						{selected ? (
+							<ExerciseDetail
+								busy={busy}
+								exercise={selected}
+								onEdit={() => open(draftFrom(selected))}
+								onRetire={() => void retire(selected)}
+							/>
+						) : (
+							<EmptyState id="exercise-panel-title">
+								{exercises.length === 0
+									? "Aún no hay prácticas. Agrega la primera con Nueva práctica."
+									: "Elige una práctica para ver sus materiales."}
+							</EmptyState>
+						)}
+					</Card>
+				</DetailPanel>
 			</div>
 
 			{draft && (

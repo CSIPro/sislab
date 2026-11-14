@@ -9,7 +9,13 @@ import { type FormEvent, useState } from "react";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
 import { ActionNotice, type NoticeState } from "../components/notice.tsx";
-import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
+import {
+	DetailPanel,
+	EmptyState,
+	Footnote,
+	Page,
+	PageHeader,
+} from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import {
@@ -240,60 +246,59 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 					</Footnote>
 				</section>
 
-				<Card
-					aria-labelledby="catalog-panel-title"
-					className="max-w-[460px] flex-[1_1_340px]"
-				>
-					{!draft && <ActionNotice notice={notice} />}
-					{selected ? (
-						<>
-							<div className="flex items-start justify-between gap-3">
-								<div className="flex min-w-0 flex-col">
-									<span className="text-[13px] text-muted-foreground first-letter:uppercase">
-										{catalog.noun}
-									</span>
-									<CardTitle
-										className="text-primary-text [overflow-wrap:anywhere]"
-										id="catalog-panel-title"
-									>
-										{selected.name}
-									</CardTitle>
+				<DetailPanel className="max-w-[460px] flex-[1_1_340px]">
+					<Card aria-labelledby="catalog-panel-title">
+						{!draft && <ActionNotice notice={notice} />}
+						{selected ? (
+							<>
+								<div className="flex items-start justify-between gap-3">
+									<div className="flex min-w-0 flex-col">
+										<span className="text-[13px] text-muted-foreground first-letter:uppercase">
+											{catalog.noun}
+										</span>
+										<CardTitle
+											className="text-primary-text [overflow-wrap:anywhere]"
+											id="catalog-panel-title"
+										>
+											{selected.name}
+										</CardTitle>
+									</div>
+									<ActiveBadge
+										active={selected.active}
+										labels={catalog.statusLabels}
+									/>
 								</div>
-								<ActiveBadge
-									active={selected.active}
-									labels={catalog.statusLabels}
-								/>
-							</div>
-							<CardFooter>
-								<Button
-									disabled={busy}
-									onClick={() =>
-										open({
-											mode: "entry",
-											id: selected.id,
-											name: selected.name,
-										})
-									}
-									size="lg"
-								>
-									Cambiar nombre
-								</Button>
-								<Button
-									disabled={busy}
-									onClick={() => void setActive(selected, !selected.active)}
-									size="lg"
-									variant="outline"
-								>
-									{selected.active ? "Desactivar" : "Reactivar"}
-								</Button>
-							</CardFooter>
-						</>
-					) : (
-						<EmptyState id="catalog-panel-title">
-							{entries.length === 0 ? catalog.emptyText : catalog.chooseText}
-						</EmptyState>
-					)}
-				</Card>
+								<CardFooter>
+									<Button
+										disabled={busy}
+										onClick={() =>
+											open({
+												mode: "entry",
+												id: selected.id,
+												name: selected.name,
+											})
+										}
+										size="lg"
+									>
+										Cambiar nombre
+									</Button>
+									<Button
+										disabled={busy}
+										onClick={() => void setActive(selected, !selected.active)}
+										size="lg"
+										variant="outline"
+									>
+										{selected.active ? "Desactivar" : "Reactivar"}
+									</Button>
+								</CardFooter>
+							</>
+						) : (
+							<EmptyState id="catalog-panel-title">
+								{entries.length === 0 ? catalog.emptyText : catalog.chooseText}
+							</EmptyState>
+						)}
+					</Card>
+				</DetailPanel>
 			</div>
 
 			{draft && (

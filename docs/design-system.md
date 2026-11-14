@@ -38,7 +38,7 @@ SISLAB (Sistema de Laboratorios) is CSI PRO's system for teaching laboratories a
 
 - **12px radius is the signature** (`radius-lg`). Use it for buttons, inputs, accordions and menus, and set shadcn `--radius: 12px`. Use `radius-md` (8px) for nested panels, `radius-xl` (16px) for a table container's top corners, `radius-2xl` (32px) for the centred auth card, and `radius-sm` (4px) for chips.
 - A short form sits in a column at most 600px wide (legacy `theme.maxWidth`).
-- A page that lists items (catalogs, períodos, prácticas, usuarios) puts the table beside a card with the selected item's data. The card never turns into a form. Adding or editing opens a `FormDialog`, and an action that needs no input, such as Desactivar, stays on the card.
+- A page that lists items (catalogs, períodos, prácticas, usuarios) puts the table beside a card with the selected item's data. The card never turns into a form. Adding or editing opens a `FormDialog`, and an action that needs no input, such as Desactivar, stays on the card. Wrap the card in `DetailPanel` (`components/page.tsx`), which keeps it at the top of the window from `xl` up while the table scrolls.
 - A long form on its own page, such as Registrar grupo, lays its fields out in a two-column grid from `md` up.
 - Accordions are outlined (1px `border`, 12px radius) with no shadow. Elevation is light, and borders do most of the separating.
 - Focus: a 2px solid `ring` outline, offset 2px.
