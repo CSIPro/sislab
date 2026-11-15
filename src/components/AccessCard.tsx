@@ -17,7 +17,7 @@ import { signInFn } from "../server/auth-functions.ts";
 type AccessMode = "in" | "up";
 
 const tabTrigger =
-	"min-h-11 flex-1 cursor-pointer rounded-[10px] border-0 text-[15px] font-medium text-muted-foreground after:hidden data-[state=active]:bg-card data-[state=active]:font-bold data-[state=active]:text-foreground data-[state=active]:shadow-[0_1px_2px_rgb(0_0_0/12%)]";
+	"min-h-11 flex-1 cursor-pointer rounded-[10px] border-0 text-[15px] font-medium text-muted-foreground after:hidden data-active:bg-card data-active:font-bold data-active:text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/12%)]";
 const note = "text-[13.5px] text-muted-foreground";
 
 export default function AccessCard({

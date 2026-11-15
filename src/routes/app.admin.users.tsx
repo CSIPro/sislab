@@ -88,7 +88,7 @@ export const Route = createFileRoute("/app/admin/users")({
 });
 
 const sectionTab =
-	"h-12 flex-none gap-2.5 px-[18px] text-base text-muted-foreground after:bg-primary data-[state=active]:font-bold group-data-[orientation=horizontal]/tabs:after:-bottom-px group-data-[orientation=horizontal]/tabs:after:h-[3px] max-md:px-3";
+	"h-12 flex-none gap-2.5 px-[18px] text-base text-muted-foreground after:bg-primary data-active:font-bold group-data-[orientation=horizontal]/tabs:after:-bottom-px group-data-[orientation=horizontal]/tabs:after:h-[3px] max-md:px-3";
 
 function UsersPage() {
 	// Read the loader's lists directly, so a change in one tab shows in the other after the reload.
