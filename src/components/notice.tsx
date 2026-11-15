@@ -11,7 +11,7 @@ const tones = {
 	error: "destructive",
 } as const;
 
-/** A message about what just happened. Errors interrupt screen readers; the rest wait their turn. */
+/** A message about the current state, a check made before submitting, or a failed action. Errors interrupt screen readers; the rest wait their turn. A successful action is a toast, not a Notice. */
 export function Notice({
 	tone = "success",
 	icon: Icon,
