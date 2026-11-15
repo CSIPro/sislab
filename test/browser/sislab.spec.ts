@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import ExcelJS from 'exceljs'
 import { unzipSync } from 'fflate'
 import { readFileSync } from 'node:fs'
@@ -28,6 +28,9 @@ let pendingPassword = ''
 let pool: Pool
 
 test.describe.configure({ mode: 'serial' })
+
+// Toasts are Sonner list items at the bottom right of the page.
+const toastNamed = (page: Page, text: string | RegExp) => page.locator('[data-sonner-toast]').filter({ hasText: text })
 
 test.beforeAll(async () => {
 	const connectionString = process.env.DATABASE_URL_TEST
@@ -174,9 +177,24 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await setTime(page, 'Hora de inicio', '09:00')
 	await expectTime(page, 'Hora de finalización', '11:00')
 	await setTime(page, 'Hora de inicio', '10:00')
+	// A failed registration shows an error toast and an inline alert, and keeps the input.
+	await page.route('**/_serverFn/**', (route) => route.abort(), { times: 1 })
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
-	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el período ${periodCode}`))).toBeVisible()
-	await page.goto(`${base}/app/dashboard`)
+	await expect(toastNamed(page, 'No se pudo registrar el grupo. Inténtalo de nuevo.')).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]').filter({ hasText: 'No se pudo registrar el grupo.' })).toBeVisible()
+	await expect(page.getByLabel('Estudiantes')).toHaveValue('20')
+	// Toasts follow the theme toggle, which flips the `dark` class on the root element.
+	const toaster = page.locator('[data-sonner-toaster]')
+	await expect(toaster).toHaveAttribute('data-sonner-theme', 'light')
+	await page.evaluate(() => document.documentElement.classList.add('dark'))
+	await expect(toaster).toHaveAttribute('data-sonner-theme', 'dark')
+	await page.evaluate(() => document.documentElement.classList.remove('dark'))
+	await page.getByRole('button', { name: 'Registrar grupo' }).click()
+	const registered = toastNamed(page, new RegExp(`El grupo 1 se registró en el período ${periodCode}`))
+	await expect(registered).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+	await registered.getByRole('button', { name: 'Volver al tablero' }).click()
+	await expect(page).toHaveURL(new RegExp(`${base}/app/dashboard`))
 	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
 	await expect(page.getByText('Martes, 10:00–11:00')).toBeVisible()
 
