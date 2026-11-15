@@ -17,7 +17,8 @@ Leftover scan: `grep -n "radix-ui\|@radix-ui" src/components/ui/toggle-group.tsx
 
 ## Behavior changes
 
-None found.
+- Radix rendered the items of a single-select group as `role="radio"` with `aria-checked`, inside a `radiogroup`. Base UI renders them as buttons with `aria-pressed` inside a `group`. Screen readers now announce "toggle button, pressed" where they said "radio button, checked". Not patched.
+- `test/browser/sislab.spec.ts:186` and `:230` looked the filter items up as radios; they now use `getByRole('button', ...)` and check `aria-pressed`.
 
 ## Verify by hand
 

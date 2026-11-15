@@ -14,7 +14,7 @@ Leftover scan: `grep -n "radix-ui\|@radix-ui" src/components/ui/avatar.tsx` is c
 
 ## Behavior changes
 
-- The Base UI Root renders a `<span>` where radix rendered a `<span>` too; no change. Nothing else.
+None found.
 
 ## Verify by hand
 

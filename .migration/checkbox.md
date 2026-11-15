@@ -17,6 +17,8 @@ Leftover scan: `grep -n "radix-ui\|@radix-ui" src/components/ui/checkbox.tsx` is
 
 - `onCheckedChange` now receives `(checked: boolean, eventDetails)`. Existing handlers ignore the second argument.
 
+- Base UI renders a hidden `<input type="checkbox" aria-hidden="true">` next to the visible `<span role="checkbox">`. Both sit inside the wrapping `<label>`, so Playwright's `getByLabel` matched two elements. `test/browser/sislab.spec.ts:465` now uses `getByRole('checkbox', { name })`. Screen readers only see the span, which Base UI names from the label through `aria-labelledby`.
+
 ## Verify by hand
 
 - Admin > Usuarios: tick "Verifiqué su identidad" and the role boxes; the green fill and check mark appear, and disabled boxes look dimmed.
