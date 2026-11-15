@@ -1,10 +1,12 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 import { GroupFields, readGroupFields } from "../components/group-fields.tsx";
-import { Notice } from "../components/notice.tsx";
+import { ActionNotice, Notice } from "../components/notice.tsx";
 import { Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card } from "../components/ui/card.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
@@ -25,10 +27,8 @@ export const Route = createFileRoute("/app/groups/new")({
 
 function NewGroupPage() {
 	const options = Route.useLoaderData();
-	const [notice, setNotice] = useState<{
-		text: string;
-		error: boolean;
-	} | null>(null);
+	const navigate = useNavigate();
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 	const [formKey, setFormKey] = useState(0);
 	const ready =
@@ -41,23 +41,26 @@ function NewGroupPage() {
 		event.preventDefault();
 		const data = readGroupFields(new FormData(event.currentTarget));
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			const group = await registerProfessorGroupFn({ data });
-			setNotice({
-				text: `El grupo ${group.number} se registró en el período ${group.periodCode}.`,
-				error: false,
-			});
+			toast.success(
+				`El grupo ${group.number} se registró en el período ${group.periodCode}.`,
+				{
+					action: {
+						label: "Volver al tablero",
+						onClick: () => void navigate({ to: "/app/dashboard" }),
+					},
+				},
+			);
 			// A new key remounts the form, which also clears the pickers.
 			setFormKey((key) => key + 1);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(
-					error,
-					"No se pudo registrar el grupo. Inténtalo de nuevo.",
-				),
-				error: true,
-			});
+			const text = userFacingError(
+				error,
+				"No se pudo registrar el grupo. Inténtalo de nuevo.",
+			);
+			fail(text);
 		} finally {
 			setBusy(false);
 		}
@@ -99,19 +102,7 @@ function NewGroupPage() {
 				</Card>
 			)}
 
-			{notice && (
-				<Notice tone={notice.error ? "error" : "success"}>
-					{notice.text}
-					{!notice.error && (
-						<>
-							{" "}
-							<Link className="font-bold" to="/app/dashboard">
-								Volver al tablero
-							</Link>
-						</>
-					)}
-				</Notice>
-			)}
+			<ActionNotice failure={failure} />
 		</Page>
 	);
 }

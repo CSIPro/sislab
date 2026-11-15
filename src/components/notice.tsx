@@ -2,8 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Alert, AlertDescription } from "#/components/ui/alert.tsx";
 
-/** What a screen keeps in state after an action: the message and whether it failed. */
-export type NoticeState = { text: string; error: boolean } | null;
+/** What a screen keeps in state after a failed action: the message, or null. A success is a toast and never sits in state. */
+export type FailureState = string | null;
 
 const tones = {
 	success: "default",
@@ -11,7 +11,7 @@ const tones = {
 	error: "destructive",
 } as const;
 
-/** A message about what just happened. Errors interrupt screen readers; the rest wait their turn. */
+/** A message about the current state, a check made before submitting, or a failed action. Errors interrupt screen readers; the rest wait their turn. A successful action is a toast, not a Notice. */
 export function Notice({
 	tone = "success",
 	icon: Icon,
@@ -33,10 +33,8 @@ export function Notice({
 	);
 }
 
-/** Renders the notice a screen holds in state, or nothing. */
-export function ActionNotice({ notice }: { notice: NoticeState }) {
-	if (!notice) return null;
-	return (
-		<Notice tone={notice.error ? "error" : "success"}>{notice.text}</Notice>
-	);
+/** Renders the failure a screen holds in state, or nothing. */
+export function ActionNotice({ failure }: { failure: FailureState }) {
+	if (!failure) return null;
+	return <Notice tone="error">{failure}</Notice>;
 }

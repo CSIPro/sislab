@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
 import {
@@ -15,7 +16,7 @@ import {
 	wasteDrafts,
 	wasteItems,
 } from "../components/materials.tsx";
-import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { ActionNotice } from "../components/notice.tsx";
 import {
 	DetailPanel,
 	EmptyState,
@@ -41,6 +42,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
@@ -107,7 +109,7 @@ function LabExercisesPage() {
 	/** The lab exercise open in the form dialog. */
 	const [draft, setDraft] = useState<ExerciseDraft | null>(null);
 	const [filter, setFilter] = useState("");
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 
 	const query = searchable(filter.trim());
@@ -125,19 +127,19 @@ function LabExercisesPage() {
 
 	function open(next: ExerciseDraft | null) {
 		setDraft(next);
-		setNotice(null);
+		clear();
 	}
 
 	function select(exerciseId: string) {
 		setSelectedId(exerciseId);
-		setNotice(null);
+		clear();
 	}
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (!draft) return;
 		setBusy(true);
-		setNotice(null);
+		clear();
 		const input = {
 			number: draft.number,
 			name: draft.name,
@@ -154,17 +156,13 @@ function LabExercisesPage() {
 			setExercises(await listLabExercisesFn());
 			setSelectedId(saved.id);
 			setDraft(null);
-			setNotice({
-				text: draft.id
+			toast.success(
+				draft.id
 					? "Se actualizó la práctica. Las solicitudes anteriores conservan sus materiales."
 					: "Se creó la práctica.",
-				error: false,
-			});
+			);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo guardar la práctica."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo guardar la práctica."));
 		} finally {
 			setBusy(false);
 		}
@@ -178,19 +176,15 @@ function LabExercisesPage() {
 		)
 			return;
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			await retireLabExerciseFn({ data: { id: exercise.id } });
 			setExercises(await listLabExercisesFn());
-			setNotice({
-				text: "Se desactivó la práctica. Las solicitudes anteriores conservan sus materiales.",
-				error: false,
-			});
+			toast.success(
+				"Se desactivó la práctica. Las solicitudes anteriores conservan sus materiales.",
+			);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo desactivar la práctica."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo desactivar la práctica."));
 		} finally {
 			setBusy(false);
 		}
@@ -295,7 +289,7 @@ function LabExercisesPage() {
 
 				<DetailPanel className="max-w-[460px] flex-[1_1_340px]">
 					<Card aria-labelledby="exercise-panel-title">
-						{!draft && <ActionNotice notice={notice} />}
+						{!draft && <ActionNotice failure={failure} />}
 						{selected ? (
 							<ExerciseDetail
 								busy={busy}
@@ -318,7 +312,7 @@ function LabExercisesPage() {
 				<FormDialog
 					busy={busy}
 					className="sm:max-w-4xl"
-					notice={notice}
+					failure={failure}
 					onClose={() => open(null)}
 					onSubmit={save}
 					submitLabel={draft.id ? "Guardar cambios" : "Crear práctica"}

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import ExcelJS from 'exceljs'
 import { unzipSync } from 'fflate'
 import { readFileSync } from 'node:fs'
@@ -28,6 +28,9 @@ let pendingPassword = ''
 let pool: Pool
 
 test.describe.configure({ mode: 'serial' })
+
+// Toasts are Sonner list items at the bottom right of the page.
+const toastNamed = (page: Page, text: string | RegExp) => page.locator('[data-sonner-toast]').filter({ hasText: text })
 
 test.beforeAll(async () => {
 	const connectionString = process.env.DATABASE_URL_TEST
@@ -110,6 +113,7 @@ test('guest landing, access request, and protected-route redirect work in Spanis
 })
 
 test('professor signs in, sees only permitted destinations, opens the mobile menu, and registers a group', async ({ page }) => {
+	test.setTimeout(60_000)
 	await signIn(page, professor.email)
 	await expect(page.getByRole('heading', { name: 'Tablero' })).toBeVisible()
 	await expect(page.getByText(`Hola, ${professor.name}.`)).toBeVisible()
@@ -174,9 +178,24 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await setTime(page, 'Hora de inicio', '09:00')
 	await expectTime(page, 'Hora de finalización', '11:00')
 	await setTime(page, 'Hora de inicio', '10:00')
+	// A failed registration shows an error toast and an inline alert, and keeps the input.
+	await page.route('**/_serverFn/**', (route) => route.abort(), { times: 1 })
 	await page.getByRole('button', { name: 'Registrar grupo' }).click()
-	await expect(page.getByText(new RegExp(`El grupo 1 se registró en el período ${periodCode}`))).toBeVisible()
-	await page.goto(`${base}/app/dashboard`)
+	await expect(toastNamed(page, 'No se pudo registrar el grupo. Inténtalo de nuevo.')).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]').filter({ hasText: 'No se pudo registrar el grupo.' })).toBeVisible()
+	await expect(page.getByLabel('Estudiantes')).toHaveValue('20')
+	// Toasts follow the theme toggle, which flips the `dark` class on the root element.
+	const toaster = page.locator('[data-sonner-toaster]')
+	await expect(toaster).toHaveAttribute('data-sonner-theme', 'light')
+	await page.evaluate(() => document.documentElement.classList.add('dark'))
+	await expect(toaster).toHaveAttribute('data-sonner-theme', 'dark')
+	await page.evaluate(() => document.documentElement.classList.remove('dark'))
+	await page.getByRole('button', { name: 'Registrar grupo' }).click()
+	const registered = toastNamed(page, new RegExp(`El grupo 1 se registró en el período ${periodCode}`))
+	await expect(registered).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+	await registered.getByRole('button', { name: 'Volver al tablero' }).click()
+	await expect(page).toHaveURL(new RegExp(`${base}/app/dashboard`))
 	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
 	await expect(page.getByText('Martes, 10:00–11:00')).toBeVisible()
 
@@ -207,7 +226,8 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await editDialog.getByLabel('Estudiantes').fill('25')
 	await editDialog.getByRole('button', { name: 'Guardar cambios' }).click()
 	await expect(editDialog).toHaveCount(0)
-	await expect(page.getByRole('status')).toContainText('Se actualizó el grupo 1.')
+	await expect(toastNamed(page, 'Se actualizó el grupo 1.')).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
 	await expect(groupCard).toContainText(/Estudiantes\s*25/)
 	await expect(groupCard.getByRole('button', { name: 'Desactivar' })).toBeVisible()
 	await groupCard.getByRole('link', { name: 'Solicitar preparación' }).click()
@@ -271,6 +291,36 @@ test('staff sees the days with requests marked in the date picker', async ({ pag
 	}
 })
 
+test('professor submits a request and sees the confirmation on Mis solicitudes', async ({ page }) => {
+	const exerciseName = `Enviar Exercise ${suffix}`
+	const exercise = await pool.query(
+		'INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id',
+		['1', exerciseName, { reagents: [], equipment: [], waste: [] }],
+	)
+	const exerciseId = exercise.rows[0].id as string
+	try {
+		await signIn(page, professor.email)
+		await page.goto(`${base}/app/requests/new`)
+		await page.waitForLoadState('networkidle')
+		await page.getByRole('button', { name: 'Enviar solicitud' }).click()
+		await expect(page.locator('[data-slot="alert"]').filter({ hasText: 'Elige un grupo, una fecha y una práctica para continuar.' })).toBeVisible()
+		await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
+
+		await page.getByRole('radio', { name: /Grupo 01/ }).click()
+		await page.getByRole('group', { name: 'Fechas disponibles' }).getByRole('button').first().click()
+		const lateReason = page.getByLabel('Motivo del aviso corto')
+		if (await lateReason.isVisible()) await lateReason.fill('Prueba de navegador')
+		await pick(page, 'Práctica de laboratorio', exerciseName)
+		await page.getByRole('button', { name: 'Enviar solicitud' }).click()
+		await expect(page).toHaveURL(/\/app\/requests\/mine$/)
+		await expect(toastNamed(page, 'Solicitud enviada.')).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]').filter({ hasText: 'Solicitud enviada.' })).toHaveCount(0)
+	} finally {
+		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
+})
+
 test('staff voids a request through a dialog that asks for the reason', async ({ page }) => {
 	const group = await pool.query(
 		'SELECT g.id, g.professor_id, g.lab_id, g.lab_name FROM groups g JOIN users u ON u.id = g.professor_id WHERE u.email = $1',
@@ -321,6 +371,8 @@ test('staff voids a request through a dialog that asks for the reason', async ({
 		)
 		await submit.click()
 		await expect(dialog.getByRole('alert')).toBeVisible()
+		const failure = (await dialog.getByRole('alert').innerText()).trim()
+		await expect(page.locator('[data-sonner-toast][data-type="error"]').filter({ hasText: failure })).toBeVisible()
 		await expect(dialog.getByLabel('Motivo de la anulación')).toHaveValue('Se registró por error')
 
 		await pool.query(
@@ -380,6 +432,11 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await page.getByRole('button', { name: 'Descargar Excel (XLSX)' }).click()
 		const download = await downloadPromise
 		expect(download.suggestedFilename()).toBe(`sislab-reporte-${currentCode}.xlsx`)
+		// One toast follows the export from loading to result, and a success closes by itself.
+		const excelToast = toastNamed(page, 'Excel descargado.')
+		await expect(excelToast).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+		await expect(excelToast).toHaveCount(0, { timeout: 8000 })
 		const workbook = new ExcelJS.Workbook()
 		await workbook.xlsx.readFile(await download.path())
 		const sheet = workbook.getWorksheet(currentCode)
@@ -390,6 +447,9 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await page.getByRole('button', { name: 'Descargar tickets (ZIP)' }).click()
 		const archive = await archivePromise
 		expect(archive.suggestedFilename()).toBe(`sislab-tickets-${currentCode}.zip`)
+		await expect(toastNamed(page, 'Tickets descargados.')).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+		await expect(page.locator('[data-sonner-toast][data-type="loading"]')).toHaveCount(0)
 		const files = unzipSync(new Uint8Array(readFileSync(await archive.path())))
 		const pdfPath = `${currentCode}/sislab-${sislabToday()}.pdf`
 		expect(Object.keys(files)).toContain(pdfPath)
@@ -464,7 +524,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await expect(request.getByRole('button', { name: 'Activar cuenta' })).toBeDisabled()
 	await request.getByLabel('Verifiqué su identidad fuera de SISLAB').check()
 	await request.getByRole('button', { name: 'Activar cuenta' }).click()
-	await expect(page.getByRole('status')).toContainText('ya puede ingresar a SISLAB')
+	await expect(toastNamed(page, 'ya puede ingresar a SISLAB')).toBeVisible()
 	await expect(request).toHaveCount(0)
 	if (pendingBefore === 1) await expect(pendingBadge).toHaveCount(0)
 	else await expect(pendingBadge).toHaveText(new RegExp(`^${pendingBefore - 1}\\D`))
@@ -478,6 +538,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 })
 
 test('admin edits a professor group and manages periods and catalogs', async ({ page }) => {
+	test.setTimeout(60_000)
 	await signIn(page, admin.email)
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Grupos', exact: true })).toHaveCount(0)
 	await page.goto(`${base}/app/admin/groups`)
@@ -492,7 +553,8 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await editGroupDialog.getByLabel('Estudiantes').fill('21')
 	await editGroupDialog.getByRole('button', { name: 'Guardar cambios' }).click()
 	await expect(editGroupDialog).toHaveCount(0)
-	await expect(page.getByRole('status')).toContainText('Se actualizó el grupo 1 de Browser.')
+	await expect(toastNamed(page, 'Se actualizó el grupo 1 de Browser.')).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
 	await expect(group).toContainText(/Estudiantes\s*21/)
 
 	await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Períodos', exact: true }).click()
@@ -503,7 +565,8 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await periodDialog.getByLabel('Código').fill(createdPeriodCode)
 	await periodDialog.getByRole('button', { name: 'Agregar período', exact: true }).click()
 	await expect(periodDialog).toHaveCount(0)
-	await expect(page.getByRole('status')).toContainText(`Se guardó el período ${createdPeriodCode}`)
+	await expect(toastNamed(page, `Se guardó el período ${createdPeriodCode}`)).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
 	await expect(page.getByRole('cell', { name: createdPeriodCode, exact: true })).toBeVisible()
 	const periodCard = page.getByRole('region', { name: createdPeriodCode })
 	await expect(periodCard).toContainText('Sin fecha')
@@ -516,7 +579,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await page.getByRole('button', { name: 'Agregar período', exact: true }).click()
 	await periodDialog.getByLabel('Código').fill(summerPeriodCode.toLowerCase())
 	await periodDialog.getByRole('button', { name: 'Agregar período', exact: true }).click()
-	await expect(page.getByRole('status')).toContainText(`Se guardó el período ${summerPeriodCode}`)
+	await expect(toastNamed(page, `Se guardó el período ${summerPeriodCode}`)).toBeVisible()
 	const summerCard = page.getByRole('region', { name: summerPeriodCode })
 	for (const [startsIn, endsIn, status] of [[-2, 2, 'Actual'], [-9, -5, 'Concluido'], [5, 9, 'Próximo']] as const) {
 		await pool.query('UPDATE periods SET starts_on = CURRENT_DATE + $2::int, ends_on = CURRENT_DATE + $3::int WHERE code = $1', [summerPeriodCode, startsIn, endsIn])
@@ -542,7 +605,8 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await labDialog.getByLabel('Nombre').fill(addedCatalogName)
 	await labDialog.getByRole('button', { name: 'Crear laboratorio' }).click()
 	await expect(labDialog).toHaveCount(0)
-	await expect(page.getByRole('status')).toContainText(`Se agregó “${addedCatalogName}” a laboratorios`)
+	await expect(toastNamed(page, `Se agregó “${addedCatalogName}” a laboratorios`)).toBeVisible()
+	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
 	const addedLab = page.getByRole('row').filter({ hasText: addedCatalogName })
 	await expect(addedLab).toContainText('Activo')
 	const labCard = page.getByRole('region', { name: addedCatalogName })
@@ -577,7 +641,12 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(rolesDialog.getByRole('checkbox', { name: 'Docente' })).toBeChecked()
 	await rolesDialog.getByRole('button', { name: 'Cancelar' }).click()
 	await userCard.getByRole('button', { name: 'Restablecer contraseña' }).click()
-	await expect(page.getByRole('dialog', { name: 'Restablecer contraseña' }).getByLabel('Contraseña nueva')).toBeVisible()
+	const passwordDialog = page.getByRole('dialog', { name: 'Restablecer contraseña' })
+	await expect(passwordDialog.getByLabel('Contraseña nueva')).toBeVisible()
+	await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+	await passwordDialog.getByRole('button', { name: 'Generar contraseña y copiarla' }).click()
+	await expect(toastNamed(page, 'Contraseña generada y copiada.')).toBeVisible()
+	await expect(passwordDialog.locator('[data-slot="alert"]')).toHaveCount(0)
 })
 
 /** Opens a Combobox or Select by its label and picks one option. */

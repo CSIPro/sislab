@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Minus, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { toast } from "sonner";
+import { ActionNotice } from "../components/notice.tsx";
 import { Footnote, Page, PageHeader } from "../components/page.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -12,6 +13,7 @@ import {
 	FieldLabel,
 } from "../components/ui/field.tsx";
 import { Input } from "../components/ui/input.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	addDays,
 	formatSessionDate,
@@ -45,27 +47,21 @@ export const Route = createFileRoute("/app/admin/settings")({
 function SettingsPage() {
 	const { minNoticeDays, today } = Route.useLoaderData();
 	const [days, setDays] = useState(minNoticeDays);
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			const saved = await saveMinimumNoticeDaysFn({
 				data: { minNoticeDays: days },
 			});
 			setDays(saved);
-			setNotice({
-				text: `El aviso mínimo quedó en ${dayCount(saved)}.`,
-				error: false,
-			});
+			toast.success(`El aviso mínimo quedó en ${dayCount(saved)}.`);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo guardar el aviso mínimo."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo guardar el aviso mínimo."));
 		} finally {
 			setBusy(false);
 		}
@@ -177,7 +173,7 @@ function SettingsPage() {
 						</div>
 					</div>
 
-					<ActionNotice notice={notice} />
+					<ActionNotice failure={failure} />
 
 					<CardFooter className="pt-6">
 						<Button disabled={busy} size="lg" type="submit">

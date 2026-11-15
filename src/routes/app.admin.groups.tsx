@@ -1,17 +1,19 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { GroupCard } from "../components/group-card.tsx";
 import {
 	GroupEditDialog,
 	type GroupInput,
 } from "../components/group-edit-dialog.tsx";
-import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { ActionNotice } from "../components/notice.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "../components/ui/toggle-group.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import {
 	deactivateAnyGroupFn,
@@ -43,10 +45,10 @@ function AdminGroupsPage() {
 	const { periodCode } = Route.useRouteContext();
 	const [groups, setGroups] = useState(initialGroups);
 	const [includeInactive, setIncludeInactive] = useState(true);
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const pageFailure = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [editingId, setEditingId] = useState<string | null>(null);
-	const [dialogNotice, setDialogNotice] = useState<NoticeState>(null);
+	const dialogFailure = useActionFailure();
 	const editing = groups.find(
 		({ group }) => group.id === editingId && group.active,
 	);
@@ -60,21 +62,19 @@ function AdminGroupsPage() {
 
 	async function save({ group, professor }: AdminGroup, input: GroupInput) {
 		setBusyId(group.id);
-		setNotice(null);
-		setDialogNotice(null);
+		pageFailure.clear();
+		dialogFailure.clear();
 		try {
 			await updateAnyGroupFn({ data: { groupId: group.id, input } });
-			setNotice({
-				text: `Se actualizó el grupo ${group.number} de ${professor.name}.`,
-				error: false,
-			});
+			toast.success(
+				`Se actualizó el grupo ${group.number} de ${professor.name}.`,
+			);
 			setEditingId(null);
 			await showGroups(includeInactive);
 		} catch (error) {
-			setDialogNotice({
-				text: userFacingError(error, "No se pudo actualizar este grupo."),
-				error: true,
-			});
+			dialogFailure.fail(
+				userFacingError(error, "No se pudo actualizar este grupo."),
+			);
 		} finally {
 			setBusyId(null);
 		}
@@ -82,16 +82,15 @@ function AdminGroupsPage() {
 
 	async function changeActivity(groupId: string, active: boolean) {
 		setBusyId(groupId);
-		setNotice(null);
+		pageFailure.clear();
 		try {
 			if (active) await deactivateAnyGroupFn({ data: { groupId } });
 			else await reactivateAnyGroupFn({ data: { groupId } });
 			await showGroups(includeInactive);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo cambiar este grupo."),
-				error: true,
-			});
+			pageFailure.fail(
+				userFacingError(error, "No se pudo cambiar este grupo."),
+			);
 		} finally {
 			setBusyId(null);
 		}
@@ -117,7 +116,7 @@ function AdminGroupsPage() {
 				<ToggleGroupItem value="all">Incluir grupos inactivos</ToggleGroupItem>
 			</ToggleGroup>
 
-			<ActionNotice notice={notice} />
+			<ActionNotice failure={pageFailure.failure} />
 
 			{groups.length === 0 && (
 				<EmptyState>No hay grupos para mostrar.</EmptyState>
@@ -133,7 +132,7 @@ function AdminGroupsPage() {
 						{group.active && (
 							<Button
 								onClick={() => {
-									setDialogNotice(null);
+									dialogFailure.clear();
 									setEditingId(group.id);
 								}}
 								variant="outline"
@@ -156,8 +155,11 @@ function AdminGroupsPage() {
 				<GroupEditDialog
 					busy={busyId === editing.group.id}
 					group={editing.group}
-					notice={dialogNotice}
-					onClose={() => setEditingId(null)}
+					failure={dialogFailure.failure}
+					onClose={() => {
+						dialogFailure.clear();
+						setEditingId(null);
+					}}
 					onSave={(input) => void save(editing, input)}
 					options={options}
 				/>
