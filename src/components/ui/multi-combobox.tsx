@@ -57,25 +57,24 @@ function MultiCombobox({
 }) {
 	return (
 		<Popover>
-			<PopoverTrigger asChild>
-				<PickerTrigger
-					data-placeholder={values.length === 0 ? "" : undefined}
-					data-slot="combobox-trigger"
-					role="combobox"
-					{...props}
-				>
-					<span className="truncate">
-						{summary(options, values, placeholder)}
-					</span>
-					<ChevronsUpDownIcon
-						aria-hidden="true"
-						className="size-4 opacity-50"
+			<PopoverTrigger
+				render={
+					<PickerTrigger
+						data-placeholder={values.length === 0 ? "" : undefined}
+						data-slot="combobox-trigger"
+						role="combobox"
+						{...props}
 					/>
-				</PickerTrigger>
+				}
+			>
+				<span className="truncate">
+					{summary(options, values, placeholder)}
+				</span>
+				<ChevronsUpDownIcon aria-hidden="true" className="size-4 opacity-50" />
 			</PopoverTrigger>
 			<PopoverContent
 				align="start"
-				className="w-(--radix-popover-trigger-width) min-w-56 rounded-lg p-0"
+				className="w-(--anchor-width) min-w-56 rounded-lg p-0"
 			>
 				<Command
 					filter={(_value, query, keywords) =>
