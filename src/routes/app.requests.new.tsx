@@ -209,7 +209,7 @@ function NewPreparationRequestPage() {
 						>
 							{groups.map((group) => (
 								<Label
-									className="cursor-pointer gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-[0_0_0_1px_var(--primary)]"
+									className="cursor-pointer gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-data-checked:border-primary has-data-checked:bg-accent has-data-checked:shadow-[0_0_0_1px_var(--primary)]"
 									key={group.id}
 								>
 									<RadioGroupItem value={group.id} />
