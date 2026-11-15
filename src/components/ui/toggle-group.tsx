@@ -1,5 +1,6 @@
+import { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
+import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
 import type { VariantProps } from "class-variance-authority";
-import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
 import * as React from "react";
 import { toggleVariants } from "#/components/ui/toggle.tsx";
 import { cn } from "#/lib/utils.ts";
@@ -21,12 +22,12 @@ function ToggleGroup({
 	spacing = 0,
 	children,
 	...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
+}: ToggleGroupPrimitive.Props &
 	VariantProps<typeof toggleVariants> & {
 		spacing?: number;
 	}) {
 	return (
-		<ToggleGroupPrimitive.Root
+		<ToggleGroupPrimitive
 			data-slot="toggle-group"
 			data-variant={variant}
 			data-size={size}
@@ -41,7 +42,7 @@ function ToggleGroup({
 			<ToggleGroupContext.Provider value={{ variant, size, spacing }}>
 				{children}
 			</ToggleGroupContext.Provider>
-		</ToggleGroupPrimitive.Root>
+		</ToggleGroupPrimitive>
 	);
 }
 
@@ -51,12 +52,11 @@ function ToggleGroupItem({
 	variant,
 	size,
 	...props
-}: React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
-	VariantProps<typeof toggleVariants>) {
+}: TogglePrimitive.Props & VariantProps<typeof toggleVariants>) {
 	const context = React.useContext(ToggleGroupContext);
 
 	return (
-		<ToggleGroupPrimitive.Item
+		<TogglePrimitive
 			data-slot="toggle-group-item"
 			data-variant={context.variant || variant}
 			data-size={context.size || size}
@@ -67,13 +67,13 @@ function ToggleGroupItem({
 					size: context.size || size,
 				}),
 				"w-auto shrink-0 focus:z-10 focus-visible:z-10",
-				"data-[spacing=0]:-ml-px data-[spacing=0]:rounded-none data-[spacing=0]:first:ml-0 data-[spacing=0]:first:rounded-l-lg data-[spacing=0]:last:rounded-r-lg data-[spacing=0]:data-[state=on]:z-10",
+				"data-[spacing=0]:-ml-px data-[spacing=0]:rounded-none data-[spacing=0]:first:ml-0 data-[spacing=0]:first:rounded-l-lg data-[spacing=0]:last:rounded-r-lg data-[spacing=0]:data-pressed:z-10",
 				className,
 			)}
 			{...props}
 		>
 			{children}
-		</ToggleGroupPrimitive.Item>
+		</TogglePrimitive>
 	);
 }
 

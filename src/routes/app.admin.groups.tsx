@@ -106,11 +106,10 @@ function AdminGroupsPage() {
 
 			<ToggleGroup
 				aria-label="Filtrar grupos"
-				onValueChange={(value) => {
+				onValueChange={([value]) => {
 					if (value) void showGroups(value === "all");
 				}}
-				type="single"
-				value={includeInactive ? "all" : "active"}
+				value={[includeInactive ? "all" : "active"]}
 				variant="outline"
 			>
 				<ToggleGroupItem value="active">Grupos activos</ToggleGroupItem>

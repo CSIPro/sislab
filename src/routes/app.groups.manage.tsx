@@ -211,11 +211,10 @@ function ManageGroupsPage() {
 					</h2>
 					<ToggleGroup
 						aria-label="Filtrar por estado"
-						onValueChange={(value) => {
+						onValueChange={([value]) => {
 							if (value) setIncludeInactive(value === "all");
 						}}
-						type="single"
-						value={includeInactive ? "all" : "active"}
+						value={[includeInactive ? "all" : "active"]}
 						variant="outline"
 					>
 						<ToggleGroupItem value="active">
