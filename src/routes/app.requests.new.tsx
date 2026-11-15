@@ -27,7 +27,7 @@ import {
 import { Notice } from "../components/notice.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import { Badge } from "../components/ui/badge.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import { Checkbox } from "../components/ui/checkbox.tsx";
 import { Combobox } from "../components/ui/combobox.tsx";
@@ -420,9 +420,12 @@ function NewPreparationRequestPage() {
 							<Button disabled={busy} size="lg" type="submit">
 								{busy ? "Enviando…" : "Enviar solicitud"}
 							</Button>
-							<Button asChild size="lg" variant="outline">
-								<Link to="/app/dashboard">Cancelar</Link>
-							</Button>
+							<Link
+								to="/app/dashboard"
+								className={buttonVariants({ variant: "outline", size: "lg" })}
+							>
+								Cancelar
+							</Link>
 						</div>
 					</form>
 				</Card>

@@ -8,7 +8,7 @@ import {
 	UsersRound,
 } from "lucide-react";
 import AccessCard from "../components/AccessCard.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import { withBase } from "../lib/base-path.ts";
 import { cn } from "../lib/utils.ts";
@@ -249,17 +249,20 @@ function LandingPage() {
 								</div>
 								<div className="mt-1 flex flex-wrap justify-center gap-2.5">
 									{links.map(({ icon: Icon, label, href }) => (
-										<Button asChild key={label} size="sm" variant="outline">
-											<a
-												aria-label={`${label} de ${name}`}
-												href={href}
-												rel="noopener noreferrer"
-												target="_blank"
-											>
-												<Icon aria-hidden="true" size={18} strokeWidth={1.75} />
-												{label}
-											</a>
-										</Button>
+										<a
+											aria-label={`${label} de ${name}`}
+											href={href}
+											rel="noopener noreferrer"
+											target="_blank"
+											key={label}
+											className={buttonVariants({
+												variant: "outline",
+												size: "sm",
+											})}
+										>
+											<Icon aria-hidden="true" size={18} strokeWidth={1.75} />
+											{label}
+										</a>
 									))}
 								</div>
 							</article>

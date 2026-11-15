@@ -7,7 +7,7 @@ import {
 	PeriodPill,
 } from "../components/page.tsx";
 import { StatusChip } from "../components/request-parts.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardHeader, CardTitle } from "../components/ui/card.tsx";
 import {
 	Table,
@@ -95,12 +95,13 @@ function DashboardPage() {
 			>
 				{periodCode && <PeriodPill code={periodCode} />}
 				{isProfessor && (
-					<Button asChild size="lg">
-						<Link to="/app/requests/new">
-							<Plus aria-hidden="true" size={18} strokeWidth={2} />
-							Nueva solicitud
-						</Link>
-					</Button>
+					<Link
+						to="/app/requests/new"
+						className={buttonVariants({ size: "lg" })}
+					>
+						<Plus aria-hidden="true" size={18} strokeWidth={2} />
+						Nueva solicitud
+					</Link>
 				)}
 			</PageHeader>
 
@@ -114,9 +115,12 @@ function DashboardPage() {
 							<CardTitle id="dashboard-requests-title">
 								Mis próximas solicitudes
 							</CardTitle>
-							<Button asChild size="inline" variant="link">
-								<Link to="/app/requests/mine">Ver todas</Link>
-							</Button>
+							<Link
+								to="/app/requests/mine"
+								className={buttonVariants({ variant: "link", size: "inline" })}
+							>
+								Ver todas
+							</Link>
 						</CardHeader>
 						{myRequests.length === 0 ? (
 							<EmptyState>
@@ -138,9 +142,12 @@ function DashboardPage() {
 					>
 						<CardHeader>
 							<CardTitle id="dashboard-groups-title">Mis grupos</CardTitle>
-							<Button asChild size="inline" variant="link">
-								<Link to="/app/groups/manage">Ver todos</Link>
-							</Button>
+							<Link
+								to="/app/groups/manage"
+								className={buttonVariants({ variant: "link", size: "inline" })}
+							>
+								Ver todos
+							</Link>
 						</CardHeader>
 						{groups.length === 0 ? (
 							<EmptyState>
@@ -198,9 +205,12 @@ function DashboardPage() {
 								Solicitudes próximas de todos los profesores
 							</h2>
 						</div>
-						<Button asChild size="inline" variant="link">
-							<Link to="/app/requests/all">Abrir la vista completa</Link>
-						</Button>
+						<Link
+							to="/app/requests/all"
+							className={buttonVariants({ variant: "link", size: "inline" })}
+						>
+							Abrir la vista completa
+						</Link>
 					</div>
 					<Table className="min-w-[920px]">
 						<TableHeader>

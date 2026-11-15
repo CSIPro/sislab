@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ThemeIcon } from "#/components/theme-toggle.tsx";
-import { Button } from "#/components/ui/button.tsx";
+import { Button, buttonVariants } from "#/components/ui/button.tsx";
 import { withBase } from "#/lib/base-path.ts";
 import { toggleTheme } from "#/lib/theme.ts";
 
@@ -53,9 +53,12 @@ export default function Header() {
 					>
 						<ThemeIcon />
 					</Button>
-					<Button asChild variant="outline">
-						<a href={withBase("/#acceso")}>Ingresar</a>
-					</Button>
+					<a
+						href={withBase("/#acceso")}
+						className={buttonVariants({ variant: "outline" })}
+					>
+						Ingresar
+					</a>
 				</nav>
 			</div>
 		</header>

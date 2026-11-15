@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Notice } from "#/components/notice.tsx";
-import { Button } from "#/components/ui/button.tsx";
+import { Button, buttonVariants } from "#/components/ui/button.tsx";
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
@@ -52,9 +52,12 @@ export default function AccessCard({
 					<p className="text-muted-foreground">
 						Ya iniciaste sesión en SISLAB.
 					</p>
-					<Button asChild size="lg">
-						<a href={withBase("/app/dashboard")}>Ir a mi espacio</a>
-					</Button>
+					<a
+						href={withBase("/app/dashboard")}
+						className={buttonVariants({ size: "lg" })}
+					>
+						Ir a mi espacio
+					</a>
 				</div>
 			) : (
 				<Tabs className="gap-5" defaultValue={initialMode}>

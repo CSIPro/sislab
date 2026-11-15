@@ -26,6 +26,7 @@
     "db:seed": "tsx scripts/seed-legacy.ts"
   },
   "dependencies": {
+    "@base-ui/react": "^1.9.0",
     "@react-pdf/renderer": "4.9.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",

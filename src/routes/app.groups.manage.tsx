@@ -13,7 +13,7 @@ import {
 	PageHeader,
 	PeriodPill,
 } from "../components/page.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import {
 	ToggleGroup,
@@ -129,12 +129,10 @@ function ManageGroupsPage() {
 				title="Mis grupos"
 			>
 				{periodCode && <PeriodPill code={periodCode} />}
-				<Button asChild size="lg">
-					<Link to="/app/groups/new">
-						<Plus aria-hidden="true" size={18} strokeWidth={2} />
-						Nuevo grupo
-					</Link>
-				</Button>
+				<Link to="/app/groups/new" className={buttonVariants({ size: "lg" })}>
+					<Plus aria-hidden="true" size={18} strokeWidth={2} />
+					Nuevo grupo
+				</Link>
 			</PageHeader>
 
 			<Card aria-labelledby="groups-week-title">
@@ -245,11 +243,13 @@ function ManageGroupsPage() {
 							key={group.id}
 						>
 							{group.active && (
-								<Button asChild variant="outline">
-									<Link search={{ group: group.id }} to="/app/requests/new">
-										Solicitar preparación
-									</Link>
-								</Button>
+								<Link
+									search={{ group: group.id }}
+									to="/app/requests/new"
+									className={buttonVariants({ variant: "outline" })}
+								>
+									Solicitar preparación
+								</Link>
 							)}
 							{group.active && (
 								<Button
