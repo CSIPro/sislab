@@ -30,14 +30,21 @@ export function OptionSelect({
 	return (
 		<Select
 			defaultValue={defaultValue}
+			// Without items, SelectValue would show the raw value instead of the label.
+			items={options.map(([optionValue, label]) => ({
+				value: optionValue,
+				label,
+			}))}
 			name={name}
-			onValueChange={onValueChange}
+			onValueChange={(next) => {
+				if (next !== null) onValueChange?.(next);
+			}}
 			value={value}
 		>
 			<SelectTrigger aria-label={ariaLabel} className={className} id={id}>
 				<SelectValue />
 			</SelectTrigger>
-			<SelectContent position="popper">
+			<SelectContent alignItemWithTrigger={false}>
 				<SelectGroup>
 					{options.map(([optionValue, label]) => (
 						<SelectItem key={optionValue} value={optionValue}>

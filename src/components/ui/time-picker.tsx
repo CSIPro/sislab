@@ -77,7 +77,13 @@ function TimePicker({
 
 	return (
 		<div className="flex items-center gap-2" data-slot="time-picker">
-			<Select onValueChange={chooseHour} required={required} value={hour}>
+			<Select
+				onValueChange={(next) => {
+					if (next !== null) chooseHour(next);
+				}}
+				required={required}
+				value={hour}
+			>
 				<SelectTrigger
 					aria-label={`${label}, hora`}
 					className="w-full min-w-0 flex-1"
@@ -85,7 +91,7 @@ function TimePicker({
 				>
 					<SelectValue placeholder="--" />
 				</SelectTrigger>
-				<SelectContent className="max-h-64" position="popper">
+				<SelectContent alignItemWithTrigger={false} className="max-h-64">
 					<SelectGroup>
 						{hours.map((option) => (
 							<SelectItem key={option} value={option}>
@@ -100,7 +106,9 @@ function TimePicker({
 			</span>
 			<Select
 				disabled={!hour}
-				onValueChange={(next) => choose(`${hour}:${next}`)}
+				onValueChange={(next) => {
+					if (next !== null) choose(`${hour}:${next}`);
+				}}
 				value={minute}
 			>
 				<SelectTrigger
@@ -109,7 +117,7 @@ function TimePicker({
 				>
 					<SelectValue placeholder="--" />
 				</SelectTrigger>
-				<SelectContent className="max-h-64" position="popper">
+				<SelectContent alignItemWithTrigger={false} className="max-h-64">
 					<SelectGroup>
 						{minutes.map((option) => (
 							<SelectItem key={option} value={option}>
