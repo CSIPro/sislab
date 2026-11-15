@@ -36,9 +36,10 @@ function SelectTrigger({
 			{...props}
 		>
 			{children}
-			<SelectPrimitive.Icon
-				render={<ChevronDownIcon className="size-4 opacity-50" />}
-			/>
+			{/* Base UI's Icon renders a "▼" unless it gets children. */}
+			<SelectPrimitive.Icon className="flex">
+				<ChevronDownIcon className="size-4 opacity-50" />
+			</SelectPrimitive.Icon>
 		</SelectPrimitive.Trigger>
 	);
 }
