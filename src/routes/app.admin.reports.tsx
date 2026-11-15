@@ -1,11 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Archive, Download, LoaderCircle } from "lucide-react";
 import { useRef, useState } from "react";
-import {
-	ActionNotice,
-	Notice,
-	type NoticeState,
-} from "../components/notice.tsx";
+import { toast } from "sonner";
+import { ActionNotice, Notice } from "../components/notice.tsx";
 import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { RequestDetails, StatusChip } from "../components/request-parts.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -34,6 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	academicPeriodStatus,
 	compareAcademicPeriodCodes,
@@ -166,7 +164,7 @@ function ReportsPage() {
 	const navigate = Route.useNavigate();
 	const [detail, setDetail] = useState<RequestListRow | null>(null);
 	const [exporting, setExporting] = useState(false);
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [archive, setArchive] = useState<{
 		current: number;
 		total: number;
@@ -201,14 +199,11 @@ function ReportsPage() {
 
 	async function exportWorkbook() {
 		setExporting(true);
-		setNotice(null);
+		clear();
 		try {
 			await downloadReportWorkbook(selected, filtered);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo generar el archivo de Excel."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo generar el archivo de Excel."));
 		} finally {
 			setExporting(false);
 		}
@@ -218,27 +213,18 @@ function ReportsPage() {
 		const controller = new AbortController();
 		archiveController.current = controller;
 		setArchive({ current: 0, total: ticketPlan.entries.length });
-		setNotice(null);
+		clear();
 		try {
 			await downloadTicketArchive(ticketPlan, {
 				signal: controller.signal,
 				onProgress: (current, total) => setArchive({ current, total }),
 			});
 		} catch (error) {
-			setNotice(
-				controller.signal.aborted
-					? {
-							text: "Se canceló la descarga de tickets. No se guardó ningún archivo.",
-							error: false,
-						}
-					: {
-							text: userFacingError(
-								error,
-								"No se pudieron generar los tickets.",
-							),
-							error: true,
-						},
-			);
+			if (controller.signal.aborted)
+				toast.info(
+					"Se canceló la descarga de tickets. No se guardó ningún archivo.",
+				);
+			else fail(userFacingError(error, "No se pudieron generar los tickets."));
 		} finally {
 			archiveController.current = null;
 			setArchive(null);
@@ -314,7 +300,7 @@ function ReportsPage() {
 				</p>
 			)}
 
-			<ActionNotice notice={notice} />
+			<ActionNotice failure={failure} />
 
 			<div className="flex flex-wrap items-start gap-x-6 gap-y-3">
 				<div className="flex flex-wrap items-center gap-3">

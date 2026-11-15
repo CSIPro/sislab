@@ -1,12 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { CircleCheck, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 import {
 	DescriptionItem,
 	DescriptionList,
 } from "../components/description-list.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
-import { Notice, type NoticeState } from "../components/notice.tsx";
+import { ActionNotice } from "../components/notice.tsx";
 import {
 	DetailPanel,
 	EmptyState,
@@ -33,6 +34,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	type AcademicPeriodStatus,
 	academicPeriodStatus,
@@ -85,7 +87,7 @@ function AcademicPeriodsPage() {
 			null,
 	);
 	const [draft, setDraft] = useState<PeriodDraft | null>(null);
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 	const currentYear = Number(currentCode.split("-")[0]);
 	const seedYears = [currentYear, currentYear + 1];
@@ -97,12 +99,12 @@ function AcademicPeriodsPage() {
 
 	function open(next: PeriodDraft | null) {
 		setDraft(next);
-		setNotice(null);
+		clear();
 	}
 
 	async function seedPeriods() {
 		setBusy(true);
-		setNotice(null);
+		clear();
 		const existing = seedCodes.filter((code) =>
 			periods.some((period) => period.code === code),
 		);
@@ -110,19 +112,15 @@ function AcademicPeriodsPage() {
 		try {
 			await ensureRegularAcademicPeriodsFn({ data: { years: seedYears } });
 			setPeriods(await listAcademicPeriodsWithGroupCountsFn());
-			setNotice({
-				text: `Se agregaron ${listed(added)}.${
+			toast.success(
+				`Se agregaron ${listed(added)}.${
 					existing.length > 0
 						? ` ${listed(existing)} ya ${existing.length === 1 ? "existía, así que se dejó como estaba" : "existían, así que se dejaron como estaban"}.`
 						: ""
 				} Puedes agregar las fechas oficiales cuando las tengas.`,
-				error: false,
-			});
+			);
 		} catch {
-			setNotice({
-				text: "No se pudieron crear los períodos. Inténtalo de nuevo.",
-				error: true,
-			});
+			fail("No se pudieron crear los períodos. Inténtalo de nuevo.");
 		} finally {
 			setBusy(false);
 		}
@@ -132,7 +130,7 @@ function AcademicPeriodsPage() {
 		event.preventDefault();
 		if (!draft) return;
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			const saved = await saveAcademicPeriodFn({
 				data: {
@@ -144,12 +142,9 @@ function AcademicPeriodsPage() {
 			setPeriods(await listAcademicPeriodsWithGroupCountsFn());
 			setSelectedCode(saved.code);
 			setDraft(null);
-			setNotice({ text: `Se guardó el período ${saved.code}.`, error: false });
+			toast.success(`Se guardó el período ${saved.code}.`);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo guardar este período."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo guardar este período."));
 		} finally {
 			setBusy(false);
 		}
@@ -191,14 +186,7 @@ function AcademicPeriodsPage() {
 				</div>
 			</PageHeader>
 
-			{!draft && notice && (
-				<Notice
-					icon={notice.error ? undefined : CircleCheck}
-					tone={notice.error ? "error" : "success"}
-				>
-					{notice.text}
-				</Notice>
-			)}
+			{!draft && <ActionNotice failure={failure} />}
 
 			<div className="flex flex-wrap items-start gap-6">
 				<Table
@@ -225,7 +213,7 @@ function AcademicPeriodsPage() {
 									key={period.code}
 									onClick={() => {
 										setSelectedCode(period.code);
-										setNotice(null);
+										clear();
 									}}
 								>
 									<TableCell>
@@ -287,7 +275,7 @@ function AcademicPeriodsPage() {
 			{draft && (
 				<FormDialog
 					busy={busy}
-					notice={notice}
+					failure={failure}
 					onClose={() => open(null)}
 					onSubmit={save}
 					submitLabel={draft.editing ? "Guardar período" : "Agregar período"}

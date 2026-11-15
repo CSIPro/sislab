@@ -6,7 +6,7 @@ import { Notice } from "../components/notice.tsx";
 import { Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card } from "../components/ui/card.tsx";
-import { notifyError } from "../lib/notify.ts";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/app/groups/new")({
 function NewGroupPage() {
 	const options = Route.useLoaderData();
 	const navigate = useNavigate();
-	const [failure, setFailure] = useState<string | null>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 	const [formKey, setFormKey] = useState(0);
 	const ready =
@@ -41,7 +41,7 @@ function NewGroupPage() {
 		event.preventDefault();
 		const data = readGroupFields(new FormData(event.currentTarget));
 		setBusy(true);
-		setFailure(null);
+		clear();
 		try {
 			const group = await registerProfessorGroupFn({ data });
 			toast.success(
@@ -60,8 +60,7 @@ function NewGroupPage() {
 				error,
 				"No se pudo registrar el grupo. Inténtalo de nuevo.",
 			);
-			setFailure(text);
-			notifyError(text);
+			fail(text);
 		} finally {
 			setBusy(false);
 		}

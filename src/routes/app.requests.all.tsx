@@ -2,7 +2,11 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { Fragment, lazy, Suspense, useRef, useState } from "react";
 import { FormDialog } from "../components/form-dialog.tsx";
-import { Notice, type NoticeState } from "../components/notice.tsx";
+import {
+	ActionNotice,
+	type FailureState,
+	Notice,
+} from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { Footnote, Page, PageHeader } from "../components/page.tsx";
 import {
@@ -39,6 +43,7 @@ import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "../components/ui/toggle-group.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { buildDailyTicket, type TicketExercise } from "../lib/daily-ticket.ts";
 import {
 	canDecideLateException,
@@ -116,10 +121,10 @@ function AllPreparationRequestsPage() {
 	const [range, setRange] = useState<Range>("day");
 	const [labFilter, setLabFilter] = useState("all");
 	const [statusFilter, setStatusFilter] = useState("all");
-	const [message, setMessage] = useState("");
+	const pageFailure = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [voidingId, setVoidingId] = useState<string | null>(null);
-	const [voidNotice, setVoidNotice] = useState<NoticeState>(null);
+	const voidFailure = useActionFailure();
 	const [ticket, setTicket] = useState<{
 		date: string;
 		exercises: TicketExercise[];
@@ -155,7 +160,7 @@ function AllPreparationRequestsPage() {
 		latestDate.current = nextDate;
 		setDate(nextDate);
 		setRange(nextRange);
-		setMessage("");
+		pageFailure.clear();
 		if (weekRange(nextDate).from !== loadedWeek) void load(nextDate);
 	}
 
@@ -172,7 +177,7 @@ function AllPreparationRequestsPage() {
 			setLoadedWeek(next.from);
 		} catch (error) {
 			if (loadId !== latestLoad.current) return;
-			setMessage(
+			pageFailure.fail(
 				userFacingError(error, "No se pudieron cargar las solicitudes."),
 			);
 		}
@@ -204,12 +209,12 @@ function AllPreparationRequestsPage() {
 		action: () => Promise<unknown>,
 	) {
 		setBusyId(requestId);
-		setMessage("");
+		pageFailure.clear();
 		try {
 			await action();
 			await refresh();
 		} catch (error) {
-			setMessage(
+			pageFailure.fail(
 				userFacingError(
 					error,
 					error instanceof Error ? error.message : fallback,
@@ -226,28 +231,27 @@ function AllPreparationRequestsPage() {
 		);
 	async function voidRequest(requestId: string, reason: string) {
 		setBusyId(requestId);
-		setVoidNotice(null);
+		voidFailure.clear();
 		try {
 			await voidPreparationRequestFn({ data: { requestId, reason } });
 		} catch (error) {
-			setVoidNotice({
-				text: userFacingError(
+			voidFailure.fail(
+				userFacingError(
 					error,
 					error instanceof Error
 						? error.message
 						: "No se pudo anular la solicitud.",
 				),
-				error: true,
-			});
+			);
 			setBusyId(null);
 			return;
 		}
 		setVoidingId(null);
-		setMessage("");
+		pageFailure.clear();
 		try {
 			await refresh();
 		} catch (error) {
-			setMessage(
+			pageFailure.fail(
 				userFacingError(error, "No se pudieron cargar las solicitudes."),
 			);
 		} finally {
@@ -256,12 +260,12 @@ function AllPreparationRequestsPage() {
 	}
 
 	async function printTicket() {
-		setMessage("");
+		pageFailure.clear();
 		try {
 			const rows = await getDailyTicketRequestsFn({ data: { date } });
 			setTicket({ date, exercises: buildDailyTicket(rows) });
 		} catch (error) {
-			setMessage(
+			pageFailure.fail(
 				userFacingError(
 					error,
 					error instanceof Error
@@ -373,7 +377,7 @@ function AllPreparationRequestsPage() {
 				</div>
 			</div>
 
-			{message && <Notice tone="error">{message}</Notice>}
+			<ActionNotice failure={pageFailure.failure} />
 
 			<Card aria-labelledby="all-requests-week-title">
 				<CardHeader className="items-baseline">
@@ -424,7 +428,7 @@ function AllPreparationRequestsPage() {
 							key={item.request.id}
 							onDecide={decide}
 							onVoid={(id) => {
-								setVoidNotice(null);
+								voidFailure.clear();
 								setVoidingId(id);
 							}}
 						/>
@@ -447,8 +451,11 @@ function AllPreparationRequestsPage() {
 				<VoidRequestDialog
 					busy={busyId === voiding.request.id}
 					item={voiding}
-					notice={voidNotice}
-					onClose={() => setVoidingId(null)}
+					failure={voidFailure.failure}
+					onClose={() => {
+						voidFailure.clear();
+						setVoidingId(null);
+					}}
 					onVoid={(reason) => void voidRequest(voiding.request.id, reason)}
 				/>
 			)}
@@ -583,13 +590,13 @@ function StaffRequestRow({
 function VoidRequestDialog({
 	item,
 	busy,
-	notice,
+	failure,
 	onVoid,
 	onClose,
 }: {
 	item: RequestListRow;
 	busy: boolean;
-	notice: NoticeState;
+	failure: FailureState;
 	onVoid: (reason: string) => void;
 	onClose: () => void;
 }) {
@@ -600,7 +607,7 @@ function VoidRequestDialog({
 			busy={busy}
 			description={`${request.exerciseName} · ${groupLabel(group.number)} · ${formatSessionDate(request.sessionDate, "short")}`}
 			destructive
-			notice={notice}
+			failure={failure}
 			onClose={onClose}
 			onSubmit={(event) => {
 				event.preventDefault();

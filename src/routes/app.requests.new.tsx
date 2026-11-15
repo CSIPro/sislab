@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { CalendarDays, CircleCheck, Clock } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
+import { toast } from "sonner";
 import {
 	DescriptionItem,
 	DescriptionList,
@@ -24,7 +25,7 @@ import {
 	wasteItems,
 	wasteSummary,
 } from "../components/materials.tsx";
-import { Notice } from "../components/notice.tsx";
+import { ActionNotice, Notice } from "../components/notice.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -40,6 +41,7 @@ import {
 import { Label } from "../components/ui/label.tsx";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	addDays,
 	formatSessionDate,
@@ -99,7 +101,7 @@ function NewPreparationRequestPage() {
 	const [addedWaste, setAddedWaste] = useState<WasteDraft[]>([]);
 	const [professorNote, setProfessorNote] = useState("");
 	const [lateReason, setLateReason] = useState("");
-	const [message, setMessage] = useState("");
+	const { failure, fail, reject, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 	const selectedGroup = groups.find((group) => group.id === groupId);
 	const selectedExercise = exercises.find(
@@ -147,11 +149,11 @@ function NewPreparationRequestPage() {
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (!selectedGroup || !selectedExercise || !sessionDate) {
-			setMessage("Elige un grupo, una fecha y una práctica para continuar.");
+			reject("Elige un grupo, una fecha y una práctica para continuar.");
 			return;
 		}
 		setBusy(true);
-		setMessage("");
+		clear();
 		const customization: RequestCustomization = {
 			omittedReagents,
 			addedReagents: quantityItems(addedReagents),
@@ -164,9 +166,10 @@ function NewPreparationRequestPage() {
 			await submitPreparationRequestFn({
 				data: { groupId, exerciseId, sessionDate, customization },
 			});
+			toast.success("Solicitud enviada.");
 			await navigate({ to: "/app/requests/mine" });
 		} catch (error) {
-			setMessage(
+			fail(
 				userFacingError(
 					error,
 					"No se pudo enviar tu solicitud. Inténtalo de nuevo más tarde.",
@@ -414,7 +417,7 @@ function NewPreparationRequestPage() {
 							/>
 						</Field>
 
-						{message && <Notice tone="error">{message}</Notice>}
+						<ActionNotice failure={failure} />
 
 						<div className="flex flex-wrap gap-3 pt-1">
 							<Button disabled={busy} size="lg" type="submit">

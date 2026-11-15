@@ -6,6 +6,7 @@ import {
 	useOptimistic,
 	useState,
 } from "react";
+import { toast } from "sonner";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import { CountBadge } from "../components/count-badge.tsx";
 import {
@@ -13,7 +14,7 @@ import {
 	DescriptionList,
 } from "../components/description-list.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
-import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { ActionNotice } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import {
 	DetailPanel,
@@ -51,6 +52,7 @@ import {
 	TabsList,
 	TabsTrigger,
 } from "../components/ui/tabs.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
@@ -180,7 +182,7 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [search, setSearch] = useState("");
 	const [roleFilter, setRoleFilter] = useState("all");
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 
 	const query = searchable(search.trim());
@@ -193,12 +195,12 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 
 	function open(next: Draft | null) {
 		setDraft(next);
-		setNotice(null);
+		clear();
 	}
 
 	function select(userId: string) {
 		setSelectedId(userId);
-		setNotice(null);
+		clear();
 	}
 
 	async function generatePassword() {
@@ -206,25 +208,23 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 		setDraft({ mode: "password", password });
 		try {
 			await navigator.clipboard.writeText(password);
-			setNotice({ text: "Contraseña generada y copiada.", error: false });
+			clear();
+			toast.success("Contraseña generada y copiada.");
 		} catch {
-			setNotice({
-				text: "Contraseña generada, pero no se pudo copiar. Cópiala a mano.",
-				error: true,
-			});
+			fail("Contraseña generada, pero no se pudo copiar. Cópiala a mano.");
 		}
 	}
 
 	async function run(fallback: string, action: () => Promise<string>) {
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			const text = await action();
 			await router.invalidate();
 			setDraft(null);
-			setNotice({ text, error: false });
+			toast.success(text);
 		} catch (error) {
-			setNotice({ text: userFacingError(error, fallback), error: true });
+			fail(userFacingError(error, fallback));
 		} finally {
 			setBusy(false);
 		}
@@ -341,7 +341,7 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 				{selected && (
 					<DetailPanel className="max-w-[420px] flex-[1_1_320px]">
 						<Card aria-labelledby="user-detail-title">
-							{!draft && <ActionNotice notice={notice} />}
+							{!draft && <ActionNotice failure={failure} />}
 							<div className="flex items-center gap-3.5">
 								<PersonAvatar accent className="size-12" person={selected} />
 								<div className="flex min-w-0 flex-1 flex-col">
@@ -405,7 +405,7 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 							? `${selected.name} ${selected.surname}`
 							: `${selected.name} ${selected.surname} no puede recuperarla por su cuenta. Escribe una nueva y compártesela. Al cambiarla se cierran sus otras sesiones.`
 					}
-					notice={notice}
+					failure={failure}
 					onClose={() => open(null)}
 					onSubmit={save}
 					submitLabel={
@@ -474,7 +474,7 @@ const newReview = (): Review => ({ roles: ["professor"], verified: false });
 function AccessRequests({ pending }: { pending: PendingAccount[] }) {
 	const router = useRouter();
 	const [reviews, setReviews] = useState<Record<string, Review>>({});
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
 
 	const review = (id: string) => reviews[id] ?? newReview();
@@ -486,21 +486,17 @@ function AccessRequests({ pending }: { pending: PendingAccount[] }) {
 
 	async function activate(account: PendingAccount) {
 		setBusyId(account.id);
-		setNotice(null);
+		clear();
 		try {
 			await activatePendingAccountFn({
 				data: { userId: account.id, roles: review(account.id).roles },
 			});
 			await router.invalidate();
-			setNotice({
-				text: `${account.name} ${account.surname} ya puede ingresar a SISLAB.`,
-				error: false,
-			});
+			toast.success(
+				`${account.name} ${account.surname} ya puede ingresar a SISLAB.`,
+			);
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo activar esta cuenta."),
-				error: true,
-			});
+			fail(userFacingError(error, "No se pudo activar esta cuenta."));
 		} finally {
 			setBusyId(null);
 		}
@@ -508,7 +504,7 @@ function AccessRequests({ pending }: { pending: PendingAccount[] }) {
 
 	return (
 		<div className="flex flex-col gap-7">
-			<ActionNotice notice={notice} />
+			<ActionNotice failure={failure} />
 
 			{pending.length === 0 ? (
 				<EmptyState>No hay solicitudes de acceso pendientes.</EmptyState>
