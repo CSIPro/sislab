@@ -158,6 +158,11 @@ function listOf(value: unknown): string[] {
 	return items.filter((item): item is string => typeof item === "string");
 }
 
+/** The text of the busy button and of the loading toast while the tickets are made. */
+function ticketProgress(current: number, total: number) {
+	return `Generando ticket ${Math.max(current, 1)} de ${total}…`;
+}
+
 function ReportsPage() {
 	const { periodOptions, selected, report } = Route.useLoaderData();
 	const search = Route.useSearch();
@@ -200,10 +205,15 @@ function ReportsPage() {
 	async function exportWorkbook() {
 		setExporting(true);
 		clear();
+		const toastId = toast.loading("Generando Excel…");
 		try {
 			await downloadReportWorkbook(selected, filtered);
+			toast.success("Excel descargado.", { id: toastId });
 		} catch (error) {
-			fail(userFacingError(error, "No se pudo generar el archivo de Excel."));
+			fail(
+				userFacingError(error, "No se pudo generar el archivo de Excel."),
+				toastId,
+			);
 		} finally {
 			setExporting(false);
 		}
@@ -214,17 +224,27 @@ function ReportsPage() {
 		archiveController.current = controller;
 		setArchive({ current: 0, total: ticketPlan.entries.length });
 		clear();
+		const toastId = toast.loading(ticketProgress(0, ticketPlan.entries.length));
 		try {
 			await downloadTicketArchive(ticketPlan, {
 				signal: controller.signal,
-				onProgress: (current, total) => setArchive({ current, total }),
+				onProgress: (current, total) => {
+					setArchive({ current, total });
+					toast.loading(ticketProgress(current, total), { id: toastId });
+				},
 			});
+			toast.success("Tickets descargados.", { id: toastId });
 		} catch (error) {
 			if (controller.signal.aborted)
 				toast.info(
 					"Se canceló la descarga de tickets. No se guardó ningún archivo.",
+					{ id: toastId },
 				);
-			else fail(userFacingError(error, "No se pudieron generar los tickets."));
+			else
+				fail(
+					userFacingError(error, "No se pudieron generar los tickets."),
+					toastId,
+				);
 		} finally {
 			archiveController.current = null;
 			setArchive(null);
@@ -260,7 +280,7 @@ function ReportsPage() {
 						<Archive aria-hidden="true" size={18} strokeWidth={2} />
 					)}
 					{archive
-						? `Generando ticket ${Math.max(archive.current, 1)} de ${archive.total}…`
+						? ticketProgress(archive.current, archive.total)
 						: "Descargar tickets (ZIP)"}
 				</Button>
 				{archive && (

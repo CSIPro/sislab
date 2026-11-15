@@ -432,6 +432,11 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await page.getByRole('button', { name: 'Descargar Excel (XLSX)' }).click()
 		const download = await downloadPromise
 		expect(download.suggestedFilename()).toBe(`sislab-reporte-${currentCode}.xlsx`)
+		// One toast follows the export from loading to result, and a success closes by itself.
+		const excelToast = toastNamed(page, 'Excel descargado.')
+		await expect(excelToast).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+		await expect(excelToast).toHaveCount(0, { timeout: 8000 })
 		const workbook = new ExcelJS.Workbook()
 		await workbook.xlsx.readFile(await download.path())
 		const sheet = workbook.getWorksheet(currentCode)
@@ -442,6 +447,9 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await page.getByRole('button', { name: 'Descargar tickets (ZIP)' }).click()
 		const archive = await archivePromise
 		expect(archive.suggestedFilename()).toBe(`sislab-tickets-${currentCode}.zip`)
+		await expect(toastNamed(page, 'Tickets descargados.')).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
+		await expect(page.locator('[data-sonner-toast][data-type="loading"]')).toHaveCount(0)
 		const files = unzipSync(new Uint8Array(readFileSync(await archive.path())))
 		const pdfPath = `${currentCode}/sislab-${sislabToday()}.pdf`
 		expect(Object.keys(files)).toContain(pdfPath)
