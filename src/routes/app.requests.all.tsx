@@ -177,7 +177,7 @@ function AllPreparationRequestsPage() {
 			setLoadedWeek(next.from);
 		} catch (error) {
 			if (loadId !== latestLoad.current) return;
-			pageFailure.fail(
+			pageFailure.reject(
 				userFacingError(error, "No se pudieron cargar las solicitudes."),
 			);
 		}

@@ -236,7 +236,7 @@ function ReportsPage() {
 			toast.success("Tickets descargados.", { id: toastId });
 		} catch (error) {
 			if (controller.signal.aborted)
-				toast.info(
+				toast(
 					"Se canceló la descarga de tickets. No se guardó ningún archivo.",
 					{ id: toastId },
 				);

@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { GroupFields, readGroupFields } from "../components/group-fields.tsx";
-import { Notice } from "../components/notice.tsx";
+import { ActionNotice, Notice } from "../components/notice.tsx";
 import { Page, PageHeader } from "../components/page.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card } from "../components/ui/card.tsx";
@@ -102,7 +102,7 @@ function NewGroupPage() {
 				</Card>
 			)}
 
-			{failure && <Notice tone="error">{failure}</Notice>}
+			<ActionNotice failure={failure} />
 		</Page>
 	);
 }
