@@ -19,7 +19,7 @@ avatar, button, card, checkbox, dialog, label, popover, radio-group, scroll-area
 
 ## App-code sweep
 
-- `asChild`: 31 call sites. 13 `<Button asChild>` links became links styled with `buttonVariants` (see `button.md`); 9 `<Card asChild>`, 2 `<SidebarMenuButton asChild>`, 4 `<PopoverTrigger asChild>` / `<TooltipTrigger asChild>` and the `DialogFooter` close button moved to `render`.
+- `asChild`: 30 call sites. 13 `<Button asChild>` links became links styled with `buttonVariants` (see `button.md`). The other 17 moved to `render`: 9 `<Card asChild>`, 2 `<SidebarMenuButton asChild>`, 3 `<PopoverTrigger asChild>`, 2 `<TooltipTrigger asChild>` and the `DialogFooter` close button.
 - Class hooks: `data-[state=checked]`, `data-[state=active]`, `data-[state=on]` and `data-[state=open|closed]` became `data-checked`, `data-active`, `data-pressed` and `data-open` / `data-closed` / `data-popup-open`. `--radix-*` variables became `--transform-origin`, `--available-height` and `--anchor-width`.
 - Props: ToggleGroup `type="single"` with string values became array values (3 call sites). Select `position="popper"` became `alignItemWithTrigger={false}` (3). TooltipProvider `delayDuration` became `delay` (1). Select `onValueChange` handlers now drop `null` (3).
 - Not found in app code: `onOpenAutoFocus`, `onCloseAutoFocus`, `onEscapeKeyDown`, `onPointerDownOutside`, `onInteractOutside`, `forceMount`, `delayMs`, `decorative`, `checked="indeterminate"`, `activationMode`, Accordion, Menu, Slider.
