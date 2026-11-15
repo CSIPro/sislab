@@ -96,10 +96,12 @@ export function QuantityAmount({
 	if (item.basis !== "team") return <>{amount}</>;
 	return (
 		<Tooltip>
-			<TooltipTrigger asChild>
-				<span className="cursor-help underline decoration-dotted underline-offset-4">
-					{amount}
-				</span>
+			<TooltipTrigger
+				render={
+					<span className="cursor-help underline decoration-dotted underline-offset-4" />
+				}
+			>
+				{amount}
 			</TooltipTrigger>
 			<TooltipContent>
 				Total para todo el grupo: {item.amount} × {teams}{" "}
