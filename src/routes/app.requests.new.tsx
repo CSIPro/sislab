@@ -186,248 +186,246 @@ function NewPreparationRequestPage() {
 
 			<div className="flex flex-wrap items-start gap-7">
 				<Card
-					asChild
 					className="max-w-[640px] flex-[1_1_480px] gap-8 p-7 max-md:p-5"
+					render={<form onSubmit={submit} />}
 				>
-					<form onSubmit={submit}>
-						<Step>
-							<StepTitle id="request-step-group" number={1}>
-								Elige el grupo
-							</StepTitle>
-							{groups.length === 0 && (
-								<EmptyState>
-									No tienes grupos activos.{" "}
-									<Link to="/app/groups/new">Registra un grupo</Link>
-								</EmptyState>
-							)}
-							<RadioGroup
-								aria-labelledby="request-step-group"
-								onValueChange={(value) => {
-									setGroupId(value);
-									setSessionDate("");
-								}}
-								value={groupId}
-							>
-								{groups.map((group) => (
-									<Label
-										className="cursor-pointer gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-[0_0_0_1px_var(--primary)]"
-										key={group.id}
-									>
-										<RadioGroupItem value={group.id} />
-										<span className="flex min-w-0 flex-1 flex-col">
-											<strong>
-												{group.subjectName} · {groupLabel(group.number)}
-											</strong>
-											<span className="text-sm text-muted-foreground">
-												{weekdays[group.weekday]},{" "}
-												{timeRange(group.startTime, group.endTime)} ·{" "}
-												{group.labName}
-											</span>
+					<Step>
+						<StepTitle id="request-step-group" number={1}>
+							Elige el grupo
+						</StepTitle>
+						{groups.length === 0 && (
+							<EmptyState>
+								No tienes grupos activos.{" "}
+								<Link to="/app/groups/new">Registra un grupo</Link>
+							</EmptyState>
+						)}
+						<RadioGroup
+							aria-labelledby="request-step-group"
+							onValueChange={(value) => {
+								setGroupId(value);
+								setSessionDate("");
+							}}
+							value={groupId}
+						>
+							{groups.map((group) => (
+								<Label
+									className="cursor-pointer gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent has-[[data-state=checked]]:shadow-[0_0_0_1px_var(--primary)]"
+									key={group.id}
+								>
+									<RadioGroupItem value={group.id} />
+									<span className="flex min-w-0 flex-1 flex-col">
+										<strong>
+											{group.subjectName} · {groupLabel(group.number)}
+										</strong>
+										<span className="text-sm text-muted-foreground">
+											{weekdays[group.weekday]},{" "}
+											{timeRange(group.startTime, group.endTime)} ·{" "}
+											{group.labName}
 										</span>
-									</Label>
-								))}
-							</RadioGroup>
-						</Step>
+									</span>
+								</Label>
+							))}
+						</RadioGroup>
+					</Step>
 
-						<Step>
-							<StepTitle number={2}>Elige la fecha</StepTitle>
-							{selectedGroup ? (
-								<>
-									<StepHelp>
-										Solo se ofrecen los {weekdayPlural(selectedGroup.weekday)},
-										el día de este grupo.
-									</StepHelp>
-									{/* biome-ignore lint/a11y/useSemanticElements: the step heading already names this group of buttons */}
-									<div
-										aria-label="Fechas disponibles"
-										className="flex flex-wrap gap-2.5"
-										role="group"
-									>
-										{dateOptions.map(({ date, late }) => (
+					<Step>
+						<StepTitle number={2}>Elige la fecha</StepTitle>
+						{selectedGroup ? (
+							<>
+								<StepHelp>
+									Solo se ofrecen los {weekdayPlural(selectedGroup.weekday)}, el
+									día de este grupo.
+								</StepHelp>
+								{/* biome-ignore lint/a11y/useSemanticElements: the step heading already names this group of buttons */}
+								<div
+									aria-label="Fechas disponibles"
+									className="flex flex-wrap gap-2.5"
+									role="group"
+								>
+									{dateOptions.map(({ date, late }) => (
+										<Button
+											aria-pressed={sessionDate === date}
+											key={date}
+											onClick={() => setSessionDate(date)}
+											size="lg"
+											variant="choice"
+										>
+											{formatSessionDate(date, "short")}
+											<DateNote>{noticeLabel(late)}</DateNote>
+										</Button>
+									))}
+									<DatePicker
+										footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
+										isDateDisabled={(date) => !pickableDate(date)}
+										max={addDays(today, CALENDAR_REACH_DAYS)}
+										min={today}
+										onValueChange={setSessionDate}
+										trigger={
 											<Button
-												aria-pressed={sessionDate === date}
-												key={date}
-												onClick={() => setSessionDate(date)}
+												aria-pressed={customPicked}
+												className="flex-row items-center gap-2.5"
 												size="lg"
 												variant="choice"
 											>
-												{formatSessionDate(date, "short")}
-												<DateNote>{noticeLabel(late)}</DateNote>
-											</Button>
-										))}
-										<DatePicker
-											footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
-											isDateDisabled={(date) => !pickableDate(date)}
-											max={addDays(today, CALENDAR_REACH_DAYS)}
-											min={today}
-											onValueChange={setSessionDate}
-											trigger={
-												<Button
-													aria-pressed={customPicked}
-													className="flex-row items-center gap-2.5"
-													size="lg"
-													variant="choice"
-												>
-													<CalendarDays
-														aria-hidden="true"
-														size={18}
-														strokeWidth={1.75}
-													/>
-													<span className="flex flex-col items-start">
+												<CalendarDays
+													aria-hidden="true"
+													size={18}
+													strokeWidth={1.75}
+												/>
+												<span className="flex flex-col items-start">
+													{customPicked
+														? formatSessionDate(sessionDate, "short")
+														: "Elegir otra fecha"}
+													<DateNote>
 														{customPicked
-															? formatSessionDate(sessionDate, "short")
-															: "Elegir otra fecha"}
-														<DateNote>
-															{customPicked
-																? noticeLabel(needsLateReason)
-																: `Solo ${weekdayPlural(selectedGroup.weekday)}`}
-														</DateNote>
-													</span>
-												</Button>
-											}
-											value={customPicked ? sessionDate : ""}
-										/>
-									</div>
-								</>
-							) : (
-								<StepHelp>Elige un grupo para ver sus fechas.</StepHelp>
-							)}
-							{needsLateReason && (
-								<Field>
-									<FieldLabel htmlFor="request-late-reason">
-										Motivo del aviso corto
-									</FieldLabel>
-									<Textarea
-										id="request-late-reason"
-										maxLength={1000}
-										onChange={(event) => setLateReason(event.target.value)}
-										placeholder="Explica por qué solicitas la preparación con poco tiempo."
-										required
-										value={lateReason}
+															? noticeLabel(needsLateReason)
+															: `Solo ${weekdayPlural(selectedGroup.weekday)}`}
+													</DateNote>
+												</span>
+											</Button>
+										}
+										value={customPicked ? sessionDate : ""}
 									/>
-									<FieldDescription>
-										El personal de laboratorio decidirá si acepta la solicitud.
-									</FieldDescription>
-								</Field>
-							)}
-						</Step>
-
-						<Step>
-							<StepTitle number={3}>Elige la práctica</StepTitle>
+								</div>
+							</>
+						) : (
+							<StepHelp>Elige un grupo para ver sus fechas.</StepHelp>
+						)}
+						{needsLateReason && (
 							<Field>
-								<FieldLabel htmlFor="request-exercise">
-									Práctica de laboratorio
+								<FieldLabel htmlFor="request-late-reason">
+									Motivo del aviso corto
 								</FieldLabel>
-								<Combobox
-									emptyText="Ninguna práctica coincide."
-									fieldVariant="filled"
-									id="request-exercise"
-									onValueChange={(value) => {
-										setExerciseId(value);
-										setOmittedReagents([]);
-									}}
-									options={exercises.map((exercise) => ({
-										value: exercise.id,
-										label: `${exercise.number} · ${exercise.name}`,
-									}))}
-									placeholder="Elige una práctica"
-									searchPlaceholder="Buscar por número o nombre"
-									value={exerciseId}
+								<Textarea
+									id="request-late-reason"
+									maxLength={1000}
+									onChange={(event) => setLateReason(event.target.value)}
+									placeholder="Explica por qué solicitas la preparación con poco tiempo."
+									required
+									value={lateReason}
 								/>
+								<FieldDescription>
+									El personal de laboratorio decidirá si acepta la solicitud.
+								</FieldDescription>
 							</Field>
-						</Step>
+						)}
+					</Step>
 
-						<Step>
-							<StepTitle number={4}>Revisa el material</StepTitle>
-							<StepHelp>
-								Desmarca los reactivos que no necesites y quedarán tachados como
-								omitidos. Puedes agregar equipo y residuos.
-							</StepHelp>
-
-							<div>
-								<MaterialHeading>Reactivos</MaterialHeading>
-								{materials?.reagents.map((item) => {
-									const omitted = omittedReagents.includes(item.name);
-									return (
-										<Label
-											className="cursor-pointer gap-3 border-t py-2.5 text-base font-normal"
-											key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-										>
-											<Checkbox
-												checked={!omitted}
-												onCheckedChange={() =>
-													setOmittedReagents((current) =>
-														omitted
-															? current.filter((name) => name !== item.name)
-															: [...current, item.name],
-													)
-												}
-											/>
-											<MaterialName omitted={omitted}>{item.name}</MaterialName>
-											{omitted && <Badge variant="muted">Omitido</Badge>}
-											<QuantityDetails item={item} omitted={omitted} />
-										</Label>
-									);
-								})}
-								<QuantityEditor
-									addLabel="Agregar reactivo"
-									chemical
-									items={addedReagents}
-									kind="reactivo"
-									onChange={setAddedReagents}
-								/>
-
-								<MaterialHeading>Equipo</MaterialHeading>
-								{materials?.equipment.map((item) => (
-									<MaterialRow
-										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
-									>
-										<MaterialName>{item.name}</MaterialName>
-										<QuantityDetails item={item} />
-									</MaterialRow>
-								))}
-								<QuantityEditor
-									addLabel="Agregar equipo"
-									items={addedEquipment}
-									kind="equipo"
-									onChange={setAddedEquipment}
-								/>
-
-								<MaterialHeading>Residuos esperados</MaterialHeading>
-								{materials?.waste.map((item) => (
-									<WasteRow item={item} key={wasteSummary(item)} />
-								))}
-								<WasteEditor items={addedWaste} onChange={setAddedWaste} />
-							</div>
-						</Step>
-
+					<Step>
+						<StepTitle number={3}>Elige la práctica</StepTitle>
 						<Field>
-							<FieldLabel htmlFor="request-note">
-								Nota para el personal (opcional)
+							<FieldLabel htmlFor="request-exercise">
+								Práctica de laboratorio
 							</FieldLabel>
-							<Textarea
-								id="request-note"
-								maxLength={2000}
-								onChange={(event) => setProfessorNote(event.target.value)}
-								placeholder="Por ejemplo: necesito las buretas limpias desde las 16:30."
-								value={professorNote}
+							<Combobox
+								emptyText="Ninguna práctica coincide."
+								fieldVariant="filled"
+								id="request-exercise"
+								onValueChange={(value) => {
+									setExerciseId(value);
+									setOmittedReagents([]);
+								}}
+								options={exercises.map((exercise) => ({
+									value: exercise.id,
+									label: `${exercise.number} · ${exercise.name}`,
+								}))}
+								placeholder="Elige una práctica"
+								searchPlaceholder="Buscar por número o nombre"
+								value={exerciseId}
 							/>
 						</Field>
+					</Step>
 
-						{message && <Notice tone="error">{message}</Notice>}
+					<Step>
+						<StepTitle number={4}>Revisa el material</StepTitle>
+						<StepHelp>
+							Desmarca los reactivos que no necesites y quedarán tachados como
+							omitidos. Puedes agregar equipo y residuos.
+						</StepHelp>
 
-						<div className="flex flex-wrap gap-3 pt-1">
-							<Button disabled={busy} size="lg" type="submit">
-								{busy ? "Enviando…" : "Enviar solicitud"}
-							</Button>
-							<Link
-								to="/app/dashboard"
-								className={buttonVariants({ variant: "outline", size: "lg" })}
-							>
-								Cancelar
-							</Link>
+						<div>
+							<MaterialHeading>Reactivos</MaterialHeading>
+							{materials?.reagents.map((item) => {
+								const omitted = omittedReagents.includes(item.name);
+								return (
+									<Label
+										className="cursor-pointer gap-3 border-t py-2.5 text-base font-normal"
+										key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
+									>
+										<Checkbox
+											checked={!omitted}
+											onCheckedChange={() =>
+												setOmittedReagents((current) =>
+													omitted
+														? current.filter((name) => name !== item.name)
+														: [...current, item.name],
+												)
+											}
+										/>
+										<MaterialName omitted={omitted}>{item.name}</MaterialName>
+										{omitted && <Badge variant="muted">Omitido</Badge>}
+										<QuantityDetails item={item} omitted={omitted} />
+									</Label>
+								);
+							})}
+							<QuantityEditor
+								addLabel="Agregar reactivo"
+								chemical
+								items={addedReagents}
+								kind="reactivo"
+								onChange={setAddedReagents}
+							/>
+
+							<MaterialHeading>Equipo</MaterialHeading>
+							{materials?.equipment.map((item) => (
+								<MaterialRow
+									key={`${item.name}-${item.amount}-${item.unit}-${item.basis}`}
+								>
+									<MaterialName>{item.name}</MaterialName>
+									<QuantityDetails item={item} />
+								</MaterialRow>
+							))}
+							<QuantityEditor
+								addLabel="Agregar equipo"
+								items={addedEquipment}
+								kind="equipo"
+								onChange={setAddedEquipment}
+							/>
+
+							<MaterialHeading>Residuos esperados</MaterialHeading>
+							{materials?.waste.map((item) => (
+								<WasteRow item={item} key={wasteSummary(item)} />
+							))}
+							<WasteEditor items={addedWaste} onChange={setAddedWaste} />
 						</div>
-					</form>
+					</Step>
+
+					<Field>
+						<FieldLabel htmlFor="request-note">
+							Nota para el personal (opcional)
+						</FieldLabel>
+						<Textarea
+							id="request-note"
+							maxLength={2000}
+							onChange={(event) => setProfessorNote(event.target.value)}
+							placeholder="Por ejemplo: necesito las buretas limpias desde las 16:30."
+							value={professorNote}
+						/>
+					</Field>
+
+					{message && <Notice tone="error">{message}</Notice>}
+
+					<div className="flex flex-wrap gap-3 pt-1">
+						<Button disabled={busy} size="lg" type="submit">
+							{busy ? "Enviando…" : "Enviar solicitud"}
+						</Button>
+						<Link
+							to="/app/dashboard"
+							className={buttonVariants({ variant: "outline", size: "lg" })}
+						>
+							Cancelar
+						</Link>
+					</div>
 				</Card>
 
 				<aside

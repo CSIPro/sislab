@@ -523,58 +523,52 @@ function AccessRequests({ pending }: { pending: PendingAccount[] }) {
 						const { roles, verified } = review(account.id);
 						return (
 							<Card
-								asChild
 								className="flex-row flex-wrap items-start gap-6 *:min-w-0 *:flex-[1_1_240px]"
 								key={account.id}
+								render={<article />}
 							>
-								<article>
-									<div className="flex items-start gap-3.5">
-										<PersonAvatar person={account} />
-										<div className="flex min-w-0 flex-col">
-											<h3 className="text-[19px] font-bold">
-												{account.name} {account.surname}
-											</h3>
-											<span className="text-[15px] text-muted-foreground">
-												{account.email}
-											</span>
-											<span className="mt-1 text-[13.5px] text-muted-foreground">
-												Solicitó acceso el {requestedOn(account.createdAt)}
-											</span>
-										</div>
+								<div className="flex items-start gap-3.5">
+									<PersonAvatar person={account} />
+									<div className="flex min-w-0 flex-col">
+										<h3 className="text-[19px] font-bold">
+											{account.name} {account.surname}
+										</h3>
+										<span className="text-[15px] text-muted-foreground">
+											{account.email}
+										</span>
+										<span className="mt-1 text-[13.5px] text-muted-foreground">
+											Solicitó acceso el {requestedOn(account.createdAt)}
+										</span>
 									</div>
-									<RoleCheckboxes
-										onChange={(next) =>
-											patchReview(account.id, { roles: next })
-										}
-										roles={roles}
-									/>
-									<div className="flex flex-col gap-3">
-										<Label className="min-h-11 cursor-pointer gap-3 text-[15px] font-normal">
-											<Checkbox
-												checked={verified}
-												onCheckedChange={(checked) =>
-													patchReview(account.id, {
-														verified: checked === true,
-													})
-												}
-											/>
-											Verifiqué su identidad fuera de SISLAB
-										</Label>
-										<div>
-											<Button
-												disabled={
-													busyId !== null || !verified || roles.length === 0
-												}
-												onClick={() => activate(account)}
-												size="lg"
-											>
-												{busyId === account.id
-													? "Activando…"
-													: "Activar cuenta"}
-											</Button>
-										</div>
+								</div>
+								<RoleCheckboxes
+									onChange={(next) => patchReview(account.id, { roles: next })}
+									roles={roles}
+								/>
+								<div className="flex flex-col gap-3">
+									<Label className="min-h-11 cursor-pointer gap-3 text-[15px] font-normal">
+										<Checkbox
+											checked={verified}
+											onCheckedChange={(checked) =>
+												patchReview(account.id, {
+													verified: checked === true,
+												})
+											}
+										/>
+										Verifiqué su identidad fuera de SISLAB
+									</Label>
+									<div>
+										<Button
+											disabled={
+												busyId !== null || !verified || roles.length === 0
+											}
+											onClick={() => activate(account)}
+											size="lg"
+										>
+											{busyId === account.id ? "Activando…" : "Activar cuenta"}
+										</Button>
 									</div>
-								</article>
+								</div>
 							</Card>
 						);
 					})}

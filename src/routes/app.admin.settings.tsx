@@ -78,121 +78,118 @@ function SettingsPage() {
 				title="Configuración"
 			/>
 
-			<Card asChild className="gap-7 p-7 max-md:p-5">
-				<form onSubmit={save}>
-					<div className="flex flex-col gap-1.5">
-						<CardTitle>Aviso mínimo para solicitudes</CardTitle>
-						<p className="text-pretty text-muted-foreground">
-							Días de calendario que deben pasar entre el envío de una solicitud
-							de preparación y la fecha de la práctica. Con menos aviso, el
-							profesor debe explicar el motivo y el personal decide si la
-							acepta.
-						</p>
-					</div>
+			<Card className="gap-7 p-7 max-md:p-5" render={<form onSubmit={save} />}>
+				<div className="flex flex-col gap-1.5">
+					<CardTitle>Aviso mínimo para solicitudes</CardTitle>
+					<p className="text-pretty text-muted-foreground">
+						Días de calendario que deben pasar entre el envío de una solicitud
+						de preparación y la fecha de la práctica. Con menos aviso, el
+						profesor debe explicar el motivo y el personal decide si la acepta.
+					</p>
+				</div>
 
-					<Field className="gap-2">
-						<FieldLabel htmlFor="min-notice-days">Días de aviso</FieldLabel>
-						<div className="flex items-center gap-2.5">
-							<Button
-								aria-label="Restar un día"
-								className="size-12"
-								disabled={days <= 0}
-								onClick={() => setDays(Math.max(0, days - 1))}
-								size="icon"
-								variant="outline"
-							>
-								<Minus aria-hidden="true" size={20} />
-							</Button>
-							<Input
-								className="w-24 appearance-none px-0 text-center text-xl font-bold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-								id="min-notice-days"
-								max={MAX_NOTICE_DAYS}
-								min="0"
-								onChange={(event) => {
-									const value = Math.trunc(event.target.valueAsNumber);
-									setDays(
-										Number.isNaN(value)
-											? 0
-											: Math.min(MAX_NOTICE_DAYS, Math.max(0, value)),
-									);
-								}}
-								required
-								step="1"
-								type="number"
-								value={days}
-								variant="filled"
-							/>
-							<Button
-								aria-label="Sumar un día"
-								className="size-12"
-								disabled={days >= MAX_NOTICE_DAYS}
-								onClick={() => setDays(days + 1)}
-								size="icon"
-								variant="outline"
-							>
-								<Plus aria-hidden="true" size={20} />
-							</Button>
-							<span className="text-[15px] text-muted-foreground">
-								{days === 1 ? "día" : "días"}
-							</span>
-						</div>
-						<FieldDescription>
-							Valor inicial: {dayCount(DEFAULT_NOTICE_DAYS)}. Las fechas usan la
-							zona horaria America/Hermosillo.
-						</FieldDescription>
-					</Field>
-
-					<div className="flex flex-col gap-3.5 rounded-lg border bg-background px-5 py-[18px] text-[15px]">
-						<h3 className="font-bold">
-							Cómo se verá hoy,{" "}
-							{formatSessionDate(today, "long").toLocaleLowerCase("es-MX")}
-						</h3>
-						<p>
-							La primera fecha con aviso suficiente es el{" "}
-							<strong>
-								{formatSessionDate(
-									addDays(today, days),
-									"long",
-								).toLocaleLowerCase("es-MX")}
-							</strong>
-							.
-						</p>
-						<div className="flex flex-col gap-2">
-							{PREVIEW_DAYS_AHEAD.map((ahead) => (
-								<div
-									className="flex min-h-9 flex-wrap items-center justify-between gap-3 border-t pt-2.5"
-									key={ahead}
-								>
-									<span>
-										{formatSessionDate(addDays(today, ahead), "long")}{" "}
-										<span className="text-muted-foreground">
-											· {dayCount(ahead)}
-										</span>
-									</span>
-									<Badge variant={ahead < days ? "warning" : "success"}>
-										{ahead < days ? "Requiere motivo" : "Con aviso suficiente"}
-									</Badge>
-								</div>
-							))}
-						</div>
-					</div>
-
-					<ActionNotice notice={notice} />
-
-					<CardFooter className="pt-6">
-						<Button disabled={busy} size="lg" type="submit">
-							{busy ? "Guardando…" : "Guardar cambios"}
-						</Button>
+				<Field className="gap-2">
+					<FieldLabel htmlFor="min-notice-days">Días de aviso</FieldLabel>
+					<div className="flex items-center gap-2.5">
 						<Button
-							disabled={busy || days === DEFAULT_NOTICE_DAYS}
-							onClick={() => setDays(DEFAULT_NOTICE_DAYS)}
-							size="lg"
+							aria-label="Restar un día"
+							className="size-12"
+							disabled={days <= 0}
+							onClick={() => setDays(Math.max(0, days - 1))}
+							size="icon"
 							variant="outline"
 						>
-							Restablecer a {dayCount(DEFAULT_NOTICE_DAYS)}
+							<Minus aria-hidden="true" size={20} />
 						</Button>
-					</CardFooter>
-				</form>
+						<Input
+							className="w-24 appearance-none px-0 text-center text-xl font-bold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+							id="min-notice-days"
+							max={MAX_NOTICE_DAYS}
+							min="0"
+							onChange={(event) => {
+								const value = Math.trunc(event.target.valueAsNumber);
+								setDays(
+									Number.isNaN(value)
+										? 0
+										: Math.min(MAX_NOTICE_DAYS, Math.max(0, value)),
+								);
+							}}
+							required
+							step="1"
+							type="number"
+							value={days}
+							variant="filled"
+						/>
+						<Button
+							aria-label="Sumar un día"
+							className="size-12"
+							disabled={days >= MAX_NOTICE_DAYS}
+							onClick={() => setDays(days + 1)}
+							size="icon"
+							variant="outline"
+						>
+							<Plus aria-hidden="true" size={20} />
+						</Button>
+						<span className="text-[15px] text-muted-foreground">
+							{days === 1 ? "día" : "días"}
+						</span>
+					</div>
+					<FieldDescription>
+						Valor inicial: {dayCount(DEFAULT_NOTICE_DAYS)}. Las fechas usan la
+						zona horaria America/Hermosillo.
+					</FieldDescription>
+				</Field>
+
+				<div className="flex flex-col gap-3.5 rounded-lg border bg-background px-5 py-[18px] text-[15px]">
+					<h3 className="font-bold">
+						Cómo se verá hoy,{" "}
+						{formatSessionDate(today, "long").toLocaleLowerCase("es-MX")}
+					</h3>
+					<p>
+						La primera fecha con aviso suficiente es el{" "}
+						<strong>
+							{formatSessionDate(
+								addDays(today, days),
+								"long",
+							).toLocaleLowerCase("es-MX")}
+						</strong>
+						.
+					</p>
+					<div className="flex flex-col gap-2">
+						{PREVIEW_DAYS_AHEAD.map((ahead) => (
+							<div
+								className="flex min-h-9 flex-wrap items-center justify-between gap-3 border-t pt-2.5"
+								key={ahead}
+							>
+								<span>
+									{formatSessionDate(addDays(today, ahead), "long")}{" "}
+									<span className="text-muted-foreground">
+										· {dayCount(ahead)}
+									</span>
+								</span>
+								<Badge variant={ahead < days ? "warning" : "success"}>
+									{ahead < days ? "Requiere motivo" : "Con aviso suficiente"}
+								</Badge>
+							</div>
+						))}
+					</div>
+				</div>
+
+				<ActionNotice notice={notice} />
+
+				<CardFooter className="pt-6">
+					<Button disabled={busy} size="lg" type="submit">
+						{busy ? "Guardando…" : "Guardar cambios"}
+					</Button>
+					<Button
+						disabled={busy || days === DEFAULT_NOTICE_DAYS}
+						onClick={() => setDays(DEFAULT_NOTICE_DAYS)}
+						size="lg"
+						variant="outline"
+					>
+						Restablecer a {dayCount(DEFAULT_NOTICE_DAYS)}
+					</Button>
+				</CardFooter>
 			</Card>
 
 			<Footnote>
