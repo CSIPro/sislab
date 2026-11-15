@@ -1,4 +1,5 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { KeyRound } from "lucide-react";
 import {
 	type FormEvent,
 	startTransition,
@@ -151,6 +152,23 @@ const roleFilterOptions = [
 	...allRoles.map((role) => [role, roleLabels[role]] as const),
 ] as const;
 
+const passwordAlphabet =
+	"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+/** 16 characters from an alphabet without look-alikes (0/O, 1/l/I). */
+function randomPassword(length = 16) {
+	const limit = 256 - (256 % passwordAlphabet.length);
+	let result = "";
+	while (result.length < length) {
+		for (const byte of crypto.getRandomValues(new Uint8Array(length))) {
+			if (byte < limit && result.length < length) {
+				result += passwordAlphabet[byte % passwordAlphabet.length];
+			}
+		}
+	}
+	return result;
+}
+
 /** The form open in the dialog for the selected account. */
 type Draft =
 	| { mode: "roles"; roles: UserRole[] }
@@ -181,6 +199,20 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 	function select(userId: string) {
 		setSelectedId(userId);
 		setNotice(null);
+	}
+
+	async function generatePassword() {
+		const password = randomPassword();
+		setDraft({ mode: "password", password });
+		try {
+			await navigator.clipboard.writeText(password);
+			setNotice({ text: "Contraseña generada y copiada.", error: false });
+		} catch {
+			setNotice({
+				text: "Contraseña generada, pero no se pudo copiar. Cópiala a mano.",
+				error: true,
+			});
+		}
 	}
 
 	async function run(fallback: string, action: () => Promise<string>) {
@@ -398,17 +430,33 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 							<FieldLabel htmlFor="user-new-password">
 								Contraseña nueva
 							</FieldLabel>
-							<Input
-								autoComplete="new-password"
-								id="user-new-password"
-								minLength={12}
-								onChange={(event) =>
-									setDraft({ mode: "password", password: event.target.value })
-								}
-								required
-								value={draft.password}
-							/>
-							<FieldDescription>Al menos 12 caracteres.</FieldDescription>
+							<div className="flex gap-2">
+								<Input
+									autoComplete="new-password"
+									id="user-new-password"
+									minLength={12}
+									onChange={(event) =>
+										setDraft({ mode: "password", password: event.target.value })
+									}
+									required
+									value={draft.password}
+								/>
+								<Button
+									aria-label="Generar contraseña y copiarla"
+									disabled={busy}
+									onClick={() => void generatePassword()}
+									size="icon"
+									title="Generar contraseña y copiarla"
+									type="button"
+									variant="outline"
+								>
+									<KeyRound aria-hidden />
+								</Button>
+							</div>
+							<FieldDescription>
+								Al menos 12 caracteres. El botón genera una y la copia al
+								portapapeles.
+							</FieldDescription>
 						</Field>
 					)}
 				</FormDialog>
