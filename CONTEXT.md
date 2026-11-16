@@ -8,6 +8,10 @@ Sislab schedules teaching in laboratories and helps staff prepare for lab exerci
 An interval of teaching identified by a year and term code, including regular and summer terms. The regular terms are `YEAR-1` and `YEAR-2`, and the summer term is `YEAR-V` ("Verano"), which falls between them. A period has default dates for its term: `YEAR-1` runs January 1 to May 31, `YEAR-V` runs June 1 to July 31, and `YEAR-2` runs August 1 to December 31. It uses its official dates when an admin has set them and its default dates otherwise. A period is current between those dates. Mis grupos opens on the current period or, when none is current, on the most recent period that has started. When no period has started, it opens on the newest period where the professor has groups.
 _Avoid_: Semester
 
+**Concluded period**:
+An academic period whose end date has passed. Its last day still belongs to the period. A professor's groups in a concluded period are frozen as the period left them, and no new groups or preparation requests go into it.
+_Avoid_: Past period, closed period
+
 **Professor**:
 A person who registers groups and submits preparation requests. The interface labels the role **Docente**, while running copy says "profesor". Code and the `user_roles` table use `professor`.
 
