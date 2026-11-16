@@ -3,7 +3,6 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type * as schema from '../db/schema.ts'
 import { groups, periods } from '../db/schema.ts'
 import {
-	currentAcademicPeriodCode,
 	regularPeriodCodes,
 	suggestedAcademicPeriodCode,
 	validateAcademicPeriodCode,
@@ -35,11 +34,7 @@ export async function listAcademicPeriods(
 		.orderBy(...byPeriodCode(periods.code))
 	return {
 		periods: available,
-		suggestedCode: suggestedAcademicPeriodCode(
-			available,
-			sislabToday(instant),
-			currentAcademicPeriodCode(instant),
-		),
+		suggestedCode: suggestedAcademicPeriodCode(available, sislabToday(instant)),
 	}
 }
 

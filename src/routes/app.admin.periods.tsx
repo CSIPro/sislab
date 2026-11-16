@@ -39,6 +39,8 @@ import {
 	type AcademicPeriodStatus,
 	academicPeriodStatus,
 	currentAcademicPeriodCode,
+	type EffectivePeriodDates,
+	effectivePeriodDates,
 	regularPeriodCodes,
 	suggestedAcademicPeriodCode,
 } from "../lib/academic-period.ts";
@@ -82,7 +84,7 @@ function AcademicPeriodsPage() {
 	const currentCode = currentAcademicPeriodCode();
 	const today = sislabToday();
 	const [selectedCode, setSelectedCode] = useState(
-		suggestedAcademicPeriodCode(initial.periods, today, currentCode) ??
+		suggestedAcademicPeriodCode(initial.periods, today) ??
 			initial.periods.at(-1)?.code ??
 			null,
 	);
@@ -205,7 +207,8 @@ function AcademicPeriodsPage() {
 					<TableBody>
 						{[...periods].reverse().map((period) => {
 							const [variant, label] =
-								statusBadges[academicPeriodStatus(period, today, currentCode)];
+								statusBadges[academicPeriodStatus(period, today)];
+							const dates = effectivePeriodDates(period);
 							const isSelected = period.code === selectedCode;
 							return (
 								<TableRow
@@ -225,8 +228,12 @@ function AcademicPeriodsPage() {
 											{period.code}
 										</Button>
 									</TableCell>
-									<TableCell>{officialDate(period.startsOn)}</TableCell>
-									<TableCell>{officialDate(period.endsOn)}</TableCell>
+									<TableCell>
+										<PeriodDate dates={dates} edge="startsOn" />
+									</TableCell>
+									<TableCell>
+										<PeriodDate dates={dates} edge="endsOn" />
+									</TableCell>
 									<TableCell>{period.groupCount}</TableCell>
 									<TableCell>
 										<Badge variant={variant}>{label}</Badge>
@@ -254,7 +261,7 @@ function AcademicPeriodsPage() {
 									})
 								}
 								period={selected}
-								status={academicPeriodStatus(selected, today, currentCode)}
+								status={academicPeriodStatus(selected, today)}
 							/>
 						) : (
 							<EmptyState id="period-panel-title">
@@ -341,6 +348,7 @@ function PeriodDetail({
 	onEdit: () => void;
 }) {
 	const [variant, label] = statusBadges[status];
+	const dates = effectivePeriodDates(period);
 	return (
 		<>
 			<div className="flex items-start justify-between gap-3">
@@ -354,10 +362,10 @@ function PeriodDetail({
 			</div>
 			<DescriptionList columns={2}>
 				<DescriptionItem term="Inicio">
-					{officialDate(period.startsOn)}
+					<PeriodDate dates={dates} edge="startsOn" />
 				</DescriptionItem>
 				<DescriptionItem term="Fin">
-					{officialDate(period.endsOn)}
+					<PeriodDate dates={dates} edge="endsOn" />
 				</DescriptionItem>
 				<DescriptionItem term="Grupos">{period.groupCount}</DescriptionItem>
 			</DescriptionList>
@@ -380,6 +388,21 @@ const dateFormat = new Intl.DateTimeFormat("es-MX", {
 	timeZone: "UTC",
 	dateStyle: "medium",
 });
-function officialDate(date: string | null) {
-	return date ? dateFormat.format(new Date(`${date}T12:00:00Z`)) : "Sin fecha";
+
+/** An effective date. Default dates show muted, marked "predeterminada". */
+function PeriodDate({
+	dates,
+	edge,
+}: {
+	dates: EffectivePeriodDates | null;
+	edge: "startsOn" | "endsOn";
+}) {
+	if (!dates) return "Sin fecha";
+	const text = dateFormat.format(new Date(`${dates[edge]}T12:00:00Z`));
+	if (dates.official) return text;
+	return (
+		<span className="text-muted-foreground">
+			{text} <span className="text-[13px]">(predeterminada)</span>
+		</span>
+	);
 }

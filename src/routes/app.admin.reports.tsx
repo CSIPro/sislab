@@ -35,8 +35,7 @@ import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	academicPeriodStatus,
 	compareAcademicPeriodCodes,
-	currentAcademicPeriodCode,
-	defaultReportPeriodCode,
+	defaultPeriodCode,
 } from "../lib/academic-period.ts";
 import { downloadReportWorkbook } from "../lib/download-report-workbook.ts";
 import { downloadTicketArchive } from "../lib/download-ticket-archive.ts";
@@ -113,11 +112,10 @@ export const Route = createFileRoute("/app/admin/reports")({
 		if (!user.roles.includes("admin")) throw redirect({ to: "/app/dashboard" });
 		const { periods } = await listAcademicPeriodsFn();
 		const today = sislabToday();
-		const currentCode = currentAcademicPeriodCode();
 		const known = new Set(periods.map(({ code }) => code));
 		const chosen = (deps.periods ?? []).filter((code) => known.has(code));
 		// With nothing chosen, the report falls back to the default period.
-		const fallback = defaultReportPeriodCode(periods, today, currentCode);
+		const fallback = defaultPeriodCode(periods, today);
 		const selected = (chosen.length > 0 ? chosen : fallback ? [fallback] : [])
 			.slice()
 			.sort(compareAcademicPeriodCodes);
@@ -126,7 +124,7 @@ export const Route = createFileRoute("/app/admin/reports")({
 			periodOptions: [...periods].reverse().map((period) => ({
 				value: period.code,
 				label:
-					academicPeriodStatus(period, today, currentCode) === "current"
+					academicPeriodStatus(period, today) === "current"
 						? `${period.code} (actual)`
 						: period.code,
 			})),
