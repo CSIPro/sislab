@@ -5,6 +5,7 @@
 ## Changed
 
 - `src/components/ui/select.tsx`:
+  - `Select.List` is the scroll container (`overflow-y-auto`, `scroll-py-6`) and the Popup is a flex column with `overflow-hidden`. Base UI scrolls the List when one is present and hides its native scrollbar while the scroll arrows are shown, as Radix did. With the Popup scrolling instead, the native scrollbar showed next to the arrows.
   - The Positioner carries `isolate z-50`. Base UI positions it with a transform, which makes it its own stacking context, so without a z-index the list opened behind dialogs even though the Popup had `z-50`.
   - `Select` is now a bare re-export of `SelectPrimitive.Root` from `@base-ui/react/select`, because the Root is generic over its value type. It no longer carries `data-slot="select"`.
   - `SelectContent` renders `Portal > Positioner > Popup > List`. The radix `position` prop is gone; `alignItemWithTrigger` (default `true`, like radix's `item-aligned` default) plus `side`, `sideOffset`, `align` and `alignOffset` are picked from the Positioner props, destructured and forwarded to it. The popper-only radix classes became `!alignItemWithTrigger && "min-w-(--anchor-width)"`. Vars: `--radix-select-content-available-height` became `--available-height`, `--radix-select-content-transform-origin` became `--transform-origin`. `data-[state=open|closed]` became `data-open` / `data-closed`, and `data-[align-trigger=true]:animate-none` skips the zoom when the list opens over the trigger.
