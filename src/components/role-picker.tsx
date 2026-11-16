@@ -1,7 +1,14 @@
 import { useId } from "react";
 import { Checkbox } from "#/components/ui/checkbox.tsx";
-import { FieldLegend, FieldSet } from "#/components/ui/field.tsx";
-import { Label } from "#/components/ui/label.tsx";
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldLabel,
+	FieldLegend,
+	FieldSet,
+	FieldTitle,
+} from "#/components/ui/field.tsx";
 import { allRoles, roleDescriptions, roleLabels } from "#/lib/user-roles.ts";
 import type { UserRole } from "#/server/user-access.ts";
 
@@ -20,34 +27,40 @@ export function RolePicker({
 		<FieldSet className="gap-2" disabled={disabled}>
 			<FieldLegend variant="label">Roles</FieldLegend>
 			{allRoles.map((role) => (
-				<Label
-					className="cursor-pointer items-start gap-3.5 rounded-lg border bg-card px-3.5 py-3 text-base font-normal has-data-checked:border-primary has-data-checked:bg-accent has-data-checked:shadow-[0_0_0_1px_var(--primary)] has-data-disabled:cursor-not-allowed has-data-disabled:opacity-60"
+				<FieldLabel
+					className="cursor-pointer rounded-lg bg-card has-data-checked:bg-accent has-data-checked:ring-1 has-data-checked:ring-primary has-data-disabled:cursor-not-allowed has-data-disabled:opacity-60 [&>*]:data-[slot=field]:px-3.5 [&>*]:data-[slot=field]:py-3"
 					key={role}
 				>
-					<Checkbox
-						aria-describedby={`${id}-${role}-description`}
-						aria-labelledby={`${id}-${role}-label`}
-						checked={roles.includes(role)}
-						className="mt-0.5"
-						disabled={disabled}
-						onCheckedChange={(checked) =>
-							onChange(
-								checked === true
-									? [...roles, role]
-									: roles.filter((entry) => entry !== role),
-							)
-						}
-					/>
-					<span className="flex min-w-0 flex-1 flex-col">
-						<strong id={`${id}-${role}-label`}>{roleLabels[role]}</strong>
-						<span
-							className="text-sm text-muted-foreground"
-							id={`${id}-${role}-description`}
-						>
-							{roleDescriptions[role]}
-						</span>
-					</span>
-				</Label>
+					<Field className="gap-3.5" orientation="horizontal">
+						<Checkbox
+							aria-describedby={`${id}-${role}-description`}
+							aria-labelledby={`${id}-${role}-label`}
+							checked={roles.includes(role)}
+							disabled={disabled}
+							onCheckedChange={(checked) =>
+								onChange(
+									checked === true
+										? [...roles, role]
+										: roles.filter((entry) => entry !== role),
+								)
+							}
+						/>
+						<FieldContent className="gap-0">
+							<FieldTitle
+								className="text-base font-bold"
+								id={`${id}-${role}-label`}
+							>
+								{roleLabels[role]}
+							</FieldTitle>
+							<FieldDescription
+								className="text-sm"
+								id={`${id}-${role}-description`}
+							>
+								{roleDescriptions[role]}
+							</FieldDescription>
+						</FieldContent>
+					</Field>
+				</FieldLabel>
 			))}
 		</FieldSet>
 	);
