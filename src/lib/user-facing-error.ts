@@ -30,6 +30,7 @@ const translations = new Map<string, string>([
 	['This group has a future preparation request. Its lab, schedule, and team count are locked until the request is voided or its session date passes.', 'Este grupo tiene una solicitud de preparación próxima. Su laboratorio, horario y número de equipos están bloqueados hasta que la solicitud se anule o pase la fecha de su sesión.'],
 	['Choose an active lab before reactivating this group.', 'Elige un laboratorio activo antes de reactivar este grupo.'],
 	['Could not reactivate this group.', 'No se pudo reactivar el grupo.'],
+	['This academic period has concluded. Groups can only be registered in the current or a future period.', 'Este período académico ya concluyó. Solo se pueden registrar grupos en el período actual o en uno futuro.'],
 	['This lab already has a group during that period and time. Choose another time, day, or lab.', 'Este laboratorio ya tiene un grupo en ese período y horario. Elige otro horario, día o laboratorio.'],
 	['Enter both period dates, or leave both blank.', 'Escribe ambas fechas del período o deja las dos vacías.'],
 	['The end date must be on or after the start date.', 'La fecha de término debe ser igual o posterior a la fecha de inicio.'],
@@ -62,7 +63,22 @@ const translations = new Map<string, string>([
 	['Choose a valid pending account.', 'Elige una solicitud de acceso válida.'],
 ])
 
+// Messages that carry a value, such as a period code, cannot be matched whole.
+const patterns: [RegExp, (match: RegExpMatchArray) => string][] = [
+	[
+		/^Academic period (\S+) has concluded, so its groups can no longer be changed\. Ask an admin to correct this group\.$/,
+		([, code]) =>
+			`El período ${code} concluyó, así que sus grupos ya no se pueden cambiar. Pide a un administrador que corrija este grupo.`,
+	],
+]
+
 export function userFacingError(error: unknown, fallback: string): string {
 	if (!(error instanceof Error)) return fallback
-	return translations.get(error.message) ?? fallback
+	const translated = translations.get(error.message)
+	if (translated) return translated
+	for (const [pattern, translate] of patterns) {
+		const match = error.message.match(pattern)
+		if (match) return translate(match)
+	}
+	return fallback
 }
