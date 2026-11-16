@@ -653,9 +653,19 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 async function setTime(page: import('@playwright/test').Page, label: string, time: string) {
 	const [hour, minute] = time.split(':')
 	await page.getByLabel(`${label}, hora`).click()
-	await page.getByRole('option', { name: hour, exact: true }).click()
+	await chooseOption(page, hour)
 	await page.getByLabel(`${label}, minutos`).click()
-	await page.getByRole('option', { name: minute, exact: true }).click()
+	await chooseOption(page, minute)
+}
+
+/**
+ * Clicks an option in the open list and waits for the list to close. A Base UI
+ * list stays in the page while its close animation runs, so the next list to
+ * open could otherwise share option names with it.
+ */
+async function chooseOption(page: import('@playwright/test').Page, name: string | RegExp) {
+	await page.getByRole('option', { name, exact: typeof name === 'string' }).click()
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 }
 
 /** An empty time shows the "--" placeholders. */
@@ -668,6 +678,7 @@ async function expectTime(page: import('@playwright/test').Page, label: string, 
 async function pick(page: import('@playwright/test').Page, label: string, option: string | RegExp) {
 	await page.getByLabel(label).click()
 	await page.getByRole('option', { name: option }).click()
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 }
 
 async function signIn(page: import('@playwright/test').Page, email: string, userPassword = password) {
