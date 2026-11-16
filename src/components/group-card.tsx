@@ -28,15 +28,18 @@ export type GroupCardData = {
  * One group: its subject, career, number, state and schedule. The page passes the
  * footer actions as `children`. Pass `professor` on pages that list several
  * professors' groups, and `currentPeriodCode` to name the period of an older group.
+ * A page that already names its period passes `showPeriod={false}`.
  */
 export function GroupCard({
 	group,
 	currentPeriodCode,
+	showPeriod = true,
 	professor,
 	children,
 }: {
 	group: GroupCardData;
 	currentPeriodCode?: string | null;
+	showPeriod?: boolean;
 	professor?: { name: string; surname: string; email: string };
 	children?: ReactNode;
 }) {
@@ -55,7 +58,8 @@ export function GroupCard({
 					</CardTitle>
 					<p className="mt-0.5 text-sm text-muted-foreground">
 						{group.careerName}
-						{group.periodCode !== currentPeriodCode &&
+						{showPeriod &&
+							group.periodCode !== currentPeriodCode &&
 							` · Período ${group.periodCode}`}
 					</p>
 					{professor && (

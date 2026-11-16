@@ -125,3 +125,52 @@ export function defaultPeriodCode(periods: DatedPeriod[], today: string): string
 		.sort((a, b) => compareAcademicPeriodCodes(b.code, a.code))
 	return started[0]?.code ?? null
 }
+
+export type GroupPeriodOption = {
+	code: string
+	groupCount: number
+	/** True when the period's dates include today. */
+	current: boolean
+}
+
+/**
+ * What the period select on Mis grupos offers. The options are the periods where
+ * the professor has a group (`groupPeriodCodes` holds one code per group) plus the
+ * default period, newest first. The default is `defaultPeriodCode`, or the newest
+ * option when no period has started. `requested` is the period from the page
+ * address, which `selectedCode` honors only when it is one of the options.
+ */
+export function groupPeriodChoice(
+	periods: DatedPeriod[],
+	groupPeriodCodes: string[],
+	today: string,
+	requested: string | undefined,
+): {
+	options: GroupPeriodOption[]
+	defaultCode: string | null
+	defaultIsCurrent: boolean
+	selectedCode: string | null
+} {
+	const known = new Map(periods.map((period) => [period.code, period]))
+	const ruleDefault = defaultPeriodCode(periods, today)
+	const counts = new Map<string, number>()
+	for (const code of groupPeriodCodes) {
+		if (known.has(code)) counts.set(code, (counts.get(code) ?? 0) + 1)
+	}
+	if (ruleDefault && !counts.has(ruleDefault)) counts.set(ruleDefault, 0)
+	const options = [...counts]
+		.sort(([a], [b]) => compareAcademicPeriodCodes(b, a))
+		.map(([code, groupCount]) => ({
+			code,
+			groupCount,
+			current: academicPeriodStatus(known.get(code) as DatedPeriod, today) === 'current',
+		}))
+	const defaultOption = options.find(({ code }) => code === ruleDefault) ?? options[0]
+	const selected = options.find(({ code }) => code === requested) ?? defaultOption
+	return {
+		options,
+		defaultCode: defaultOption?.code ?? null,
+		defaultIsCurrent: defaultOption?.current ?? false,
+		selectedCode: selected?.code ?? null,
+	}
+}

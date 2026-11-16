@@ -8,12 +8,8 @@ import {
 	type GroupInput,
 } from "../components/group-edit-dialog.tsx";
 import { ActionNotice } from "../components/notice.tsx";
-import {
-	EmptyState,
-	Page,
-	PageHeader,
-	PeriodPill,
-} from "../components/page.tsx";
+import { OptionSelect } from "../components/option-select.tsx";
+import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import {
@@ -22,15 +18,18 @@ import {
 } from "../components/ui/toggle-group.tsx";
 import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { useSislabClock } from "../hooks/use-sislab-clock.ts";
+import { groupPeriodChoice } from "../lib/academic-period.ts";
 import {
 	groupLabel,
 	groupSessionProgress,
+	sislabToday,
 	timeRange,
 	weekdayOf,
 } from "../lib/session-dates.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
 import { cn } from "../lib/utils.ts";
 import { weekdays } from "../lib/weekdays.ts";
+import { listAcademicPeriodsFn } from "../server/academic-period-functions.ts";
 import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import { getProfessorGroupOptionsFn } from "../server/group-functions.ts";
 import {
@@ -41,16 +40,22 @@ import {
 } from "../server/group-management-functions.ts";
 
 export const Route = createFileRoute("/app/groups/manage")({
+	// A value that is not a period code is dropped. One that names no option falls back in the page.
+	validateSearch: (search: Record<string, unknown>): { period?: string } => ({
+		...(typeof search.period === "string" &&
+			/^\d{4}-[12V]$/.test(search.period) && { period: search.period }),
+	}),
 	loader: async () => {
 		const user = await getCurrentSessionFn();
 		if (!user) throw redirect({ to: "/sign-in" });
 		if (!user.roles.includes("professor"))
 			throw redirect({ to: "/app/dashboard" });
-		const [groups, options] = await Promise.all([
+		const [groups, options, { periods }] = await Promise.all([
 			listMyGroupsFn({ data: { includeInactive: true } }),
 			getProfessorGroupOptionsFn(),
+			listAcademicPeriodsFn(),
 		]);
-		return { groups, options };
+		return { groups, options, periods, today: sislabToday() };
 	},
 	component: ManageGroupsPage,
 });
@@ -61,19 +66,37 @@ type Group = Awaited<ReturnType<typeof listMyGroupsFn>>[number];
 const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 function ManageGroupsPage() {
-	const { groups: initialGroups, options } = Route.useLoaderData();
-	const { periodCode } = Route.useRouteContext();
+	const {
+		groups: initialGroups,
+		options,
+		periods,
+		today,
+	} = Route.useLoaderData();
+	const search = Route.useSearch();
+	const navigate = Route.useNavigate();
 	const [groups, setGroups] = useState(initialGroups);
 	const [includeInactive, setIncludeInactive] = useState(false);
 	const pageFailure = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const dialogFailure = useActionFailure();
-	const activeGroups = groups.filter((group) => group.active);
+	const period = groupPeriodChoice(
+		periods,
+		groups.map((group) => group.periodCode),
+		today,
+		search.period,
+	);
+	const selectedOption = period.options.find(
+		({ code }) => code === period.selectedCode,
+	);
+	const periodGroups = groups.filter(
+		(group) => group.periodCode === period.selectedCode,
+	);
+	const activeGroups = periodGroups.filter((group) => group.active);
 	const editingGroup = groups.find(
 		(group) => group.id === editingId && group.active,
 	);
-	const visibleGroups = includeInactive ? groups : activeGroups;
+	const visibleGroups = includeInactive ? periodGroups : activeGroups;
 	const weekGroups = [...activeGroups].sort((a, b) =>
 		a.startTime.localeCompare(b.startTime),
 	);
@@ -125,7 +148,20 @@ function ManageGroupsPage() {
 				description={`${activeGroups.length} ${activeGroups.length === 1 ? "grupo activo" : "grupos activos"}`}
 				title="Mis grupos"
 			>
-				{periodCode && <PeriodPill code={periodCode} />}
+				{period.selectedCode && (
+					<OptionSelect
+						aria-label="Período"
+						className="min-h-11 font-bold"
+						onValueChange={(code) =>
+							void navigate({ search: { period: code } })
+						}
+						options={period.options.map(({ code, groupCount, current }) => [
+							code,
+							`${code}${current ? " (actual)" : ""} · ${groupCount} ${groupCount === 1 ? "grupo" : "grupos"}`,
+						])}
+						value={period.selectedCode}
+					/>
+				)}
 				<Link to="/app/groups/new" className={buttonVariants({ size: "lg" })}>
 					<Plus aria-hidden="true" size={18} strokeWidth={2} />
 					Nuevo grupo
@@ -218,26 +254,48 @@ function ManageGroupsPage() {
 							Activos · {activeGroups.length}
 						</ToggleGroupItem>
 						<ToggleGroupItem value="all">
-							Todos · {groups.length}
+							Todos · {periodGroups.length}
 						</ToggleGroupItem>
 					</ToggleGroup>
 				</div>
+				{period.selectedCode && (
+					<p className="text-sm text-muted-foreground">
+						Estás viendo los grupos del período {period.selectedCode}.
+						{!selectedOption?.current && " No es el período actual."}
+						{period.selectedCode !== period.defaultCode && (
+							<>
+								{" "}
+								<Link
+									className={buttonVariants({
+										variant: "link",
+										size: "inline",
+									})}
+									search={{}}
+									to="/app/groups/manage"
+								>
+									{period.defaultIsCurrent
+										? "Ir al período actual"
+										: "Ir al período más reciente"}{" "}
+									({period.defaultCode})
+								</Link>
+							</>
+						)}
+					</p>
+				)}
 				<ActionNotice failure={pageFailure.failure} />
 				{visibleGroups.length === 0 && (
 					<EmptyState>
-						{includeInactive
-							? "No hay grupos para mostrar."
-							: "No hay grupos activos para mostrar."}{" "}
+						{periodGroups.length === 0
+							? period.selectedCode
+								? `No tienes grupos en el período ${period.selectedCode}.`
+								: "No tienes grupos."
+							: "No hay grupos activos en este período."}{" "}
 						<Link to="/app/groups/new">Registra un grupo</Link>
 					</EmptyState>
 				)}
 				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] gap-5">
 					{visibleGroups.map((group) => (
-						<GroupCard
-							currentPeriodCode={periodCode}
-							group={group}
-							key={group.id}
-						>
+						<GroupCard group={group} key={group.id} showPeriod={false}>
 							{group.active && (
 								<Link
 									search={{ group: group.id }}

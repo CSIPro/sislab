@@ -4,7 +4,12 @@ import ExcelJS from 'exceljs'
 import { unzipSync } from 'fflate'
 import { readFileSync } from 'node:fs'
 import { Pool } from 'pg'
-import { currentAcademicPeriodCode } from '../../src/lib/academic-period.ts'
+import {
+	academicPeriodStatus,
+	compareAcademicPeriodCodes,
+	currentAcademicPeriodCode,
+	defaultPeriodCode,
+} from '../../src/lib/academic-period.ts'
 import { sislabToday } from '../../src/lib/session-dates.ts'
 import { hashPassword } from '../../src/server/auth.server.ts'
 
@@ -199,7 +204,8 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByText(subjectName, { exact: true })).toBeVisible()
 	await expect(page.getByText('Martes, 10:00–11:00')).toBeVisible()
 
-	await page.goto(`${base}/app/groups/manage`)
+	// Mis grupos opens on the default period, so ask for the period of the group just registered.
+	await page.goto(`${base}/app/groups/manage?period=${periodCode}`)
 	await page.waitForLoadState('networkidle')
 	await expect(page.getByRole('heading', { name: 'Tu semana en el laboratorio' })).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Activos · 1' })).toHaveAttribute('aria-pressed', 'true')
@@ -469,6 +475,107 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
 		await pool.query('DELETE FROM groups WHERE id = $1', [group.rows[0].id])
 		if (insertedPeriod.rowCount) await pool.query('DELETE FROM periods WHERE code = $1', [currentCode])
+	}
+})
+
+test('professor filters Mis grupos by academic period and the choice stays in the address', async ({ page, browser }) => {
+	test.setTimeout(90_000)
+	const today = sislabToday()
+	const owner = await pool.query('SELECT id FROM users WHERE email = $1', [professor.email])
+	const lab = await pool.query('SELECT id FROM labs WHERE name = $1', [labName])
+	const career = await pool.query('SELECT id FROM careers WHERE name = $1', [careerName])
+	const subject = await pool.query('SELECT id FROM subjects WHERE name = $1', [subjectName])
+	const insertedPeriod = await pool.query('INSERT INTO periods (code) VALUES ($1) ON CONFLICT (code) DO NOTHING', [currentAcademicPeriodCode()])
+	const dated = await pool.query(`SELECT code, starts_on::text AS "startsOn", ends_on::text AS "endsOn" FROM periods`)
+	const defaultCode = defaultPeriodCode(dated.rows, today)
+	if (!defaultCode) throw new Error('The test database has no period that has started.')
+	const statusOf = (code: string) => academicPeriodStatus(dated.rows.find((row) => row.code === code), today)
+	const label = (code: string) => `${code}${statusOf(code) === 'current' ? ' (actual)' : ''} · 1 grupo`
+	const group = await pool.query(
+		`INSERT INTO groups (professor_id, period_code, number, lab_id, lab_name, career_id, career_name, subject_id, subject_name, students, teams, weekday, start_time, end_time)
+		VALUES ($1, $2, 91, $3, $4, $5, $6, $7, $8, 20, 5, 3, '14:00', '16:00') RETURNING id`,
+		[owner.rows[0].id, defaultCode, lab.rows[0].id, labName, career.rows[0].id, careerName, subject.rows[0].id, subjectName],
+	)
+	const otherCode = periodCode
+	const defaultCopy = statusOf(defaultCode) === 'current' ? 'actual' : 'más reciente'
+	const resetLink = page.getByRole('link', { name: `Ir al período ${defaultCopy} (${defaultCode})` })
+	const notCurrent = (code: string) => (statusOf(code) === 'current' ? 'No es el período actual.' : '')
+	const week = page.getByRole('region', { name: 'Tu semana en el laboratorio' })
+	const cardOf = (number: string) => page.locator('article').filter({ hasText: `Grupo ${number}` })
+	try {
+		await signIn(page, professor.email)
+		await page.goto(`${base}/app/groups/manage`)
+		await page.waitForLoadState('networkidle')
+		// The page opens on the default period and shows only its groups.
+		await expect(page.getByLabel('Período')).toContainText(label(defaultCode))
+		await expect(page.getByText(`Estás viendo los grupos del período ${defaultCode}.`)).toBeVisible()
+		if (statusOf(defaultCode) === 'current') await expect(page.getByText('No es el período actual.')).toHaveCount(0)
+		await expect(resetLink).toHaveCount(0)
+		await expect(cardOf('91')).toBeVisible()
+		await expect(page.getByText('Grupo 01')).toHaveCount(0)
+		await expect(week).toContainText('Grupo 91')
+		await expect(week).not.toContainText('Grupo 01')
+		await expect(page.getByRole('button', { name: 'Activos · 1' })).toHaveAttribute('aria-pressed', 'true')
+		await expect(page.getByRole('button', { name: 'Todos · 1' })).toBeVisible()
+		await expect(cardOf('91')).not.toContainText('Período')
+
+		// The select offers each period with groups, newest first, with its group count.
+		await page.getByLabel('Período').click()
+		const expectedLabels = [defaultCode, otherCode].sort((a, b) => compareAcademicPeriodCodes(b, a)).map(label)
+		await expect(page.getByRole('option')).toHaveText(expectedLabels)
+		await page.getByRole('option', { name: label(otherCode) }).click()
+		await expect(page.getByRole('listbox')).toHaveCount(0)
+		await expect(page).toHaveURL(new RegExp(`/app/groups/manage\\?period=${otherCode}$`))
+		await expect(page.getByText(`Estás viendo los grupos del período ${otherCode}.`)).toBeVisible()
+		if (notCurrent(otherCode)) await expect(page.getByText(notCurrent(otherCode))).toBeVisible()
+		await expect(cardOf('01')).toBeVisible()
+		await expect(cardOf('91')).toHaveCount(0)
+		await expect(cardOf('01')).not.toContainText('Período')
+		await expect(week).toContainText('Grupo 01')
+		await expect(week).not.toContainText('Grupo 91')
+
+		// The period stays in the address across a reload.
+		await page.reload()
+		await page.waitForLoadState('networkidle')
+		await expect(page.getByLabel('Período')).toContainText(label(otherCode))
+		await expect(cardOf('01')).toBeVisible()
+
+		// An unknown or malformed period falls back to the default.
+		for (const unknown of ['2031-1', 'no-es-un-periodo']) {
+			await page.goto(`${base}/app/groups/manage?period=${unknown}`)
+			await page.waitForLoadState('networkidle')
+			await expect(page.getByText(`Estás viendo los grupos del período ${defaultCode}.`)).toBeVisible()
+			await expect(cardOf('91')).toBeVisible()
+		}
+
+		// The link goes back to the default period and clears the param.
+		await page.goto(`${base}/app/groups/manage?period=${otherCode}`)
+		await page.waitForLoadState('networkidle')
+		await resetLink.click()
+		await expect(page).toHaveURL(new RegExp(`/app/groups/manage$`))
+		await expect(page.getByText(`Estás viendo los grupos del período ${defaultCode}.`)).toBeVisible()
+		await expect(resetLink).toHaveCount(0)
+
+		// A default period with only inactive groups says so, and Todos still lists them.
+		await pool.query('UPDATE groups SET active = false WHERE id = $1', [group.rows[0].id])
+		await page.reload()
+		await page.waitForLoadState('networkidle')
+		await expect(page.getByText('No hay grupos activos en este período.')).toBeVisible()
+		await expect(page.getByRole('button', { name: 'Activos · 0' })).toHaveAttribute('aria-pressed', 'true')
+		await page.getByRole('button', { name: 'Todos · 1' }).click()
+		await expect(cardOf('91').getByRole('button', { name: 'Reactivar' })).toBeVisible()
+
+		// A professor with no groups reads that the default period is empty.
+		const emptyPage = await (await browser.newContext()).newPage()
+		await signIn(emptyPage, mixed.email)
+		await emptyPage.goto(`${base}/app/groups/manage`)
+		await emptyPage.waitForLoadState('networkidle')
+		await expect(emptyPage.getByText(`No tienes grupos en el período ${defaultCode}.`)).toBeVisible()
+		await expect(emptyPage.getByRole('link', { name: 'Registra un grupo' })).toBeVisible()
+		await emptyPage.context().close()
+	} finally {
+		await pool.query('DELETE FROM groups WHERE id = $1', [group.rows[0].id])
+		if (insertedPeriod.rowCount) await pool.query('DELETE FROM periods WHERE code = $1', [currentAcademicPeriodCode()])
 	}
 })
 

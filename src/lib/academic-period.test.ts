@@ -6,6 +6,7 @@ import {
 	currentAcademicPeriodCode,
 	defaultPeriodCode,
 	effectivePeriodDates,
+	groupPeriodChoice,
 	suggestedAcademicPeriodCode,
 	validateAcademicPeriodCode,
 } from "./academic-period.ts";
@@ -211,4 +212,81 @@ test("there is no default period when none has started", () => {
 	const upcoming = [{ code: "2027-1", ...undated }];
 	assert.equal(defaultPeriodCode(upcoming, "2026-10-12"), null);
 	assert.equal(defaultPeriodCode([], "2026-10-12"), null);
+});
+
+const periodsOf = (...codes: string[]) =>
+	codes.map((code) => ({ code, ...undated }));
+
+test("the select lists the periods with groups plus the default, newest first, with counts", () => {
+	const periods = periodsOf("2025-2", "2026-1", "2026-V", "2026-2", "2027-1");
+	const choice = groupPeriodChoice(
+		periods,
+		["2025-2", "2026-1", "2026-1", "2026-1"],
+		"2026-10-12",
+		undefined,
+	);
+	assert.deepEqual(choice.options, [
+		{ code: "2026-2", groupCount: 0, current: true },
+		{ code: "2026-1", groupCount: 3, current: false },
+		{ code: "2025-2", groupCount: 1, current: false },
+	]);
+	assert.equal(choice.defaultCode, "2026-2");
+	assert.equal(choice.defaultIsCurrent, true);
+	assert.equal(choice.selectedCode, "2026-2");
+});
+
+test("the default period is listed once when the professor has groups in it", () => {
+	const periods = periodsOf("2026-1", "2026-2");
+	const choice = groupPeriodChoice(
+		periods,
+		["2026-2", "2026-2"],
+		"2026-10-12",
+		undefined,
+	);
+	assert.deepEqual(choice.options, [
+		{ code: "2026-2", groupCount: 2, current: true },
+	]);
+});
+
+test("the requested period is selected when it is an option", () => {
+	const periods = periodsOf("2025-2", "2026-1", "2026-2");
+	const groupCodes = ["2025-2", "2026-2"];
+	const select = (requested: string | undefined) =>
+		groupPeriodChoice(periods, groupCodes, "2026-10-12", requested)
+			.selectedCode;
+	assert.equal(select("2025-2"), "2025-2");
+	// Periods without groups, unknown periods and nothing at all fall back.
+	assert.equal(select("2026-1"), "2026-2");
+	assert.equal(select("2031-1"), "2026-2");
+	assert.equal(select(undefined), "2026-2");
+});
+
+test("on a gap day the default is the latest period that started and is not current", () => {
+	const periods = [
+		dated("2026-1", "2026-01-12", "2026-06-05"),
+		dated("2026-2", "2026-08-10", "2026-12-04"),
+	];
+	const choice = groupPeriodChoice(periods, [], "2026-07-30", undefined);
+	assert.equal(choice.defaultCode, "2026-1");
+	assert.equal(choice.defaultIsCurrent, false);
+	assert.deepEqual(choice.options, [
+		{ code: "2026-1", groupCount: 0, current: false },
+	]);
+});
+
+test("with no period started, the select offers the periods that have groups", () => {
+	const periods = periodsOf("2027-1", "2027-2");
+	const choice = groupPeriodChoice(
+		periods,
+		["2027-1"],
+		"2026-10-12",
+		undefined,
+	);
+	assert.equal(choice.defaultCode, "2027-1");
+	assert.equal(choice.defaultIsCurrent, false);
+	assert.equal(choice.selectedCode, "2027-1");
+	const empty = groupPeriodChoice(periods, [], "2026-10-12", undefined);
+	assert.deepEqual(empty.options, []);
+	assert.equal(empty.defaultCode, null);
+	assert.equal(empty.selectedCode, null);
 });
