@@ -81,6 +81,7 @@ export async function updateAnyGroup(
 		await groupOwnerActor(database, groupId),
 		groupId,
 		input,
+		{ allowConcluded: true },
 	);
 }
 
@@ -94,6 +95,7 @@ export async function deactivateAnyGroup(
 		database,
 		await groupOwnerActor(database, groupId),
 		groupId,
+		{ allowConcluded: true },
 	);
 }
 
@@ -107,6 +109,7 @@ export async function reactivateAnyGroup(
 		database,
 		await groupOwnerActor(database, groupId),
 		groupId,
+		{ allowConcluded: true },
 	);
 }
 
