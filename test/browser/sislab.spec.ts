@@ -652,6 +652,7 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 /** Opens a Combobox or Select by its label and picks one option. */
 async function setTime(page: import('@playwright/test').Page, label: string, time: string) {
 	const [hour, minute] = time.split(':')
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 	await page.getByLabel(`${label}, hora`).click()
 	await chooseOption(page, hour)
 	await page.getByLabel(`${label}, minutos`).click()
