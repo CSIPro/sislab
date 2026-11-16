@@ -569,7 +569,9 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 	await expect(page.locator('[data-slot="alert"]')).toHaveCount(0)
 	await expect(page.getByRole('cell', { name: createdPeriodCode, exact: true })).toBeVisible()
 	const periodCard = page.getByRole('region', { name: createdPeriodCode })
-	await expect(periodCard).toContainText('Sin fecha')
+	// A period with no official dates shows its term's default dates.
+	await expect(periodCard).toContainText('predeterminada')
+	await expect(periodCard).not.toContainText('Sin fecha')
 	await periodCard.getByRole('button', { name: 'Editar período' }).click()
 	const editPeriodDialog = page.getByRole('dialog', { name: `Editar ${createdPeriodCode}` })
 	await expect(editPeriodDialog.getByLabel('Código')).toHaveCount(0)

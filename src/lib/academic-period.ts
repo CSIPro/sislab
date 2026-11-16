@@ -16,7 +16,8 @@ export function currentAcademicPeriodCode(
 	if (!Number.isInteger(year) || !Number.isInteger(month)) {
 		throw new Error('Could not determine the current academic period.')
 	}
-	return `${year}-${month <= 6 ? 1 : 2}`
+	// The default term calendar: January to May, June and July, August to December.
+	return `${year}-${month <= 5 ? 1 : month <= 7 ? 'V' : 2}`
 }
 
 export function regularPeriodCodes(year: number): AcademicPeriodCode[] {
@@ -55,59 +56,68 @@ export function compareAcademicPeriodCodes(a: string, b: string): number {
 
 type DatedPeriod = { code: string; startsOn: string | null; endsOn: string | null }
 
-function includesDate(period: DatedPeriod, date: string): boolean {
-	return Boolean(
-		period.startsOn && period.endsOn && period.startsOn <= date && date <= period.endsOn,
-	)
+export type EffectivePeriodDates = {
+	startsOn: string
+	endsOn: string
+	/** True when an admin set the dates, false when they come from the term's defaults. */
+	official: boolean
+}
+
+/** The dates a term runs when no official dates are set, or null for an unknown term. */
+function defaultTermDates(code: string): { startsOn: string; endsOn: string } | null {
+	const match = /^(\d{4})-([12V])$/.exec(code)
+	if (!match) return null
+	const [, year, term] = match
+	if (term === '1') return { startsOn: `${year}-01-01`, endsOn: `${year}-05-31` }
+	if (term === 'V') return { startsOn: `${year}-06-01`, endsOn: `${year}-07-31` }
+	return { startsOn: `${year}-08-01`, endsOn: `${year}-12-31` }
 }
 
 /**
- * The period to offer by default. A period whose official dates include `today`
- * (YYYY-MM-DD) comes first, then the one named by `currentCode`. Null when neither exists.
+ * The dates a period runs: its official dates when it has both, otherwise its
+ * term's default dates. Null for a code with an unknown term and no official dates.
+ */
+export function effectivePeriodDates(period: DatedPeriod): EffectivePeriodDates | null {
+	if (period.startsOn && period.endsOn) {
+		return { startsOn: period.startsOn, endsOn: period.endsOn, official: true }
+	}
+	const defaults = defaultTermDates(period.code)
+	return defaults && { ...defaults, official: false }
+}
+
+function includesDate(period: DatedPeriod, date: string): boolean {
+	const dates = effectivePeriodDates(period)
+	return Boolean(dates && dates.startsOn <= date && date <= dates.endsOn)
+}
+
+/**
+ * The period to offer by default: the one whose effective dates include `today`
+ * (YYYY-MM-DD). Null when none does.
  */
 export function suggestedAcademicPeriodCode(
 	periods: DatedPeriod[],
 	today: string,
-	currentCode: string,
 ): string | null {
-	const suggested =
-		periods.find((period) => includesDate(period, today)) ??
-		periods.find(({ code }) => code === currentCode)
-	return suggested?.code ?? null
+	return periods.find((period) => includesDate(period, today))?.code ?? null
 }
 
 export type AcademicPeriodStatus = 'current' | 'upcoming' | 'concluded'
 
-/**
- * The official dates decide the status when the period has them. `today` is a
- * YYYY-MM-DD date. Without dates, the period's code is compared to `currentCode`.
- */
-export function academicPeriodStatus(
-	period: DatedPeriod,
-	today: string,
-	currentCode: string,
-): AcademicPeriodStatus {
-	if (period.startsOn && period.endsOn) {
-		if (includesDate(period, today)) return 'current'
-		return today < period.startsOn ? 'upcoming' : 'concluded'
-	}
-	const order = compareAcademicPeriodCodes(period.code, currentCode)
-	if (order === 0) return 'current'
-	return order > 0 ? 'upcoming' : 'concluded'
+/** The effective dates decide the status. `today` is a YYYY-MM-DD date. */
+export function academicPeriodStatus(period: DatedPeriod, today: string): AcademicPeriodStatus {
+	const dates = effectivePeriodDates(period)
+	if (!dates) return 'upcoming'
+	if (includesDate(period, today)) return 'current'
+	return today < dates.startsOn ? 'upcoming' : 'concluded'
 }
 
 /**
- * The period a report opens on: the current one, or when none is current (a gap
+ * The period a page opens on: the current one, or when none is current (a gap
  * between dated periods), the most recent one that has already started. Null
  * when no period has started.
  */
-export function defaultReportPeriodCode(
-	periods: DatedPeriod[],
-	today: string,
-	currentCode: string,
-): string | null {
-	const status = (period: DatedPeriod) =>
-		academicPeriodStatus(period, today, currentCode)
+export function defaultPeriodCode(periods: DatedPeriod[], today: string): string | null {
+	const status = (period: DatedPeriod) => academicPeriodStatus(period, today)
 	const current = periods.find((period) => status(period) === 'current')
 	if (current) return current.code
 	const started = periods

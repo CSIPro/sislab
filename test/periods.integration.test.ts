@@ -51,12 +51,23 @@ test('admins can seed regular periods repeatedly and correct optional dates', as
 	)
 })
 
-test('suggestion uses the Hermosillo month at January and July boundaries', async () => {
+test('an undated period is suggested during its term in Hermosillo time', async () => {
 	await ensureRegularAcademicPeriods(database, [testYear])
-	const january = await listAcademicPeriods(database, new Date('2098-01-01T07:30:00.000Z'))
-	const july = await listAcademicPeriods(database, new Date('2098-07-01T07:30:00.000Z'))
-	assert.equal(january.suggestedCode, '2098-1')
-	assert.equal(july.suggestedCode, '2098-2')
+	// The first test gave 2098-1 official dates. Clear them to use the term's defaults.
+	await saveAcademicPeriod(database, { code: '2098-1' })
+	const suggestionAt = async (instant: string) =>
+		(await listAcademicPeriods(database, new Date(instant))).suggestedCode
+	// Hermosillo is UTC-7, so these instants fall on the first day of each term there.
+	assert.equal(await suggestionAt('2098-01-01T07:30:00.000Z'), '2098-1')
+	assert.equal(await suggestionAt('2098-05-31T23:30:00.000Z'), '2098-1')
+	assert.equal(await suggestionAt('2098-06-01T07:30:00.000Z'), null, 'June has no summer period yet')
+	assert.equal(await suggestionAt('2098-08-01T07:30:00.000Z'), '2098-2')
+	assert.equal(await suggestionAt('2098-12-31T23:30:00.000Z'), '2098-2')
+
+	await saveAcademicPeriod(database, { code: '2098-V' })
+	assert.equal(await suggestionAt('2098-06-01T07:30:00.000Z'), '2098-V')
+	assert.equal(await suggestionAt('2098-07-31T23:30:00.000Z'), '2098-V')
+	assert.equal(await suggestionAt('2098-08-01T06:30:00.000Z'), '2098-V', 'still July 31 in Hermosillo')
 })
 
 test('admins see how many groups each period holds', async () => {
@@ -85,6 +96,9 @@ test('admins can add a summer period, which lists between the regular terms', as
 	await saveAcademicPeriod(database, { code: '2098-V', startsOn: '2098-06-09', endsOn: '2098-07-18' })
 	const duringSummer = await listAcademicPeriods(database, new Date('2098-07-01T19:00:00.000Z'))
 	const afterSummer = await listAcademicPeriods(database, new Date('2098-07-19T19:00:00.000Z'))
+	const nextTerm = await listAcademicPeriods(database, new Date('2098-08-01T19:00:00.000Z'))
 	assert.equal(duringSummer.suggestedCode, '2098-V')
-	assert.equal(afterSummer.suggestedCode, '2098-2')
+	// The official end date replaces the default July 31, and 2098-2 has not started.
+	assert.equal(afterSummer.suggestedCode, null)
+	assert.equal(nextTerm.suggestedCode, '2098-2')
 })
