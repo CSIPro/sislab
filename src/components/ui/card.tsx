@@ -1,23 +1,27 @@
-import { Slot } from "radix-ui";
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
 import type * as React from "react";
 import { cn } from "#/lib/utils.ts";
 
 function Card({
 	className,
-	asChild = false,
+	render,
 	...props
-}: React.ComponentProps<"section"> & { asChild?: boolean }) {
-	const Comp = asChild ? Slot.Root : "section";
-	return (
-		<Comp
-			className={cn(
-				"flex min-w-0 flex-col gap-[18px] rounded-lg border bg-card p-6 text-card-foreground max-md:p-[18px]",
-				className,
-			)}
-			data-slot="card"
-			{...props}
-		/>
-	);
+}: useRender.ComponentProps<"section">) {
+	return useRender({
+		defaultTagName: "section",
+		render,
+		props: mergeProps<"section">(
+			{
+				className: cn(
+					"flex min-w-0 flex-col gap-[18px] rounded-lg border bg-card p-6 text-card-foreground max-md:p-[18px]",
+					className,
+				),
+				"data-slot": "card",
+			} as React.ComponentProps<"section">,
+			props,
+		),
+	});
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {

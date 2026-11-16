@@ -8,7 +8,7 @@ import {
 	StatusChip,
 	statusFilterOptions,
 } from "../components/request-parts.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Label } from "../components/ui/label.tsx";
 import {
 	Table,
@@ -68,12 +68,10 @@ function MyPreparationRequestsPage() {
 				description={`${periodCode ? `Período ${periodCode} · ` : ""}${visible.length} ${visible.length === 1 ? "solicitud" : "solicitudes"}`}
 				title="Mis solicitudes"
 			>
-				<Button asChild size="lg">
-					<Link to="/app/requests/new">
-						<Plus aria-hidden="true" size={18} strokeWidth={2} />
-						Nueva solicitud
-					</Link>
-				</Button>
+				<Link to="/app/requests/new" className={buttonVariants({ size: "lg" })}>
+					<Plus aria-hidden="true" size={18} strokeWidth={2} />
+					Nueva solicitud
+				</Link>
 			</PageHeader>
 
 			<div className="flex flex-wrap items-center gap-3">

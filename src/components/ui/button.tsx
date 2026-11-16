@@ -1,6 +1,5 @@
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot } from "radix-ui";
-import type * as React from "react";
 import { cn } from "#/lib/utils.ts";
 
 const buttonVariants = cva(
@@ -46,27 +45,20 @@ const buttonVariants = cva(
 	},
 );
 
+// Base UI's Button renders type="button" by default, so a button inside a form
+// only submits when it says type="submit".
 function Button({
 	className,
 	variant = "default",
 	size = "default",
-	asChild = false,
-	type,
 	...props
-}: React.ComponentProps<"button"> &
-	VariantProps<typeof buttonVariants> & {
-		asChild?: boolean;
-	}) {
-	const Comp = asChild ? Slot.Root : "button";
-
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
 	return (
-		<Comp
+		<ButtonPrimitive
 			className={cn(buttonVariants({ variant, size, className }))}
 			data-size={size}
 			data-slot="button"
 			data-variant={variant}
-			// A button inside a form submits it unless told otherwise.
-			type={asChild ? type : (type ?? "button")}
 			{...props}
 		/>
 	);

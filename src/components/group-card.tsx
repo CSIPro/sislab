@@ -41,49 +41,43 @@ export function GroupCard({
 	children?: ReactNode;
 }) {
 	return (
-		<Card asChild className={cn(!group.active && "bg-background")}>
-			<article>
-				<header className="flex items-start justify-between gap-3">
-					<div>
-						<CardTitle
-							as="h3"
-							className={cn(
-								"text-[21px]",
-								group.active ? "text-primary-text" : "text-off-text",
-							)}
-						>
-							{group.subjectName}
-						</CardTitle>
-						<p className="mt-0.5 text-sm text-muted-foreground">
-							{group.careerName}
-							{group.periodCode !== currentPeriodCode &&
-								` · Período ${group.periodCode}`}
-						</p>
-						{professor && (
-							<p className="mt-0.5 text-sm text-muted-foreground">
-								{professor.name} {professor.surname} · {professor.email}
-							</p>
+		<Card className={cn(!group.active && "bg-background")} render={<article />}>
+			<header className="flex items-start justify-between gap-3">
+				<div>
+					<CardTitle
+						as="h3"
+						className={cn(
+							"text-[21px]",
+							group.active ? "text-primary-text" : "text-off-text",
 						)}
-					</div>
-					<div className="flex flex-wrap items-center justify-end gap-2 text-[13px] font-bold">
-						<span>{groupLabel(group.number)}</span>
-						<ActiveBadge
-							active={group.active}
-							labels={["Activo", "Inactivo"]}
-						/>
-					</div>
-				</header>
-				<DescriptionList columns={2}>
-					<DescriptionItem term="Día y hora">
-						{weekdays[group.weekday]},{" "}
-						{timeRange(group.startTime, group.endTime)}
-					</DescriptionItem>
-					<DescriptionItem term="Laboratorio">{group.labName}</DescriptionItem>
-					<DescriptionItem term="Estudiantes">{group.students}</DescriptionItem>
-					<DescriptionItem term="Equipos">{group.teams}</DescriptionItem>
-				</DescriptionList>
-				{children && <CardFooter className="pt-4">{children}</CardFooter>}
-			</article>
+					>
+						{group.subjectName}
+					</CardTitle>
+					<p className="mt-0.5 text-sm text-muted-foreground">
+						{group.careerName}
+						{group.periodCode !== currentPeriodCode &&
+							` · Período ${group.periodCode}`}
+					</p>
+					{professor && (
+						<p className="mt-0.5 text-sm text-muted-foreground">
+							{professor.name} {professor.surname} · {professor.email}
+						</p>
+					)}
+				</div>
+				<div className="flex flex-wrap items-center justify-end gap-2 text-[13px] font-bold">
+					<span>{groupLabel(group.number)}</span>
+					<ActiveBadge active={group.active} labels={["Activo", "Inactivo"]} />
+				</div>
+			</header>
+			<DescriptionList columns={2}>
+				<DescriptionItem term="Día y hora">
+					{weekdays[group.weekday]}, {timeRange(group.startTime, group.endTime)}
+				</DescriptionItem>
+				<DescriptionItem term="Laboratorio">{group.labName}</DescriptionItem>
+				<DescriptionItem term="Estudiantes">{group.students}</DescriptionItem>
+				<DescriptionItem term="Equipos">{group.teams}</DescriptionItem>
+			</DescriptionList>
+			{children && <CardFooter className="pt-4">{children}</CardFooter>}
 		</Card>
 	);
 }

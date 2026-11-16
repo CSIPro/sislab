@@ -312,11 +312,10 @@ function AllPreparationRequestsPage() {
 				<div className="flex flex-wrap items-center gap-3">
 					<ToggleGroup
 						aria-label="Vista"
-						onValueChange={(value) => {
+						onValueChange={([value]) => {
 							if (value) show(date, value as Range);
 						}}
-						type="single"
-						value={range}
+						value={[range]}
 						variant="outline"
 					>
 						<ToggleGroupItem value="day">Día</ToggleGroupItem>

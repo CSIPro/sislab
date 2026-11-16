@@ -99,27 +99,29 @@ function DatePicker({
 
 	return (
 		<Popover open={open} onOpenChange={changeOpen}>
-			<PopoverTrigger asChild>
-				{trigger ?? (
-					<PickerTrigger
-						// An aria-label replaces the visible text, so it has to carry the date too.
-						aria-label={
-							ariaLabel && selected
-								? `${ariaLabel}: ${labelFormat.format(selected)}`
-								: ariaLabel
-						}
-						data-placeholder={value ? undefined : ""}
-						data-slot="date-picker-trigger"
-						fieldVariant={fieldVariant}
-						{...props}
-					>
-						<span className="truncate">
-							{selected ? labelFormat.format(selected) : placeholder}
-						</span>
-						<CalendarIcon aria-hidden="true" className="size-4 opacity-50" />
-					</PickerTrigger>
-				)}
-			</PopoverTrigger>
+			<PopoverTrigger
+				render={
+					trigger ?? (
+						<PickerTrigger
+							// An aria-label replaces the visible text, so it has to carry the date too.
+							aria-label={
+								ariaLabel && selected
+									? `${ariaLabel}: ${labelFormat.format(selected)}`
+									: ariaLabel
+							}
+							data-placeholder={value ? undefined : ""}
+							data-slot="date-picker-trigger"
+							fieldVariant={fieldVariant}
+							{...props}
+						>
+							<span className="truncate">
+								{selected ? labelFormat.format(selected) : placeholder}
+							</span>
+							<CalendarIcon aria-hidden="true" className="size-4 opacity-50" />
+						</PickerTrigger>
+					)
+				}
+			/>
 			{name && <input name={name} type="hidden" value={value} />}
 			<PopoverContent align="start" className="w-auto rounded-lg p-0">
 				<Calendar

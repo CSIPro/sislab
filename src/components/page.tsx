@@ -108,7 +108,7 @@ export function DetailPanel({
 	return (
 		<ScrollArea
 			className={cn(
-				"min-w-0 rounded-lg xl:sticky! xl:top-6 xl:[&>[data-slot=scroll-area-viewport]]:max-h-[calc(100svh-3rem)] [&>[data-slot=scroll-area-viewport]>div]:block!",
+				"min-w-0 rounded-lg xl:sticky! xl:top-6 xl:[&>[data-slot=scroll-area-viewport]]:max-h-[calc(100svh-3rem)]",
 				className,
 			)}
 		>

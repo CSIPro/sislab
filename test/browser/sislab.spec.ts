@@ -202,7 +202,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await page.goto(`${base}/app/groups/manage`)
 	await page.waitForLoadState('networkidle')
 	await expect(page.getByRole('heading', { name: 'Tu semana en el laboratorio' })).toBeVisible()
-	await expect(page.getByRole('radio', { name: 'Activos · 1' })).toBeChecked()
+	await expect(page.getByRole('button', { name: 'Activos · 1' })).toHaveAttribute('aria-pressed', 'true')
 	const groupCard = page.locator('article').filter({ hasText: subjectName })
 	await expect(groupCard).toContainText('Grupo 01')
 	await expect(groupCard.getByLabel('Estudiantes')).toHaveCount(0)
@@ -247,7 +247,7 @@ test('staff picks a day from the week strip and it becomes the selected date', a
 	const otherDayName = (await otherDay.getAttribute('aria-label'))?.split(':')[0] ?? ''
 	await otherDay.click()
 	await expect(week.getByRole('button', { pressed: true })).toHaveAccessibleName(new RegExp(`^${otherDayName}:`))
-	await page.getByRole('radio', { name: 'Día' }).click()
+	await page.getByRole('button', { name: 'Día', exact: true }).click()
 	await expect(page.getByText(new RegExp(`^${otherDayName} de \\d{4}`, 'i'))).toBeVisible()
 	await expect(week.getByRole('button')).toHaveCount(7)
 })
@@ -522,7 +522,7 @@ test('admin activates a requested account and can sign in as that account', asyn
 	const request = page.locator('article').filter({ hasText: pendingEmail })
 	await expect(request).toBeVisible()
 	await expect(request.getByRole('button', { name: 'Activar cuenta' })).toBeDisabled()
-	await request.getByLabel('Verifiqué su identidad fuera de SISLAB').check()
+	await request.getByRole('checkbox', { name: 'Verifiqué su identidad fuera de SISLAB' }).check()
 	await request.getByRole('button', { name: 'Activar cuenta' }).click()
 	await expect(toastNamed(page, 'ya puede ingresar a SISLAB')).toBeVisible()
 	await expect(request).toHaveCount(0)
@@ -652,10 +652,21 @@ test('admin edits a professor group and manages periods and catalogs', async ({ 
 /** Opens a Combobox or Select by its label and picks one option. */
 async function setTime(page: import('@playwright/test').Page, label: string, time: string) {
 	const [hour, minute] = time.split(':')
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 	await page.getByLabel(`${label}, hora`).click()
-	await page.getByRole('option', { name: hour, exact: true }).click()
+	await chooseOption(page, hour)
 	await page.getByLabel(`${label}, minutos`).click()
-	await page.getByRole('option', { name: minute, exact: true }).click()
+	await chooseOption(page, minute)
+}
+
+/**
+ * Clicks an option in the open list and waits for the list to close. A Base UI
+ * list stays in the page while its close animation runs, so the next list to
+ * open could otherwise share option names with it.
+ */
+async function chooseOption(page: import('@playwright/test').Page, name: string | RegExp) {
+	await page.getByRole('option', { name, exact: typeof name === 'string' }).click()
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 }
 
 /** An empty time shows the "--" placeholders. */
@@ -668,6 +679,7 @@ async function expectTime(page: import('@playwright/test').Page, label: string, 
 async function pick(page: import('@playwright/test').Page, label: string, option: string | RegExp) {
 	await page.getByLabel(label).click()
 	await page.getByRole('option', { name: option }).click()
+	await expect(page.getByRole('listbox')).toHaveCount(0)
 }
 
 async function signIn(page: import('@playwright/test').Page, email: string, userPassword = password) {

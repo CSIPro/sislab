@@ -53,11 +53,7 @@ export function FormDialog({
 			}}
 			open
 		>
-			<DialogContent
-				className={cn("gap-0 p-0", className)}
-				// Radix warns about a missing description unless the attribute is cleared.
-				{...(description ? {} : { "aria-describedby": undefined })}
-			>
+			<DialogContent className={cn("gap-0 p-0", className)}>
 				<form
 					className="flex max-h-[calc(100dvh-2rem)] flex-col"
 					onSubmit={onSubmit}

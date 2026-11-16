@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Notice } from "#/components/notice.tsx";
-import { Button } from "#/components/ui/button.tsx";
+import { Button, buttonVariants } from "#/components/ui/button.tsx";
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
@@ -17,7 +17,7 @@ import { signInFn } from "../server/auth-functions.ts";
 type AccessMode = "in" | "up";
 
 const tabTrigger =
-	"min-h-11 flex-1 cursor-pointer rounded-[10px] border-0 text-[15px] font-medium text-muted-foreground after:hidden data-[state=active]:bg-card data-[state=active]:font-bold data-[state=active]:text-foreground data-[state=active]:shadow-[0_1px_2px_rgb(0_0_0/12%)]";
+	"min-h-11 flex-1 cursor-pointer rounded-[10px] border-0 text-[15px] font-medium text-muted-foreground after:hidden data-active:bg-card data-active:font-bold data-active:text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/12%)]";
 const note = "text-[13.5px] text-muted-foreground";
 
 export default function AccessCard({
@@ -52,9 +52,12 @@ export default function AccessCard({
 					<p className="text-muted-foreground">
 						Ya iniciaste sesión en SISLAB.
 					</p>
-					<Button asChild size="lg">
-						<a href={withBase("/app/dashboard")}>Ir a mi espacio</a>
-					</Button>
+					<a
+						href={withBase("/app/dashboard")}
+						className={buttonVariants({ size: "lg" })}
+					>
+						Ir a mi espacio
+					</a>
 				</div>
 			) : (
 				<Tabs className="gap-5" defaultValue={initialMode}>

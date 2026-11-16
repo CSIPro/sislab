@@ -40,24 +40,22 @@ function CatalogsPage() {
 					const count = entries[kind].length;
 					return (
 						<Card
-							asChild
 							className="text-card-foreground no-underline transition-colors hover:border-primary hover:bg-accent hover:text-card-foreground"
 							key={kind}
+							render={<Link params={{ kind }} to="/app/admin/catalogs/$kind" />}
 						>
-							<Link params={{ kind }} to="/app/admin/catalogs/$kind">
-								<CardHeader>
-									<CardTitle>{catalog.title}</CardTitle>
-									<ChevronRight
-										aria-hidden="true"
-										className="text-muted-foreground"
-										size={20}
-									/>
-								</CardHeader>
-								<CardDescription>{catalog.description}</CardDescription>
-								<span className="text-[13.5px] text-muted-foreground">
-									{count === 1 ? "1 elemento" : `${count} elementos`}
-								</span>
-							</Link>
+							<CardHeader>
+								<CardTitle>{catalog.title}</CardTitle>
+								<ChevronRight
+									aria-hidden="true"
+									className="text-muted-foreground"
+									size={20}
+								/>
+							</CardHeader>
+							<CardDescription>{catalog.description}</CardDescription>
+							<span className="text-[13.5px] text-muted-foreground">
+								{count === 1 ? "1 elemento" : `${count} elementos`}
+							</span>
 						</Card>
 					);
 				})}

@@ -18,7 +18,7 @@ import {
 	type TicketReagent,
 	type TicketWaste,
 } from "../lib/daily-ticket.ts";
-import { Button } from "./ui/button.tsx";
+import { buttonVariants } from "./ui/button.tsx";
 
 // Fira Mono has the subscripts and superscripts of chemical formulas, which the legacy Inconsolata lacks.
 Font.register({
@@ -234,11 +234,13 @@ export default function PDFTicket({
 
 	if (isMobile) {
 		return (
-			<Button asChild size="lg">
-				<PDFDownloadLink document={ticketDoc} fileName={ticketTitle(date)}>
-					Descargar PDF
-				</PDFDownloadLink>
-			</Button>
+			<PDFDownloadLink
+				document={ticketDoc}
+				fileName={ticketTitle(date)}
+				className={buttonVariants({ size: "lg" })}
+			>
+				Descargar PDF
+			</PDFDownloadLink>
 		);
 	}
 

@@ -17,7 +17,7 @@ import {
 	Page,
 	PageHeader,
 } from "../components/page.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import {
 	Field,
@@ -162,12 +162,17 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 
 	return (
 		<Page size="compact">
-			<Button asChild className="self-start" size="inline" variant="link">
-				<Link to="/app/admin/catalogs">
-					<ArrowLeft aria-hidden="true" size={18} strokeWidth={2} />
-					Catálogos
-				</Link>
-			</Button>
+			<Link
+				to="/app/admin/catalogs"
+				className={buttonVariants({
+					variant: "link",
+					size: "inline",
+					className: "self-start",
+				})}
+			>
+				<ArrowLeft aria-hidden="true" size={18} strokeWidth={2} />
+				Catálogos
+			</Link>
 			<PageHeader
 				description={`${catalog.description} Un elemento desactivado deja de ofrecerse, pero sigue visible en los grupos y solicitudes que ya lo usan.`}
 				title={catalog.title}

@@ -192,25 +192,25 @@ export function AppSidebar({
 											return (
 												<SidebarMenuItem key={to}>
 													<SidebarMenuButton
-														asChild
 														className={menuButton}
 														isActive={isActive}
+														render={
+															<Link
+																// Without an exact match the Link calls itself the current page on sub-paths.
+																activeOptions={{ exact: true }}
+																aria-current={
+																	isCurrent ? "page" : isActive || undefined
+																}
+																onClick={closeMobile}
+																to={to}
+															/>
+														}
 													>
-														<Link
-															// Without an exact match the Link calls itself the current page on sub-paths.
-															activeOptions={{ exact: true }}
-															aria-current={
-																isCurrent ? "page" : isActive || undefined
-															}
-															onClick={closeMobile}
-															to={to}
-														>
-															<Icon aria-hidden="true" strokeWidth={1.75} />
-															<span>{label}</span>
-															{badge && badge.count > 0 && (
-																<CountBadge className="ml-auto" {...badge} />
-															)}
-														</Link>
+														<Icon aria-hidden="true" strokeWidth={1.75} />
+														<span>{label}</span>
+														{badge && badge.count > 0 && (
+															<CountBadge className="ml-auto" {...badge} />
+														)}
 													</SidebarMenuButton>
 												</SidebarMenuItem>
 											);
@@ -238,13 +238,11 @@ export function AppSidebar({
 				<SidebarMenu className="gap-2">
 					<SidebarMenuItem>
 						<SidebarMenuButton
-							asChild
 							className={`${menuButton} text-[14.5px]`}
+							render={<Link onClick={closeMobile} to="/" />}
 						>
-							<Link onClick={closeMobile} to="/">
-								<House aria-hidden="true" strokeWidth={1.75} />
-								<span>Página de inicio</span>
-							</Link>
+							<House aria-hidden="true" strokeWidth={1.75} />
+							<span>Página de inicio</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 					<SidebarMenuItem>

@@ -56,26 +56,25 @@ function Combobox({
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<PickerTrigger
-					aria-expanded={open}
-					data-placeholder={selected ? undefined : ""}
-					data-slot="combobox-trigger"
-					fieldVariant={fieldVariant}
-					role="combobox"
-					{...props}
-				>
-					<span className="truncate">{selected?.label ?? placeholder}</span>
-					<ChevronsUpDownIcon
-						aria-hidden="true"
-						className="size-4 opacity-50"
+			<PopoverTrigger
+				render={
+					<PickerTrigger
+						aria-expanded={open}
+						data-placeholder={selected ? undefined : ""}
+						data-slot="combobox-trigger"
+						fieldVariant={fieldVariant}
+						role="combobox"
+						{...props}
 					/>
-				</PickerTrigger>
+				}
+			>
+				<span className="truncate">{selected?.label ?? placeholder}</span>
+				<ChevronsUpDownIcon aria-hidden="true" className="size-4 opacity-50" />
 			</PopoverTrigger>
 			{name && <input name={name} type="hidden" value={value} />}
 			<PopoverContent
 				align="start"
-				className="w-(--radix-popover-trigger-width) min-w-56 rounded-lg p-0"
+				className="w-(--anchor-width) min-w-56 rounded-lg p-0"
 			>
 				<Command
 					filter={(_value, search, keywords) =>

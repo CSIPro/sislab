@@ -88,17 +88,15 @@ function NewGroupPage() {
 
 			{ready && (
 				<Card
-					asChild
 					className="grid max-w-[860px] gap-x-5 gap-y-4 p-7 max-md:p-5 md:grid-cols-2"
+					render={<form key={formKey} onSubmit={submit} />}
 				>
-					<form key={formKey} onSubmit={submit}>
-						<GroupFields idPrefix="new-group" options={options} />
-						<div className="col-span-full pt-2">
-							<Button disabled={busy} size="lg" type="submit">
-								{busy ? "Registrando…" : "Registrar grupo"}
-							</Button>
-						</div>
-					</form>
+					<GroupFields idPrefix="new-group" options={options} />
+					<div className="col-span-full pt-2">
+						<Button disabled={busy} size="lg" type="submit">
+							{busy ? "Registrando…" : "Registrar grupo"}
+						</Button>
+					</div>
 				</Card>
 			)}
 

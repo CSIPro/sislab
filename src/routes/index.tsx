@@ -8,7 +8,7 @@ import {
 	UsersRound,
 } from "lucide-react";
 import AccessCard from "../components/AccessCard.tsx";
-import { Button } from "../components/ui/button.tsx";
+import { buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import { withBase } from "../lib/base-path.ts";
 import { cn } from "../lib/utils.ts";
@@ -168,19 +168,17 @@ function LandingPage() {
 				/>
 				<div className={grid}>
 					{steps.map(({ icon: Icon, title, text }, index) => (
-						<Card asChild className="gap-3" key={title}>
-							<article>
-								<div className="flex size-11 flex-none items-center justify-center rounded-lg bg-accent text-primary-text">
-									<Icon aria-hidden="true" size={22} strokeWidth={1.75} />
-								</div>
-								<p className="mt-1 text-sm text-muted-foreground">
-									Paso {index + 1}
-								</p>
-								<CardTitle as="h3" className="text-[21px]">
-									{title}
-								</CardTitle>
-								<p className="text-pretty text-muted-foreground">{text}</p>
-							</article>
+						<Card className="gap-3" key={title} render={<article />}>
+							<div className="flex size-11 flex-none items-center justify-center rounded-lg bg-accent text-primary-text">
+								<Icon aria-hidden="true" size={22} strokeWidth={1.75} />
+							</div>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Paso {index + 1}
+							</p>
+							<CardTitle as="h3" className="text-[21px]">
+								{title}
+							</CardTitle>
+							<p className="text-pretty text-muted-foreground">{text}</p>
 						</Card>
 					))}
 				</div>
@@ -194,17 +192,19 @@ function LandingPage() {
 					/>
 					<div className={grid}>
 						{roles.map(({ title, items }) => (
-							<Card asChild className="gap-3.5 px-7 pb-7" key={title}>
-								<article>
-									<CardTitle as="h3" className="text-primary-text">
-										{title}
-									</CardTitle>
-									<ul className="flex list-disc flex-col gap-2 pl-5">
-										{items.map((item) => (
-											<li key={item}>{item}</li>
-										))}
-									</ul>
-								</article>
+							<Card
+								className="gap-3.5 px-7 pb-7"
+								key={title}
+								render={<article />}
+							>
+								<CardTitle as="h3" className="text-primary-text">
+									{title}
+								</CardTitle>
+								<ul className="flex list-disc flex-col gap-2 pl-5">
+									{items.map((item) => (
+										<li key={item}>{item}</li>
+									))}
+								</ul>
 							</Card>
 						))}
 					</div>
@@ -223,46 +223,47 @@ function LandingPage() {
 				<div className={grid}>
 					{team.map(({ name, role, owl, links }) => (
 						<Card
-							asChild
 							className="items-center gap-3.5 px-6 pt-7 text-center"
 							key={name}
+							render={<article />}
 						>
-							<article>
-								<div className="flex size-[104px] flex-none items-center justify-center rounded-full bg-accent">
-									<img
-										alt=""
-										// The black owl would vanish on the dark circle.
-										className={cn(
-											"h-auto w-16",
-											owl === "black" && "dark:invert",
-										)}
-										height={50}
-										src={withBase(`/images/owl-${owl}.png`)}
-										width={64}
-									/>
-								</div>
-								<div className="flex flex-col gap-0.5">
-									<CardTitle as="h3" className="text-[21px] leading-tight">
-										{name}
-									</CardTitle>
-									<p className="text-muted-foreground">{role}</p>
-								</div>
-								<div className="mt-1 flex flex-wrap justify-center gap-2.5">
-									{links.map(({ icon: Icon, label, href }) => (
-										<Button asChild key={label} size="sm" variant="outline">
-											<a
-												aria-label={`${label} de ${name}`}
-												href={href}
-												rel="noopener noreferrer"
-												target="_blank"
-											>
-												<Icon aria-hidden="true" size={18} strokeWidth={1.75} />
-												{label}
-											</a>
-										</Button>
-									))}
-								</div>
-							</article>
+							<div className="flex size-[104px] flex-none items-center justify-center rounded-full bg-accent">
+								<img
+									alt=""
+									// The black owl would vanish on the dark circle.
+									className={cn(
+										"h-auto w-16",
+										owl === "black" && "dark:invert",
+									)}
+									height={50}
+									src={withBase(`/images/owl-${owl}.png`)}
+									width={64}
+								/>
+							</div>
+							<div className="flex flex-col gap-0.5">
+								<CardTitle as="h3" className="text-[21px] leading-tight">
+									{name}
+								</CardTitle>
+								<p className="text-muted-foreground">{role}</p>
+							</div>
+							<div className="mt-1 flex flex-wrap justify-center gap-2.5">
+								{links.map(({ icon: Icon, label, href }) => (
+									<a
+										aria-label={`${label} de ${name}`}
+										href={href}
+										rel="noopener noreferrer"
+										target="_blank"
+										key={label}
+										className={buttonVariants({
+											variant: "outline",
+											size: "sm",
+										})}
+									>
+										<Icon aria-hidden="true" size={18} strokeWidth={1.75} />
+										{label}
+									</a>
+								))}
+							</div>
 						</Card>
 					))}
 				</div>
