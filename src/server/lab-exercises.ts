@@ -85,14 +85,31 @@ export async function retireLabExercise(
 	actor: LabExerciseActor,
 	id: string,
 ): Promise<LabExercise> {
+	return setLabExerciseActive(database, actor, id, false);
+}
+
+export async function reactivateLabExercise(
+	database: LabExerciseDatabase,
+	actor: LabExerciseActor,
+	id: string,
+): Promise<LabExercise> {
+	return setLabExerciseActive(database, actor, id, true);
+}
+
+async function setLabExerciseActive(
+	database: LabExerciseDatabase,
+	actor: LabExerciseActor,
+	id: string,
+	active: boolean,
+): Promise<LabExercise> {
 	requireAdmin(actor);
-	const [retired] = await database
+	const [updated] = await database
 		.update(labExercises)
-		.set({ active: false })
+		.set({ active })
 		.where(eq(labExercises.id, id))
 		.returning();
-	if (!retired) throw new Error("Lab exercise not found.");
-	return retired;
+	if (!updated) throw new Error("Lab exercise not found.");
+	return updated;
 }
 
 function normalizeInput(input: LabExerciseInput): LabExerciseInput {

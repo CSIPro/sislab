@@ -338,6 +338,45 @@ test('professor confirms before deactivating a group, and Reactivar needs one cl
 	}
 })
 
+test('admin confirms before deactivating a lab exercise, and Reactivar needs one click', async ({ page }) => {
+	const exerciseName = `Retire Exercise ${suffix}`
+	const materials = { reagents: [], equipment: [], waste: [] }
+	const exercise = await pool.query('INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id', ['1', exerciseName, materials])
+	const exerciseId = exercise.rows[0].id as string
+	try {
+		await signIn(page, admin.email)
+		await page.goto(`${base}/app/admin/exercises`)
+		await page.waitForLoadState('networkidle')
+		await page.getByLabel('Buscar').fill(exerciseName)
+		await page.getByRole('button', { name: exerciseName }).click()
+		const row = page.getByRole('row').filter({ hasText: exerciseName })
+		const dialog = page.getByRole('alertdialog', { name: `¿Desactivar “${exerciseName}”?` })
+
+		// Cancelar leaves the exercise active.
+		await page.getByRole('button', { name: 'Desactivar', exact: true }).click()
+		await expect(dialog).toContainText('no se elimina')
+		await dialog.getByRole('button', { name: 'Cancelar' }).click()
+		await expect(dialog).toHaveCount(0)
+		await expect(row).toContainText('Activa')
+
+		// Confirming deactivates it.
+		await page.getByRole('button', { name: 'Desactivar', exact: true }).click()
+		await dialog.getByRole('button', { name: 'Desactivar' }).click()
+		await expect(dialog).toHaveCount(0)
+		await expect(toastNamed(page, 'Se desactivó la práctica.')).toBeVisible()
+		await expect(row).toContainText('Inactiva')
+
+		// Reactivar works with one click, without a dialog.
+		await page.getByRole('button', { name: 'Reactivar', exact: true }).click()
+		await expect(page.getByRole('alertdialog')).toHaveCount(0)
+		await expect(toastNamed(page, 'Se reactivó la práctica.')).toBeVisible()
+		await expect(row).toContainText('Activa')
+		await expect(row).not.toContainText('Inactiva')
+	} finally {
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
+})
+
 test('staff picks a day from the week strip and it becomes the selected date', async ({ page }) => {
 	await signIn(page, staff.email)
 	const nav = page.getByRole('navigation', { name: 'Navegación principal' })

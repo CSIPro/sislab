@@ -1,18 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
+import { db } from "../db/index.ts";
 import type {
 	ExerciseMaterials,
 	QuantityItem,
 	WasteItem,
 } from "../db/schema.ts";
-import { db } from "../db/index.ts";
+import { requireRole, requireUser } from "./auth.server.ts";
 import {
 	createLabExercise,
 	listActiveLabExercises,
 	listLabExercises,
+	reactivateLabExercise,
 	retireLabExercise,
 	updateLabExercise,
 } from "./lab-exercises.ts";
-import { requireRole, requireUser } from "./auth.server.ts";
 
 export const listActiveLabExercisesFn = createServerFn({
 	method: "GET",
@@ -41,6 +42,12 @@ export const retireLabExerciseFn = createServerFn({ method: "POST" })
 	.validator(parseId)
 	.handler(async ({ data }) =>
 		retireLabExercise(db, await requireAdmin(), data.id),
+	);
+
+export const reactivateLabExerciseFn = createServerFn({ method: "POST" })
+	.validator(parseId)
+	.handler(async ({ data }) =>
+		reactivateLabExercise(db, await requireAdmin(), data.id),
 	);
 
 async function requireAdmin() {

@@ -6,7 +6,13 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../db/schema.ts";
 import { labExercises } from "../db/schema.ts";
-import { listActiveLabExercises, listLabExercises } from "./lab-exercises.ts";
+import {
+	createLabExercise,
+	listActiveLabExercises,
+	listLabExercises,
+	reactivateLabExercise,
+	retireLabExercise,
+} from "./lab-exercises.ts";
 
 const connectionString = process.env.DATABASE_URL_TEST;
 if (!connectionString) {
@@ -74,6 +80,35 @@ test("lab exercises that share a label list in numeric order of their names", as
 				.filter((exercise) => exercise.name.endsWith(suffix))
 				.map((e) => e.name),
 			expected,
+		);
+	} finally {
+		await database
+			.delete(labExercises)
+			.where(like(labExercises.name, `%${suffix}`));
+	}
+});
+
+test("a retired lab exercise can be reactivated for new requests", async () => {
+	const suffix = randomUUID();
+	const materials = { reagents: [], equipment: [], waste: [] };
+	const created = await createLabExercise(database, admin, {
+		number: "1",
+		name: `Exercise ${suffix}`,
+		materials,
+	});
+
+	try {
+		await retireLabExercise(database, admin, created.id);
+		const reactivated = await reactivateLabExercise(
+			database,
+			admin,
+			created.id,
+		);
+		assert.equal(reactivated.active, true);
+		const active = await listActiveLabExercises(database);
+		assert.ok(active.some(({ id }) => id === created.id));
+		await assert.rejects(
+			reactivateLabExercise(database, { roles: ["professor"] }, created.id),
 		);
 	} finally {
 		await database
