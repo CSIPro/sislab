@@ -1,4 +1,9 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useRouter,
+} from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
@@ -81,15 +86,10 @@ type Group = Awaited<ReturnType<typeof listMyGroupsFn>>[number];
 const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 function ManageGroupsPage() {
-	const {
-		groups: initialGroups,
-		options,
-		periods,
-		today,
-	} = Route.useLoaderData();
+	const { groups, options, periods, today } = Route.useLoaderData();
+	const router = useRouter();
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
-	const [groups, setGroups] = useState(initialGroups);
 	const [includeInactive, setIncludeInactive] = useState(false);
 	const pageFailure = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
@@ -128,8 +128,9 @@ function ManageGroupsPage() {
 		return groupPeriod ? academicPeriodStatus(groupPeriod, today) : "current";
 	}
 
+	// The router cache backs the Tablero too, so refresh it instead of a local copy.
 	async function reload() {
-		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
+		await router.invalidate();
 	}
 
 	async function save(group: Group, input: GroupInput) {
