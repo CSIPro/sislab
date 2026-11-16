@@ -10,6 +10,16 @@ import {
 import { ActionNotice } from "../components/notice.tsx";
 import { OptionSelect } from "../components/option-select.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../components/ui/alert-dialog.tsx";
 import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
 import {
@@ -79,6 +89,7 @@ function ManageGroupsPage() {
 	const pageFailure = useActionFailure();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 	const dialogFailure = useActionFailure();
 	const period = groupPeriodChoice(
 		periods,
@@ -93,6 +104,9 @@ function ManageGroupsPage() {
 		(group) => group.periodCode === period.selectedCode,
 	);
 	const activeGroups = periodGroups.filter((group) => group.active);
+	const deactivatingGroup = groups.find(
+		(group) => group.id === deactivatingId && group.active,
+	);
 	const editingGroup = groups.find(
 		(group) => group.id === editingId && group.active,
 	);
@@ -129,9 +143,10 @@ function ManageGroupsPage() {
 		setBusyId(group.id);
 		pageFailure.clear();
 		try {
-			if (group.active)
+			if (group.active) {
 				await deactivateMyGroupFn({ data: { groupId: group.id } });
-			else await reactivateMyGroupFn({ data: { groupId: group.id } });
+				toast.success(`Se desactivó el grupo ${group.number}.`);
+			} else await reactivateMyGroupFn({ data: { groupId: group.id } });
 			await reload();
 		} catch (error) {
 			pageFailure.fail(
@@ -318,7 +333,11 @@ function ManageGroupsPage() {
 							)}
 							<Button
 								disabled={busyId === group.id}
-								onClick={() => void changeActivity(group)}
+								onClick={() =>
+									group.active
+										? setDeactivatingId(group.id)
+										: void changeActivity(group)
+								}
 								variant={group.active ? "destructive" : "outline"}
 							>
 								{group.active ? "Desactivar" : "Reactivar"}
@@ -327,6 +346,41 @@ function ManageGroupsPage() {
 					))}
 				</div>
 			</section>
+
+			{deactivatingGroup && (
+				<AlertDialog
+					onOpenChange={(open) => {
+						if (!open) setDeactivatingId(null);
+					}}
+					open
+				>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>
+								¿Desactivar el grupo {deactivatingGroup.number}?
+							</AlertDialogTitle>
+							<AlertDialogDescription>
+								El grupo deja de aparecer en Activos y en tu semana, pero no se
+								elimina. Lo encuentras en Todos y puedes reactivarlo cuando
+								quieras.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel size="lg">Cancelar</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={() => {
+									setDeactivatingId(null);
+									void changeActivity(deactivatingGroup);
+								}}
+								size="lg"
+								variant="destructive"
+							>
+								Desactivar
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			)}
 
 			{editingGroup && (
 				<GroupEditDialog

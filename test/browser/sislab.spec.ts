@@ -10,7 +10,7 @@ import {
 	currentAcademicPeriodCode,
 	defaultPeriodCode,
 } from '../../src/lib/academic-period.ts'
-import { sislabToday } from '../../src/lib/session-dates.ts'
+import { addDays, sislabToday } from '../../src/lib/session-dates.ts'
 import { hashPassword } from '../../src/server/auth.server.ts'
 
 // The app is served under Vite's `base`, set in vite.config.ts.
@@ -240,6 +240,73 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page).toHaveURL(/\/app\/requests\/new\?group=/)
 	await expect(page.getByRole('radio', { name: new RegExp(`${subjectName} · Grupo 01`) })).toBeChecked()
 	await expect(page.getByRole('group', { name: 'Fechas disponibles' }).getByRole('button')).toHaveCount(4)
+})
+
+test('professor confirms before deactivating a group, and Reactivar needs one click', async ({ page }) => {
+	test.setTimeout(60_000)
+	const exerciseName = `Desactivar Exercise ${suffix}`
+	const materials = { reagents: [], equipment: [], waste: [] }
+	const group = await pool.query(
+		`SELECT g.id, g.lab_id, g.lab_name FROM groups g JOIN users u ON u.id = g.professor_id
+		WHERE u.email = $1 AND g.period_code = $2 AND g.number = 1`,
+		[professor.email, periodCode],
+	)
+	const exercise = await pool.query('INSERT INTO lab_exercises (number, name, materials) VALUES ($1, $2, $3) RETURNING id', ['1', exerciseName, materials])
+	const exerciseId = exercise.rows[0].id as string
+	const request = await pool.query(
+		`INSERT INTO preparation_requests
+			(group_id, professor_id, exercise_id, exercise_number, exercise_name, session_date, lab_id, lab_name, start_time, end_time, materials)
+		SELECT g.id, g.professor_id, $2, '1', $3, $4, g.lab_id, g.lab_name, '10:00', '12:00', $5 FROM groups g WHERE g.id = $1
+		RETURNING id`,
+		[group.rows[0].id, exerciseId, exerciseName, addDays(sislabToday(), 2), { ...materials, omittedReagents: [], addedReagents: [], addedEquipment: [], addedWaste: [] }],
+	)
+	try {
+		await signIn(page, professor.email)
+		await page.goto(`${base}/app/groups/manage?period=${periodCode}`)
+		await page.waitForLoadState('networkidle')
+		const groupCard = page.locator('article').filter({ hasText: subjectName })
+		const dialog = page.getByRole('alertdialog', { name: '¿Desactivar el grupo 1?' })
+
+		// Cancelar leaves the group active.
+		await groupCard.getByRole('button', { name: 'Desactivar' }).click()
+		await expect(dialog).toContainText('no se elimina')
+		await expect(dialog).toContainText('Todos')
+		await dialog.getByRole('button', { name: 'Cancelar' }).click()
+		await expect(dialog).toHaveCount(0)
+		await expect(page.getByRole('button', { name: 'Activos · 1' })).toBeVisible()
+		await expect(groupCard.getByRole('button', { name: 'Desactivar' })).toBeVisible()
+
+		// A refusal from the server shows the existing error and leaves the group active.
+		await groupCard.getByRole('button', { name: 'Desactivar' }).click()
+		await dialog.getByRole('button', { name: 'Desactivar' }).click()
+		await expect(dialog).toHaveCount(0)
+		await expect(toastNamed(page, 'No se pudo cambiar este grupo.')).toBeVisible()
+		await expect(page.locator('[data-slot="alert"]').filter({ hasText: 'No se pudo cambiar este grupo.' })).toBeVisible()
+		await expect(toastNamed(page, 'Se desactivó el grupo 1.')).toHaveCount(0)
+		await expect(page.getByRole('button', { name: 'Activos · 1' })).toBeVisible()
+		await expect(groupCard.getByRole('button', { name: 'Desactivar' })).toBeVisible()
+
+		// Confirming deactivates the group and moves it to Todos.
+		await pool.query('DELETE FROM preparation_requests WHERE id = $1', [request.rows[0].id])
+		await groupCard.getByRole('button', { name: 'Desactivar' }).click()
+		await dialog.getByRole('button', { name: 'Desactivar' }).click()
+		await expect(dialog).toHaveCount(0)
+		await expect(toastNamed(page, 'Se desactivó el grupo 1.')).toBeVisible()
+		await expect(page.getByRole('button', { name: 'Activos · 0' })).toBeVisible()
+		await expect(page.getByRole('button', { name: 'Todos · 1' })).toBeVisible()
+		await expect(groupCard).toHaveCount(0)
+		await page.getByRole('button', { name: 'Todos · 1' }).click()
+		await expect(groupCard).toContainText('Inactivo')
+
+		// Reactivar works with one click, without a dialog.
+		await groupCard.getByRole('button', { name: 'Reactivar' }).click()
+		await expect(page.getByRole('alertdialog')).toHaveCount(0)
+		await expect(page.getByRole('button', { name: 'Activos · 1' })).toBeVisible()
+		await expect(groupCard).toContainText('Activo')
+	} finally {
+		await pool.query('DELETE FROM preparation_requests WHERE exercise_id = $1', [exerciseId])
+		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
+	}
 })
 
 test('staff picks a day from the week strip and it becomes the selected date', async ({ page }) => {
