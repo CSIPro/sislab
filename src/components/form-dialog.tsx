@@ -1,5 +1,5 @@
 import type { FormEvent, ReactNode } from "react";
-import { ActionNotice, type NoticeState } from "#/components/notice.tsx";
+import { ActionNotice, type FailureState } from "#/components/notice.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
 	Dialog,
@@ -20,7 +20,7 @@ import { cn } from "#/lib/utils.ts";
 export function FormDialog({
 	title,
 	description,
-	notice = null,
+	failure = null,
 	submitLabel,
 	busy,
 	destructive = false,
@@ -32,8 +32,8 @@ export function FormDialog({
 }: {
 	title: string;
 	description?: ReactNode;
-	/** Shown above the fields. Use it for the error of a failed save. */
-	notice?: NoticeState;
+	/** Shown above the fields. Use it for the error of a failed save. A successful save closes the dialog and raises a toast. */
+	failure?: FailureState;
 	submitLabel: string;
 	busy: boolean;
 	/** Draws the submit button in the destructive style, for an action that voids or removes something. */
@@ -68,7 +68,7 @@ export function FormDialog({
 					</DialogHeader>
 					<ScrollArea className="flex min-h-0 flex-col">
 						<div className="flex flex-col gap-[18px] px-6 pt-1 pb-6">
-							<ActionNotice notice={notice} />
+							<ActionNotice failure={failure} />
 							{children}
 						</div>
 					</ScrollArea>

@@ -6,9 +6,10 @@ import {
 } from "@tanstack/react-router";
 import { ArrowLeft, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { toast } from "sonner";
 import { ActiveBadge } from "../components/active-badge.tsx";
 import { FormDialog } from "../components/form-dialog.tsx";
-import { ActionNotice, type NoticeState } from "../components/notice.tsx";
+import { ActionNotice } from "../components/notice.tsx";
 import {
 	DetailPanel,
 	EmptyState,
@@ -34,6 +35,7 @@ import {
 	TableRow,
 } from "../components/ui/table.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { catalogCopy, isCatalogKind } from "../lib/catalog-copy.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
@@ -82,7 +84,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 	);
 	const [draft, setDraft] = useState<Draft | null>(null);
 	const [search, setSearch] = useState("");
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, reject, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
 
 	const query = searchable(search.trim());
@@ -93,24 +95,24 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 
 	function open(next: Draft | null) {
 		setDraft(next);
-		setNotice(null);
+		clear();
 	}
 
 	function select(entryId: string) {
 		setSelectedId(entryId);
-		setNotice(null);
+		clear();
 	}
 
 	async function run(fallback: string, action: () => Promise<string>) {
 		setBusy(true);
-		setNotice(null);
+		clear();
 		try {
 			const text = await action();
 			await router.invalidate();
 			setDraft(null);
-			setNotice({ text, error: false });
+			toast.success(text);
 		} catch (error) {
-			setNotice({ text: userFacingError(error, fallback), error: true });
+			fail(userFacingError(error, fallback));
 		} finally {
 			setBusy(false);
 		}
@@ -122,7 +124,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 		if (draft.mode === "import") {
 			const names = draft.text.split(/\r?\n/).filter((value) => value.trim());
 			if (names.length === 0) {
-				setNotice({ text: "Escribe al menos un valor.", error: true });
+				reject("Escribe al menos un valor.");
 				return;
 			}
 			return run("No se pudieron cargar los valores.", async () => {
@@ -253,7 +255,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 
 				<DetailPanel className="max-w-[460px] flex-[1_1_340px]">
 					<Card aria-labelledby="catalog-panel-title">
-						{!draft && <ActionNotice notice={notice} />}
+						{!draft && <ActionNotice failure={failure} />}
 						{selected ? (
 							<>
 								<div className="flex items-start justify-between gap-3">
@@ -309,7 +311,7 @@ function CatalogPage({ kind }: { kind: CatalogKind }) {
 			{draft && (
 				<FormDialog
 					busy={busy}
-					notice={notice}
+					failure={failure}
 					onClose={() => open(null)}
 					onSubmit={save}
 					submitLabel={

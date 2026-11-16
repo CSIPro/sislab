@@ -7,6 +7,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { Toaster } from '../components/ui/sonner.tsx'
 import { themeInitScript } from '../lib/theme.ts'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
@@ -54,6 +55,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Header />
         {children}
         <Footer />
+        <Toaster />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

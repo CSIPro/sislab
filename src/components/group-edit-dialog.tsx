@@ -5,7 +5,7 @@ import {
 	type GroupFieldValues,
 	readGroupFields,
 } from "#/components/group-fields.tsx";
-import type { NoticeState } from "#/components/notice.tsx";
+import type { FailureState } from "#/components/notice.tsx";
 import { groupLabel } from "#/lib/session-dates.ts";
 
 export type GroupInput = Omit<ReturnType<typeof readGroupFields>, "number"> & {
@@ -14,20 +14,20 @@ export type GroupInput = Omit<ReturnType<typeof readGroupFields>, "number"> & {
 
 /**
  * Edits one existing group in a dialog. The page decides how to save: it gets the
- * fields the person submitted, and passes a failed save back through `notice`.
+ * fields the person submitted, and passes a failed save back through `failure`.
  */
 export function GroupEditDialog({
 	group,
 	options,
 	busy,
-	notice,
+	failure,
 	onSave,
 	onClose,
 }: {
 	group: GroupFieldValues & { id: string };
 	options: GroupFieldOptions;
 	busy: boolean;
-	notice: NoticeState;
+	failure: FailureState;
 	onSave: (input: GroupInput) => void;
 	onClose: () => void;
 }) {
@@ -36,7 +36,7 @@ export function GroupEditDialog({
 			busy={busy}
 			className="sm:max-w-2xl"
 			description={`${group.subjectName} · ${groupLabel(group.number)}`}
-			notice={notice}
+			failure={failure}
 			onClose={onClose}
 			onSubmit={(event) => {
 				event.preventDefault();

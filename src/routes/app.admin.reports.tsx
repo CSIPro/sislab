@@ -1,11 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Archive, Download, LoaderCircle } from "lucide-react";
 import { useRef, useState } from "react";
-import {
-	ActionNotice,
-	Notice,
-	type NoticeState,
-} from "../components/notice.tsx";
+import { toast } from "sonner";
+import { ActionNotice, Notice } from "../components/notice.tsx";
 import { EmptyState, Footnote, Page, PageHeader } from "../components/page.tsx";
 import { RequestDetails, StatusChip } from "../components/request-parts.tsx";
 import { Button } from "../components/ui/button.tsx";
@@ -34,6 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ui/table.tsx";
+import { useActionFailure } from "../hooks/use-action-failure.ts";
 import {
 	academicPeriodStatus,
 	compareAcademicPeriodCodes,
@@ -160,13 +158,18 @@ function listOf(value: unknown): string[] {
 	return items.filter((item): item is string => typeof item === "string");
 }
 
+/** The text of the busy button and of the loading toast while the tickets are made. */
+function ticketProgress(current: number, total: number) {
+	return `Generando ticket ${Math.max(current, 1)} de ${total}…`;
+}
+
 function ReportsPage() {
 	const { periodOptions, selected, report } = Route.useLoaderData();
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const [detail, setDetail] = useState<RequestListRow | null>(null);
 	const [exporting, setExporting] = useState(false);
-	const [notice, setNotice] = useState<NoticeState>(null);
+	const { failure, fail, clear } = useActionFailure();
 	const [archive, setArchive] = useState<{
 		current: number;
 		total: number;
@@ -201,14 +204,16 @@ function ReportsPage() {
 
 	async function exportWorkbook() {
 		setExporting(true);
-		setNotice(null);
+		clear();
+		const toastId = toast.loading("Generando Excel…");
 		try {
 			await downloadReportWorkbook(selected, filtered);
+			toast.success("Excel descargado.", { id: toastId });
 		} catch (error) {
-			setNotice({
-				text: userFacingError(error, "No se pudo generar el archivo de Excel."),
-				error: true,
-			});
+			fail(
+				userFacingError(error, "No se pudo generar el archivo de Excel."),
+				toastId,
+			);
 		} finally {
 			setExporting(false);
 		}
@@ -218,27 +223,28 @@ function ReportsPage() {
 		const controller = new AbortController();
 		archiveController.current = controller;
 		setArchive({ current: 0, total: ticketPlan.entries.length });
-		setNotice(null);
+		clear();
+		const toastId = toast.loading(ticketProgress(0, ticketPlan.entries.length));
 		try {
 			await downloadTicketArchive(ticketPlan, {
 				signal: controller.signal,
-				onProgress: (current, total) => setArchive({ current, total }),
+				onProgress: (current, total) => {
+					setArchive({ current, total });
+					toast.loading(ticketProgress(current, total), { id: toastId });
+				},
 			});
+			toast.success("Tickets descargados.", { id: toastId });
 		} catch (error) {
-			setNotice(
-				controller.signal.aborted
-					? {
-							text: "Se canceló la descarga de tickets. No se guardó ningún archivo.",
-							error: false,
-						}
-					: {
-							text: userFacingError(
-								error,
-								"No se pudieron generar los tickets.",
-							),
-							error: true,
-						},
-			);
+			if (controller.signal.aborted)
+				toast(
+					"Se canceló la descarga de tickets. No se guardó ningún archivo.",
+					{ id: toastId },
+				);
+			else
+				fail(
+					userFacingError(error, "No se pudieron generar los tickets."),
+					toastId,
+				);
 		} finally {
 			archiveController.current = null;
 			setArchive(null);
@@ -274,7 +280,7 @@ function ReportsPage() {
 						<Archive aria-hidden="true" size={18} strokeWidth={2} />
 					)}
 					{archive
-						? `Generando ticket ${Math.max(archive.current, 1)} de ${archive.total}…`
+						? ticketProgress(archive.current, archive.total)
 						: "Descargar tickets (ZIP)"}
 				</Button>
 				{archive && (
@@ -314,7 +320,7 @@ function ReportsPage() {
 				</p>
 			)}
 
-			<ActionNotice notice={notice} />
+			<ActionNotice failure={failure} />
 
 			<div className="flex flex-wrap items-start gap-x-6 gap-y-3">
 				<div className="flex flex-wrap items-center gap-3">
