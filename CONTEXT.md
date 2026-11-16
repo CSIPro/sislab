@@ -52,7 +52,7 @@ An admin's view of the preparation requests in one or more academic periods, wit
 _Avoid_: Statistics, analytics
 
 **Lab staff**:
-People who use preparation requests and daily tickets to prepare laboratory exercises.
+People who use preparation requests and daily tickets to prepare laboratory exercises. The interface labels the role **Personal de laboratorio**. Code and the `user_roles` table use `staff`.
 
 **Admin**:
-A person who has lab staff privileges and also manages the catalogs, settings, and user access.
+A person who has lab staff privileges and also manages the catalogs, settings, and user access. The interface labels the role **Administración**. Code and the `user_roles` table use `admin`.

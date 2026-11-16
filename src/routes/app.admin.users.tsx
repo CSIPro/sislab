@@ -24,7 +24,7 @@ import {
 	PageHeader,
 } from "../components/page.tsx";
 import { PersonAvatar } from "../components/person-avatar.tsx";
-import { RoleCheckboxes } from "../components/role-checkboxes.tsx";
+import { RolePicker } from "../components/role-picker.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
@@ -56,7 +56,7 @@ import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { SISLAB_TIME_ZONE } from "../lib/academic-period.ts";
 import { searchable } from "../lib/search.ts";
 import { userFacingError } from "../lib/user-facing-error.ts";
-import { allRoles, roleLabels } from "../lib/user-roles.ts";
+import { allRoles, roleLabels, sortRoles } from "../lib/user-roles.ts";
 import {
 	activatePendingAccountFn,
 	listPendingAccountsFn,
@@ -317,7 +317,7 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 									</TableCell>
 									<TableCell className={personCell}>
 										<div className="flex flex-wrap gap-1.5">
-											{user.roles.map((role) => (
+											{sortRoles(user.roles).map((role) => (
 												<Badge key={role} variant="outline">
 													{roleLabels[role]}
 												</Badge>
@@ -358,7 +358,7 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 							<DescriptionList>
 								<DescriptionItem term="Roles">
 									<span className="mt-1 flex flex-wrap gap-1.5">
-										{selected.roles.map((role) => (
+										{sortRoles(selected.roles).map((role) => (
 											<Badge key={role} variant="outline">
 												{roleLabels[role]}
 											</Badge>
@@ -416,15 +416,11 @@ function UserAccess({ users }: { users: ManagedUser[] }) {
 					}
 				>
 					{draft.mode === "roles" ? (
-						<RoleCheckboxes
+						<RolePicker
 							disabled={busy}
 							onChange={(roles) => setDraft({ mode: "roles", roles })}
 							roles={draft.roles}
-						>
-							<FieldDescription className="mt-1">
-								Administración incluye los permisos del personal de laboratorio.
-							</FieldDescription>
-						</RoleCheckboxes>
+						/>
 					) : (
 						<Field>
 							<FieldLabel htmlFor="user-new-password">
@@ -537,7 +533,7 @@ function AccessRequests({ pending }: { pending: PendingAccount[] }) {
 										</span>
 									</div>
 								</div>
-								<RoleCheckboxes
+								<RolePicker
 									onChange={(next) => patchReview(account.id, { roles: next })}
 									roles={roles}
 								/>
