@@ -907,6 +907,27 @@ test('admin activates a requested account and can sign in as that account', asyn
 	await expect(page.getByText('Hola, Browser.')).toBeVisible()
 })
 
+test('admin picks roles from cards that list Administración, Personal de laboratorio, then Docente', async ({ page }) => {
+	await signIn(page, admin.email)
+	await page.goto(`${base}/app/admin/users`)
+	await page.waitForLoadState('networkidle')
+	await page.getByLabel('Buscar').fill(professor.email)
+	await page.getByRole('button', { name: new RegExp(professor.email) }).click()
+	const userCard = page.getByRole('region', { name: `${professor.name} ${professor.surname}` })
+	await userCard.getByRole('button', { name: 'Editar roles' }).click()
+	const rolesDialog = page.getByRole('dialog', { name: 'Editar roles' })
+	const roleCards = rolesDialog.getByRole('checkbox')
+	await expect(roleCards).toHaveCount(3)
+	await expect(roleCards.nth(0)).toHaveAccessibleName('Administración')
+	await expect(roleCards.nth(1)).toHaveAccessibleName('Personal de laboratorio')
+	await expect(roleCards.nth(2)).toHaveAccessibleName('Docente')
+	await expect(roleCards.nth(2)).toBeChecked()
+	await expect(roleCards.nth(2)).toHaveAccessibleDescription('Registra sus grupos y envía solicitudes de preparación.')
+	await rolesDialog.getByText('Personal de laboratorio', { exact: true }).click()
+	await expect(roleCards.nth(1)).toBeChecked()
+	await rolesDialog.getByRole('button', { name: 'Cancelar' }).click()
+})
+
 test('admin edits a professor group and manages periods and catalogs', async ({ page }) => {
 	test.setTimeout(60_000)
 	await signIn(page, admin.email)

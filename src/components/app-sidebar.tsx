@@ -38,6 +38,7 @@ import {
 } from "#/components/ui/sidebar.tsx";
 import { withBase } from "#/lib/base-path.ts";
 import { toggleTheme } from "#/lib/theme.ts";
+import { roleLabels, sortRoles } from "#/lib/user-roles.ts";
 import type { AuthUser } from "#/server/auth.server.ts";
 
 type NavItem = {
@@ -143,12 +144,8 @@ export function AppSidebar({
 	const { pathname } = useLocation();
 	const { setOpenMobile } = useSidebar();
 	const closeMobile = () => setOpenMobile(false);
-	const roleLabel = [
-		user.roles.includes("professor") ? "Docente" : null,
-		user.roles.includes("staff") ? "Personal de laboratorio" : null,
-		user.roles.includes("admin") ? "Administración" : null,
-	]
-		.filter(Boolean)
+	const roleLabel = sortRoles(user.roles)
+		.map((role) => roleLabels[role])
 		.join(" · ");
 
 	return (
