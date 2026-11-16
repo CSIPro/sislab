@@ -62,6 +62,7 @@ function SelectContent({
 		<SelectPrimitive.Portal>
 			<SelectPrimitive.Positioner
 				align={align}
+				className="isolate z-50"
 				alignItemWithTrigger={alignItemWithTrigger}
 				alignOffset={alignOffset}
 				side={side}
