@@ -1,5 +1,7 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../db/schema.ts";
+import { academicPeriodStatus } from "../lib/academic-period.ts";
+import { sislabToday } from "../lib/session-dates.ts";
 import { listAcademicPeriods } from "./academic-periods.ts";
 import {
 	type AccountRole,
@@ -37,7 +39,12 @@ export function createFirstUsableOperations(
 				listActiveCatalogEntries(database, "careers"),
 				listActiveCatalogEntries(database, "subjects"),
 			]);
-			return { ...periodOptions, labs, careers, subjects };
+			// A professor cannot register groups in a concluded period (ADR 0009).
+			const today = sislabToday();
+			const periods = periodOptions.periods.filter(
+				(period) => academicPeriodStatus(period, today) !== "concluded",
+			);
+			return { ...periodOptions, periods, labs, careers, subjects };
 		},
 		registerGroup: async (input: RegisterGroupInput) => {
 			const actor = await requireRole(getCurrentUser, "professor");

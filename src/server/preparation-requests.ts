@@ -19,6 +19,7 @@ import {
 	type ExerciseMaterials,
 	groups,
 	labExercises,
+	periods,
 	preparationRequests,
 	type QuantityItem,
 	type RequestMaterials,
@@ -26,6 +27,11 @@ import {
 	users,
 	type WasteItem,
 } from "../db/schema.ts";
+import {
+	academicPeriodStatus,
+	effectivePeriodDates,
+	suggestedAcademicPeriodCode,
+} from "../lib/academic-period.ts";
 import {
 	type PreparationRequestStatusKey,
 	requestStatusKey,
@@ -118,16 +124,30 @@ export async function getPreparationRequestOptions(
 	actor: RequestActor,
 ) {
 	requireProfessor(actor);
-	const [ownedGroups, exercises, minimumNoticeDays] = await Promise.all([
-		database
-			.select()
-			.from(groups)
-			.where(and(eq(groups.professorId, actor.id), eq(groups.active, true)))
-			.orderBy(...byPeriodCode(groups.periodCode), groups.number),
-		listActiveLabExercises(database),
-		getMinimumNoticeDays(database),
-	]);
-	return { groups: ownedGroups, exercises, minimumNoticeDays };
+	const today = sislabToday();
+	const [activeGroups, allPeriods, exercises, minimumNoticeDays] =
+		await Promise.all([
+			database
+				.select({ group: groups, period: periods })
+				.from(groups)
+				.innerJoin(periods, eq(periods.code, groups.periodCode))
+				.where(and(eq(groups.professorId, actor.id), eq(groups.active, true)))
+				.orderBy(...byPeriodCode(groups.periodCode), groups.number),
+			database.select().from(periods),
+			listActiveLabExercises(database),
+			getMinimumNoticeDays(database),
+		]);
+	// Only groups in the current period can receive a request.
+	const ownedGroups = activeGroups
+		.filter(({ period }) => academicPeriodStatus(period, today) === "current")
+		.map(({ group }) => group);
+	return {
+		groups: ownedGroups,
+		/** The period whose dates include today, or null between periods. */
+		currentPeriodCode: suggestedAcademicPeriodCode(allPeriods, today),
+		exercises,
+		minimumNoticeDays,
+	};
 }
 
 export async function getMinimumNoticeDays(
@@ -295,6 +315,24 @@ export async function submitPreparationRequest(
 				.limit(1);
 			if (!exercise) throw new Error("Choose an active lab exercise.");
 			const today = hermosilloDateTime();
+			const [period] = await transaction
+				.select()
+				.from(periods)
+				.where(eq(periods.code, group.periodCode))
+				.limit(1);
+			if (!period || academicPeriodStatus(period, today.date) !== "current")
+				throw new Error(
+					"Your group's academic period is not current. Requests open once the period starts and close when it ends.",
+				);
+			const periodDates = effectivePeriodDates(period);
+			if (
+				!periodDates ||
+				input.sessionDate < periodDates.startsOn ||
+				input.sessionDate > periodDates.endsOn
+			)
+				throw new Error(
+					"Choose a session date within your group's academic period.",
+				);
 			const requestedDay = new Date(
 				`${input.sessionDate}T12:00:00Z`,
 			).getUTCDay();

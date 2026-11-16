@@ -6,6 +6,8 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from '../src/db/schema.ts'
 import { careers, groups, labs, periods, subjects, userRoles, users } from '../src/db/schema.ts'
+import { addDays, sislabToday } from '../src/lib/session-dates.ts'
+import { createFirstUsableOperations } from '../src/server/first-usable-operations.ts'
 import {
 	deactivateProfessorGroup,
 	getProfessorGroup,
@@ -276,5 +278,87 @@ test('group updates keep numbers reserved and validate edits without replacing s
 		)
 	} finally {
 		await f.clean()
+	}
+})
+
+/** Gives a period official dates, so it counts as concluded, current or upcoming. */
+async function setPeriodDates(code: string, startsOn: string, endsOn: string) {
+	await database.update(periods).set({ startsOn, endsOn }).where(eq(periods.code, code))
+}
+
+const concludedDates = () => [addDays(sislabToday(), -60), addDays(sislabToday(), -1)] as const
+const futureDates = () => [addDays(sislabToday(), 10), addDays(sislabToday(), 100)] as const
+
+test('professors cannot register a group in a concluded period but can in a future one', async () => {
+	const f = await fixture()
+	try {
+		await setPeriodDates(f.periodCode, ...concludedDates())
+		await assert.rejects(registerProfessorGroup(database, f.actor, groupInput(f)), /concluded/i)
+		assert.deepEqual(await listProfessorGroups(database, f.actor, true), [])
+
+		await setPeriodDates(f.periodCode, ...futureDates())
+		const created = await registerProfessorGroup(database, f.actor, groupInput(f))
+		assert.equal(created.periodCode, f.periodCode)
+	} finally {
+		await f.clean()
+	}
+})
+
+test('professors cannot update, deactivate or reactivate a group once its period has concluded', async () => {
+	const f = await fixture()
+	try {
+		const group = await registerProfessorGroup(database, f.actor, groupInput(f))
+		const inactive = await registerProfessorGroup(database, f.actor, groupInput(f, { weekday: 3 }))
+		await deactivateProfessorGroup(database, f.actor, inactive.id)
+		await setPeriodDates(f.periodCode, ...concludedDates())
+
+		await assert.rejects(
+			updateProfessorGroup(database, f.actor, group.id, groupInput(f, { students: 20 })),
+			/concluded/i,
+		)
+		await assert.rejects(deactivateProfessorGroup(database, f.actor, group.id), /concluded/i)
+		await assert.rejects(reactivateProfessorGroup(database, f.actor, inactive.id), /concluded/i)
+		const [saved] = await database.select().from(groups).where(eq(groups.id, group.id))
+		assert.equal(saved?.students, 12)
+		assert.equal(saved?.active, true)
+	} finally {
+		await f.clean()
+	}
+})
+
+test('professors can still move a group out of an open period into a concluded one', async () => {
+	const f = await fixture()
+	const concluded = await fixture()
+	try {
+		await setPeriodDates(concluded.periodCode, ...concludedDates())
+		const group = await registerProfessorGroup(database, f.actor, groupInput(f))
+		const moved = await updateProfessorGroup(
+			database,
+			f.actor,
+			group.id,
+			groupInput(f, { periodCode: concluded.periodCode }),
+		)
+		assert.equal(moved.periodCode, concluded.periodCode)
+	} finally {
+		// The moved group belongs to f's professor, so f cleans first.
+		await f.clean()
+		await concluded.clean()
+	}
+})
+
+test("the professor's period picker leaves out concluded periods and keeps future ones", async () => {
+	const concluded = await fixture()
+	const future = await fixture()
+	try {
+		await setPeriodDates(concluded.periodCode, ...concludedDates())
+		await setPeriodDates(future.periodCode, ...futureDates())
+		const professor = { ...future.actor, email: '', name: '', surname: '', roles: ['professor' as const] }
+		const operations = createFirstUsableOperations(database, async () => professor)
+		const codes = (await operations.getGroupOptions()).periods.map(({ code }) => code)
+		assert.ok(!codes.includes(concluded.periodCode))
+		assert.ok(codes.includes(future.periodCode))
+	} finally {
+		await concluded.clean()
+		await future.clean()
 	}
 })

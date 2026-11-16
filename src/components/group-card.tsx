@@ -4,7 +4,9 @@ import {
 	DescriptionItem,
 	DescriptionList,
 } from "#/components/description-list.tsx";
+import { Badge } from "#/components/ui/badge.tsx";
 import { Card, CardFooter, CardTitle } from "#/components/ui/card.tsx";
+import type { AcademicPeriodStatus } from "#/lib/academic-period.ts";
 import { groupLabel, timeRange } from "#/lib/session-dates.ts";
 import { cn } from "#/lib/utils.ts";
 import { weekdays } from "#/lib/weekdays.ts";
@@ -29,15 +31,19 @@ export type GroupCardData = {
  * footer actions as `children`. Pass `professor` on pages that list several
  * professors' groups, and `currentPeriodCode` to name the period of an older group.
  * A page that already names its period passes `showPeriod={false}`.
+ * `periodStatus` adds a "Concluido" or "Próximo" badge under "Activo". A current
+ * period, or none, shows no badge.
  */
 export function GroupCard({
 	group,
+	periodStatus,
 	currentPeriodCode,
 	showPeriod = true,
 	professor,
 	children,
 }: {
 	group: GroupCardData;
+	periodStatus?: AcademicPeriodStatus;
 	currentPeriodCode?: string | null;
 	showPeriod?: boolean;
 	professor?: { name: string; surname: string; email: string };
@@ -68,9 +74,18 @@ export function GroupCard({
 						</p>
 					)}
 				</div>
-				<div className="flex flex-wrap items-center justify-end gap-2 text-[13px] font-bold">
-					<span>{groupLabel(group.number)}</span>
-					<ActiveBadge active={group.active} labels={["Activo", "Inactivo"]} />
+				<div className="flex flex-col items-end gap-2 text-[13px] font-bold">
+					<div className="flex flex-wrap items-center justify-end gap-2">
+						<span>{groupLabel(group.number)}</span>
+						<ActiveBadge
+							active={group.active}
+							labels={["Activo", "Inactivo"]}
+						/>
+					</div>
+					{periodStatus === "concluded" && (
+						<Badge variant="neutral">Concluido</Badge>
+					)}
+					{periodStatus === "upcoming" && <Badge variant="info">Próximo</Badge>}
 				</div>
 			</header>
 			<DescriptionList columns={2}>

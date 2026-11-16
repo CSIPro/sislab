@@ -9,10 +9,18 @@ import {
 	preparationRequests,
 	subjects,
 } from "../db/schema.ts";
+import { academicPeriodStatus } from "../lib/academic-period.ts";
+import { sislabToday } from "../lib/session-dates.ts";
 import { byPeriodCode } from "./academic-periods.ts";
 
 export type GroupDatabase = NodePgDatabase<typeof schema>;
 export type GroupActor = { id: string; roles: readonly string[] };
+/**
+ * Professors cannot change groups in a concluded academic period (ADR 0009).
+ * Admins correct those groups through `admin-groups.ts`, which passes `allowConcluded`.
+ */
+export type GroupChangeOptions = { allowConcluded?: boolean };
+
 export type RegisterGroupInput = {
 	periodCode: string;
 	number?: number | null;
@@ -43,11 +51,15 @@ export async function registerProfessorGroup(
 			`);
 
 			const [period] = await transaction
-				.select({ code: periods.code })
+				.select()
 				.from(periods)
 				.where(eq(periods.code, normalized.periodCode))
 				.limit(1);
 			if (!period) throw new Error("Choose an available academic period.");
+			if (isConcluded(period))
+				throw new Error(
+					"This academic period has concluded. Groups can only be registered in the current or a future period.",
+				);
 
 			const [lab] = await transaction
 				.select({ id: labs.id, name: labs.name })
@@ -180,6 +192,7 @@ export async function updateProfessorGroup(
 	actor: GroupActor,
 	groupId: string,
 	input: RegisterGroupInput,
+	options: GroupChangeOptions = {},
 ): Promise<typeof groups.$inferSelect> {
 	requireProfessor(actor);
 	const normalized = validateInput(input);
@@ -192,6 +205,8 @@ export async function updateProfessorGroup(
 				.for("update")
 				.limit(1);
 			if (!current) throw new Error("That group was not found.");
+			if (!options.allowConcluded)
+				await requireOpenPeriod(transaction, current.periodCode);
 			const changesPreparation =
 				current.labId !== normalized.labId ||
 				current.weekday !== normalized.weekday ||
@@ -216,7 +231,7 @@ export async function updateProfessorGroup(
 			}
 
 			const [period] = await transaction
-				.select({ code: periods.code })
+				.select()
 				.from(periods)
 				.where(eq(periods.code, normalized.periodCode))
 				.limit(1);
@@ -286,6 +301,7 @@ export async function deactivateProfessorGroup(
 	database: GroupDatabase,
 	actor: GroupActor,
 	groupId: string,
+	options: GroupChangeOptions = {},
 ): Promise<typeof groups.$inferSelect> {
 	requireProfessor(actor);
 	return database.transaction(async (transaction) => {
@@ -296,6 +312,8 @@ export async function deactivateProfessorGroup(
 			.for("update")
 			.limit(1);
 		if (!current) throw new Error("That group was not found.");
+		if (!options.allowConcluded)
+			await requireOpenPeriod(transaction, current.periodCode);
 		if (await hasFutureRequest(transaction, current.id)) {
 			throw new Error(
 				"This group has a future preparation request. It cannot be deactivated until the request is voided or its session date passes.",
@@ -315,6 +333,7 @@ export async function reactivateProfessorGroup(
 	database: GroupDatabase,
 	actor: GroupActor,
 	groupId: string,
+	options: GroupChangeOptions = {},
 ): Promise<typeof groups.$inferSelect> {
 	requireProfessor(actor);
 	try {
@@ -326,6 +345,8 @@ export async function reactivateProfessorGroup(
 				.for("update")
 				.limit(1);
 			if (!current) throw new Error("That group was not found.");
+			if (!options.allowConcluded)
+				await requireOpenPeriod(transaction, current.periodCode);
 			if (!current.active) {
 				await transaction.execute(sql`
 					SELECT pg_advisory_xact_lock(hashtext(${actor.id}), hashtext(${current.periodCode}))
@@ -349,6 +370,26 @@ export async function reactivateProfessorGroup(
 	} catch (error) {
 		throw translateGroupConstraint(error);
 	}
+}
+
+function isConcluded(period: typeof periods.$inferSelect): boolean {
+	return academicPeriodStatus(period, sislabToday()) === "concluded";
+}
+
+/** Refuses a change to a group whose academic period has concluded. */
+async function requireOpenPeriod(
+	database: Pick<GroupDatabase, "select">,
+	periodCode: string,
+): Promise<void> {
+	const [period] = await database
+		.select()
+		.from(periods)
+		.where(eq(periods.code, periodCode))
+		.limit(1);
+	if (period && isConcluded(period))
+		throw new Error(
+			`Academic period ${periodCode} has concluded, so its groups can no longer be changed. Ask an admin to correct this group.`,
+		);
 }
 
 function translateGroupConstraint(error: unknown): unknown {

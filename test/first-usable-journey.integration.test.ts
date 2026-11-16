@@ -31,7 +31,8 @@ const adminActor = { roles: ["admin"] };
 const suffix = randomUUID();
 const email = `journey-${suffix}@integration.test`;
 const adminEmail = `journey-admin-${suffix}@integration.test`;
-const periodYear = 2000 + (Number.parseInt(suffix.slice(0, 4), 16) % 201);
+// A year far ahead, so the period is never concluded.
+const periodYear = 2100 + (Number.parseInt(suffix.slice(0, 4), 16) % 100);
 const periodCode = `${periodYear}-1`;
 let adminId: string | undefined;
 let professorId: string | undefined;

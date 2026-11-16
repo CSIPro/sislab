@@ -84,8 +84,14 @@ export const Route = createFileRoute("/app/requests/new")({
 });
 
 function NewPreparationRequestPage() {
-	const { groups, exercises, minimumNoticeDays, today, nowTime } =
-		Route.useLoaderData();
+	const {
+		groups,
+		currentPeriodCode,
+		exercises,
+		minimumNoticeDays,
+		today,
+		nowTime,
+	} = Route.useLoaderData();
 	const search = Route.useSearch();
 	const navigate = useNavigate();
 	const [groupId, setGroupId] = useState(
@@ -198,8 +204,14 @@ function NewPreparationRequestPage() {
 						</StepTitle>
 						{groups.length === 0 && (
 							<EmptyState>
-								No tienes grupos activos.{" "}
-								<Link to="/app/groups/new">Registra un grupo</Link>
+								{currentPeriodCode ? (
+									<>
+										No tienes grupos activos en el período {currentPeriodCode}.{" "}
+										<Link to="/app/groups/new">Registra un grupo</Link>
+									</>
+								) : (
+									"No hay un período en curso; podrás solicitar preparaciones cuando inicie el siguiente."
+								)}
 							</EmptyState>
 						)}
 						<RadioGroup

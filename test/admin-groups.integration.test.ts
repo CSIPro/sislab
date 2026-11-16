@@ -5,6 +5,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from '../src/db/schema.ts'
+import { addDays, sislabToday } from '../src/lib/session-dates.ts'
 import { careers, groups, labs, periods, subjects, userRoles, users } from '../src/db/schema.ts'
 import {
 	deactivateAnyGroup,
@@ -119,6 +120,29 @@ test('admins can inspect and correct any professor group while preserving its ow
 		assert.equal(corrected.students, 18)
 		const visible = await listAllGroups(database, f.admin, true)
 		assert.equal(visible.find(({ group: row }) => row.id === group.id)?.group.active, false)
+	} finally {
+		await f.clean()
+	}
+})
+
+test('admins can still update, deactivate and reactivate a group in a concluded period', async () => {
+	const f = await fixture()
+	try {
+		const group = await registerProfessorGroup(database, f.professor, groupInput(f))
+		const today = sislabToday()
+		await database
+			.update(periods)
+			.set({ startsOn: addDays(today, -60), endsOn: addDays(today, -1) })
+			.where(eq(periods.code, f.periodCode))
+		await assert.rejects(
+			deactivateProfessorGroup(database, f.professor, group.id),
+			/concluded/i,
+		)
+
+		const corrected = await updateAnyGroup(database, f.admin, group.id, groupInput(f, { students: 18, teams: 6 }))
+		assert.equal(corrected.students, 18)
+		assert.equal((await deactivateAnyGroup(database, f.admin, group.id)).active, false)
+		assert.equal((await reactivateAnyGroup(database, f.admin, group.id)).active, true)
 	} finally {
 		await f.clean()
 	}
