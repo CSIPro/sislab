@@ -24,6 +24,16 @@ import {
 	Page,
 	PageHeader,
 } from "../components/page.tsx";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../components/ui/alert-dialog.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Card, CardFooter, CardTitle } from "../components/ui/card.tsx";
 import { Field, FieldLabel } from "../components/ui/field.tsx";
@@ -49,6 +59,7 @@ import { getCurrentSessionFn } from "../server/auth-functions.ts";
 import {
 	createLabExerciseFn,
 	listLabExercisesFn,
+	reactivateLabExerciseFn,
 	retireLabExerciseFn,
 	updateLabExerciseFn,
 } from "../server/lab-exercise-functions.ts";
@@ -108,6 +119,8 @@ function LabExercisesPage() {
 	);
 	/** The lab exercise open in the form dialog. */
 	const [draft, setDraft] = useState<ExerciseDraft | null>(null);
+	/** The lab exercise waiting on the deactivation confirmation. */
+	const [retiring, setRetiring] = useState<LabExercise | null>(null);
 	const [filter, setFilter] = useState("");
 	const { failure, fail, clear } = useActionFailure();
 	const [busy, setBusy] = useState(false);
@@ -168,23 +181,29 @@ function LabExercisesPage() {
 		}
 	}
 
-	async function retire(exercise: LabExercise) {
-		if (
-			!window.confirm(
-				`¿Desactivar “${exercise.name}”? Ya no estará disponible para solicitudes nuevas.`,
-			)
-		)
-			return;
+	async function changeActivity(exercise: LabExercise) {
 		setBusy(true);
 		clear();
 		try {
-			await retireLabExerciseFn({ data: { id: exercise.id } });
+			if (exercise.active) {
+				await retireLabExerciseFn({ data: { id: exercise.id } });
+				toast.success(
+					"Se desactivó la práctica. Las solicitudes anteriores conservan sus materiales.",
+				);
+			} else {
+				await reactivateLabExerciseFn({ data: { id: exercise.id } });
+				toast.success("Se reactivó la práctica.");
+			}
 			setExercises(await listLabExercisesFn());
-			toast.success(
-				"Se desactivó la práctica. Las solicitudes anteriores conservan sus materiales.",
-			);
 		} catch (error) {
-			fail(userFacingError(error, "No se pudo desactivar la práctica."));
+			fail(
+				userFacingError(
+					error,
+					exercise.active
+						? "No se pudo desactivar la práctica."
+						: "No se pudo reactivar la práctica.",
+				),
+			);
 		} finally {
 			setBusy(false);
 		}
@@ -295,7 +314,11 @@ function LabExercisesPage() {
 								busy={busy}
 								exercise={selected}
 								onEdit={() => open(draftFrom(selected))}
-								onRetire={() => void retire(selected)}
+								onChangeActivity={() =>
+									selected.active
+										? setRetiring(selected)
+										: void changeActivity(selected)
+								}
 							/>
 						) : (
 							<EmptyState id="exercise-panel-title">
@@ -307,6 +330,41 @@ function LabExercisesPage() {
 					</Card>
 				</DetailPanel>
 			</div>
+
+			{retiring && (
+				<AlertDialog
+					onOpenChange={(open) => {
+						if (!open) setRetiring(null);
+					}}
+					open
+				>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>
+								¿Desactivar “{retiring.name}”?
+							</AlertDialogTitle>
+							<AlertDialogDescription>
+								La práctica deja de estar disponible para solicitudes nuevas,
+								pero no se elimina. Las solicitudes anteriores conservan sus
+								materiales y puedes reactivarla cuando quieras.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel size="lg">Cancelar</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={() => {
+									setRetiring(null);
+									void changeActivity(retiring);
+								}}
+								size="lg"
+								variant="destructive"
+							>
+								Desactivar
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+			)}
 
 			{draft && (
 				<FormDialog
@@ -329,12 +387,12 @@ function ExerciseDetail({
 	exercise,
 	busy,
 	onEdit,
-	onRetire,
+	onChangeActivity,
 }: {
 	exercise: LabExercise;
 	busy: boolean;
 	onEdit: () => void;
-	onRetire: () => void;
+	onChangeActivity: () => void;
 }) {
 	const { reagents, equipment, waste } = exercise.materials;
 	return (
@@ -359,16 +417,14 @@ function ExerciseDetail({
 				<Button disabled={busy} onClick={onEdit} size="lg">
 					Editar práctica
 				</Button>
-				{exercise.active && (
-					<Button
-						disabled={busy}
-						onClick={onRetire}
-						size="lg"
-						variant="outline"
-					>
-						Desactivar
-					</Button>
-				)}
+				<Button
+					disabled={busy}
+					onClick={onChangeActivity}
+					size="lg"
+					variant={exercise.active ? "destructive" : "outline"}
+				>
+					{exercise.active ? "Desactivar" : "Reactivar"}
+				</Button>
 			</CardFooter>
 		</>
 	);
