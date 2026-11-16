@@ -566,7 +566,12 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 	const otherCode = periodCode
 	const defaultCopy = statusOf(defaultCode) === 'current' ? 'actual' : 'más reciente'
 	const resetLink = page.getByRole('link', { name: `Ir al período ${defaultCopy} (${defaultCode})` })
-	const notCurrent = (code: string) => (statusOf(code) === 'current' ? 'No es el período actual.' : '')
+	// The note shows under Todos tus grupos only when the selected period is not current.
+	const expectCurrentNote = async (code: string) => {
+		const note = page.getByText('No es el período actual.')
+		if (statusOf(code) === 'current') await expect(note).toHaveCount(0)
+		else await expect(note).toBeVisible()
+	}
 	const week = page.getByRole('region', { name: 'Tu semana en el laboratorio' })
 	const cardOf = (number: string) => page.locator('article').filter({ hasText: `Grupo ${number}` })
 	try {
@@ -576,7 +581,7 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 		// The page opens on the default period and shows only its groups.
 		await expect(page.getByLabel('Período')).toContainText(label(defaultCode))
 		await expect(page.getByText(`Estás viendo los grupos del período ${defaultCode}.`)).toBeVisible()
-		if (statusOf(defaultCode) === 'current') await expect(page.getByText('No es el período actual.')).toHaveCount(0)
+		await expectCurrentNote(defaultCode)
 		await expect(resetLink).toHaveCount(0)
 		await expect(cardOf('91')).toBeVisible()
 		await expect(page.getByText('Grupo 01')).toHaveCount(0)
@@ -594,7 +599,7 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 		await expect(page.getByRole('listbox')).toHaveCount(0)
 		await expect(page).toHaveURL(new RegExp(`/app/groups/manage\\?period=${otherCode}$`))
 		await expect(page.getByText(`Estás viendo los grupos del período ${otherCode}.`)).toBeVisible()
-		if (notCurrent(otherCode)) await expect(page.getByText(notCurrent(otherCode))).toBeVisible()
+		await expectCurrentNote(otherCode)
 		await expect(cardOf('01')).toBeVisible()
 		await expect(cardOf('91')).toHaveCount(0)
 		await expect(cardOf('01')).not.toContainText('Período')

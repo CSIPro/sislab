@@ -8,7 +8,6 @@ import {
 	type GroupInput,
 } from "../components/group-edit-dialog.tsx";
 import { ActionNotice } from "../components/notice.tsx";
-import { OptionSelect } from "../components/option-select.tsx";
 import { EmptyState, Page, PageHeader } from "../components/page.tsx";
 import {
 	AlertDialog,
@@ -22,6 +21,7 @@ import {
 } from "../components/ui/alert-dialog.tsx";
 import { Button, buttonVariants } from "../components/ui/button.tsx";
 import { Card, CardTitle } from "../components/ui/card.tsx";
+import { Combobox } from "../components/ui/combobox.tsx";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
@@ -164,16 +164,17 @@ function ManageGroupsPage() {
 				title="Mis grupos"
 			>
 				{period.selectedCode && (
-					<OptionSelect
+					<Combobox
 						aria-label="Período"
-						className="min-h-11 font-bold"
+						className="w-auto min-w-64 font-bold"
 						onValueChange={(code) =>
 							void navigate({ search: { period: code } })
 						}
-						options={period.options.map(({ code, groupCount, current }) => [
-							code,
-							`${code}${current ? " (actual)" : ""} · ${groupCount} ${groupCount === 1 ? "grupo" : "grupos"}`,
-						])}
+						options={period.options.map(({ code, groupCount, current }) => ({
+							value: code,
+							label: `${code}${current ? " (actual)" : ""} · ${groupCount} ${groupCount === 1 ? "grupo" : "grupos"}`,
+						}))}
+						searchPlaceholder="Buscar período"
 						value={period.selectedCode}
 					/>
 				)}
@@ -298,12 +299,10 @@ function ManageGroupsPage() {
 					</p>
 				)}
 				<ActionNotice failure={pageFailure.failure} />
-				{visibleGroups.length === 0 && (
+				{period.selectedCode && visibleGroups.length === 0 && (
 					<EmptyState>
 						{periodGroups.length === 0
-							? period.selectedCode
-								? `No tienes grupos en el período ${period.selectedCode}.`
-								: "No tienes grupos."
+							? `No tienes grupos en el período ${period.selectedCode}.`
 							: "No hay grupos activos en este período."}{" "}
 						<Link to="/app/groups/new">Registra un grupo</Link>
 					</EmptyState>
