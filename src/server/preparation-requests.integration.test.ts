@@ -16,10 +16,14 @@ import {
 	userRoles,
 	users,
 } from "../db/schema.ts";
+import { addDays, sislabToday, weekdayOf } from "../lib/session-dates.ts";
+import { saveAcademicPeriod } from "./academic-periods.ts";
 import {
 	countRemainingRequestsToday,
+	getPreparationRequestOptions,
 	getPreparationRequestReport,
 	listRequestDates,
+	submitPreparationRequest,
 } from "./preparation-requests.ts";
 
 const connectionString = process.env.DATABASE_URL_TEST;
@@ -107,9 +111,12 @@ async function fixture() {
 	return {
 		periodCode,
 		year,
+		exerciseId: exercise.id,
 		/** Another period of this run, with one group in it. */
-		async addPeriod(dates?: { startsOn: string; endsOn: string }) {
-			const code = `${year}-${randomUUID().slice(0, 8)}`;
+		async addPeriod(
+			dates?: { startsOn: string; endsOn: string },
+			code = `${year}-${randomUUID().slice(0, 8)}`,
+		) {
 			await database.insert(periods).values({ code, ...dates });
 			extraPeriodCodes.push(code);
 			const [group] = await database
@@ -522,5 +529,161 @@ test("only admins can read the report", async () => {
 			]),
 			/The admin role is required/,
 		);
+	}
+});
+
+const noCustomization = {
+	omittedReagents: [],
+	addedReagents: [],
+	addedEquipment: [],
+	addedWaste: [],
+	professorNote: null,
+	lateReason: "Cambio de horario",
+};
+
+/** The first Monday on or after `date`. Fixture groups meet on Mondays. */
+function mondayOnOrAfter(date: string): string {
+	let day = date;
+	while (weekdayOf(day) !== 1) day = addDays(day, 1);
+	return day;
+}
+
+/** A period that began 30 days ago and ends `daysLeft` days from today. */
+function currentDates(daysLeft: number) {
+	const today = sislabToday();
+	return { startsOn: addDays(today, -30), endsOn: addDays(today, daysLeft) };
+}
+
+test("accepts a session date on the last day of the current period and refuses the next Monday", async () => {
+	const data = await fixture();
+	try {
+		const lastMonday = mondayOnOrAfter(addDays(sislabToday(), 8));
+		const open = await data.addPeriod({
+			startsOn: addDays(sislabToday(), -30),
+			endsOn: lastMonday,
+		});
+		const actor = { id: data.professor.id, roles: ["professor"] };
+		const created = await submitPreparationRequest(database, actor, {
+			groupId: open.groupId,
+			exerciseId: data.exerciseId,
+			sessionDate: lastMonday,
+			customization: noCustomization,
+		});
+		assert.equal(created.sessionDate, lastMonday);
+		await assert.rejects(
+			submitPreparationRequest(database, actor, {
+				groupId: open.groupId,
+				exerciseId: data.exerciseId,
+				sessionDate: addDays(lastMonday, 7),
+				customization: noCustomization,
+			}),
+			/within your group's academic period/,
+		);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("refuses a request for a group in a concluded period", async () => {
+	const data = await fixture();
+	try {
+		const today = sislabToday();
+		const concluded = await data.addPeriod({
+			startsOn: addDays(today, -60),
+			endsOn: addDays(today, -1),
+		});
+		await assert.rejects(
+			submitPreparationRequest(
+				database,
+				{ id: data.professor.id, roles: ["professor"] },
+				{
+					groupId: concluded.groupId,
+					exerciseId: data.exerciseId,
+					sessionDate: mondayOnOrAfter(addDays(today, 8)),
+					customization: noCustomization,
+				},
+			),
+			/academic period is not current/,
+		);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("refuses a request for a group in a future period", async () => {
+	const data = await fixture();
+	try {
+		const today = sislabToday();
+		const future = await data.addPeriod({
+			startsOn: addDays(today, 5),
+			endsOn: addDays(today, 90),
+		});
+		await assert.rejects(
+			submitPreparationRequest(
+				database,
+				{ id: data.professor.id, roles: ["professor"] },
+				{
+					groupId: future.groupId,
+					exerciseId: data.exerciseId,
+					sessionDate: mondayOnOrAfter(addDays(today, 20)),
+					customization: noCustomization,
+				},
+			),
+			/academic period is not current/,
+		);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("the request form offers only active groups in the current period", async () => {
+	const data = await fixture();
+	try {
+		const today = sislabToday();
+		const current = await data.addPeriod(currentDates(60));
+		await data.addPeriod({
+			startsOn: addDays(today, -60),
+			endsOn: addDays(today, -1),
+		});
+		await data.addPeriod({
+			startsOn: addDays(today, 5),
+			endsOn: addDays(today, 90),
+		});
+		const actor = { id: data.professor.id, roles: ["professor"] };
+		const offered = await getPreparationRequestOptions(database, actor);
+		assert.deepEqual(
+			offered.groups.map((group) => group.id),
+			[current.groupId],
+		);
+		await database
+			.update(groups)
+			.set({ active: false })
+			.where(eq(groups.id, current.groupId));
+		const afterDeactivating = await getPreparationRequestOptions(
+			database,
+			actor,
+		);
+		assert.deepEqual(afterDeactivating.groups, []);
+	} finally {
+		await data.clean();
+	}
+});
+
+test("an admin can change a period's dates while requests fall outside the new range", async () => {
+	const data = await fixture();
+	try {
+		const code = "2199-V";
+		const spring = await data.addPeriod(undefined, code);
+		await data.addRequest("03-10", { groupId: spring.groupId });
+		const saved = await saveAcademicPeriod(database, {
+			code,
+			startsOn: data.day("08-01"),
+			endsOn: data.day("12-01"),
+		});
+		assert.equal(saved.startsOn, data.day("08-01"));
+		const report = await getPreparationRequestReport(database, admin, [code]);
+		assert.equal(report.totals.total, 1);
+	} finally {
+		await data.clean();
 	}
 });

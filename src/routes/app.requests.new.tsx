@@ -84,8 +84,14 @@ export const Route = createFileRoute("/app/requests/new")({
 });
 
 function NewPreparationRequestPage() {
-	const { groups, exercises, minimumNoticeDays, today, nowTime } =
-		Route.useLoaderData();
+	const {
+		groups,
+		currentPeriodCode,
+		exercises,
+		minimumNoticeDays,
+		today,
+		nowTime,
+	} = Route.useLoaderData();
 	const search = Route.useSearch();
 	const navigate = useNavigate();
 	const [groupId, setGroupId] = useState(
@@ -107,6 +113,12 @@ function NewPreparationRequestPage() {
 	const selectedExercise = exercises.find(
 		(exercise) => exercise.id === exerciseId,
 	);
+	// Sessions after the group's period ends are refused, so they are not offered.
+	const calendarEnd = addDays(today, CALENDAR_REACH_DAYS);
+	const lastDate =
+		selectedGroup?.periodEndsOn && selectedGroup.periodEndsOn < calendarEnd
+			? selectedGroup.periodEndsOn
+			: calendarEnd;
 	const dateOptions = selectedGroup
 		? upcomingSessionDates({
 				weekday: selectedGroup.weekday,
@@ -115,7 +127,7 @@ function NewPreparationRequestPage() {
 				startTime: selectedGroup.startTime,
 				minimumNoticeDays,
 				count: OFFERED_DATES,
-			})
+			}).filter(({ date }) => date <= lastDate)
 		: [];
 	const pickableDate = (date: string) =>
 		selectedGroup
@@ -198,8 +210,14 @@ function NewPreparationRequestPage() {
 						</StepTitle>
 						{groups.length === 0 && (
 							<EmptyState>
-								No tienes grupos activos.{" "}
-								<Link to="/app/groups/new">Registra un grupo</Link>
+								{currentPeriodCode ? (
+									<>
+										No tienes grupos activos en el período {currentPeriodCode}.{" "}
+										<Link to="/app/groups/new">Registra un grupo</Link>
+									</>
+								) : (
+									"No hay un período en curso; podrás solicitar preparaciones cuando inicie el siguiente."
+								)}
 							</EmptyState>
 						)}
 						<RadioGroup
@@ -259,8 +277,10 @@ function NewPreparationRequestPage() {
 									))}
 									<DatePicker
 										footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
-										isDateDisabled={(date) => !pickableDate(date)}
-										max={addDays(today, CALENDAR_REACH_DAYS)}
+										isDateDisabled={(date) =>
+											date > lastDate || !pickableDate(date)
+										}
+										max={lastDate}
 										min={today}
 										onValueChange={setSessionDate}
 										trigger={
