@@ -43,7 +43,7 @@ test.beforeAll(async () => {
 		throw new Error('Set DATABASE_URL_TEST to a dedicated, migrated PostgreSQL database.')
 	}
 	pool = new Pool({ connectionString })
-	// An early year sorts first, so the period below is the one the Tablero names while it is current.
+	// The first test registers a group through the form and expects it on the Tablero. An early year sorts first, so the period below is the one the Tablero names while it is current.
 	const firstYear = 2000 + (Number.parseInt(suffix.slice(0, 4), 16) % 20)
 	for (let offset = 0; offset < 20; offset += 1) {
 		const year = 2000 + ((firstYear - 2000 + offset) % 20)
@@ -92,6 +92,17 @@ async function setPeriodWindow(open: boolean) {
 		open ? addDays(sislabToday(), -1) : null,
 		open ? addDays(sislabToday(), 100) : null,
 	])
+}
+
+/** Period codes in a far-off year that no period uses, so a run never shares one with another. */
+async function unusedPeriodCodes(count: number): Promise<string[]> {
+	const codes: string[] = []
+	while (codes.length < count) {
+		const code = `${2101 + Math.floor(Math.random() * 99)}-${['1', '2', 'V'][Math.floor(Math.random() * 3)]}`
+		const taken = await pool.query('SELECT 1 FROM periods WHERE code = $1', [code])
+		if (taken.rowCount === 0 && !codes.includes(code)) codes.push(code)
+	}
+	return codes
 }
 
 test.afterAll(async () => {
@@ -677,8 +688,7 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 test('professor sees concluded and upcoming groups held back, and the Tablero lists only the current period', async ({ page }) => {
 	test.setTimeout(90_000)
 	const today = sislabToday()
-	const concludedCode = '2900-1'
-	const upcomingCode = '2901-1'
+	const [concludedCode, upcomingCode] = await unusedPeriodCodes(2)
 	const owner = await pool.query('SELECT id FROM users WHERE email = $1', [professor.email])
 	const lab = await pool.query('SELECT id FROM labs WHERE name = $1', [labName])
 	const career = await pool.query('SELECT id FROM careers WHERE name = $1', [careerName])
@@ -700,6 +710,7 @@ test('professor sees concluded and upcoming groups held back, and the Tablero li
 	await insertGroup(concludedCode, 92)
 	await insertGroup(upcomingCode, 93)
 	const cardOf = (number: string) => page.locator('article').filter({ hasText: `Grupo ${number}` })
+	let pillCode = ''
 	try {
 		await signIn(page, professor.email)
 
@@ -743,10 +754,19 @@ test('professor sees concluded and upcoming groups held back, and the Tablero li
 			page.getByText(`Podrás solicitar preparaciones cuando inicie el período ${upcomingCode}`),
 		).toBeVisible()
 
-		// A current group is unchanged: no badge and a working link.
-		await page.goto(`${base}/app/groups/manage?period=${periodCode}`)
+		// The Tablero names one period in its pill. Read it, then put a group there.
+		await page.goto(`${base}/app/dashboard`)
 		await page.waitForLoadState('networkidle')
-		const current = cardOf('01')
+		const pillText = (await page.getByText(/^Período \d{4}-[12V]$/).first().textContent()) ?? ''
+		pillCode = pillText.replace('Período ', '')
+		await insertGroup(pillCode, 94)
+		await page.reload()
+		await page.waitForLoadState('networkidle')
+
+		// A current group is unchanged: no badge and a working link.
+		await page.goto(`${base}/app/groups/manage?period=${pillCode}`)
+		await page.waitForLoadState('networkidle')
+		const current = cardOf('94')
 		await expect(current).not.toContainText('Concluido')
 		await expect(current).not.toContainText('Próximo')
 		await expect(current.getByRole('link', { name: 'Solicitar preparación' })).toBeVisible()
@@ -755,28 +775,30 @@ test('professor sees concluded and upcoming groups held back, and the Tablero li
 		await page.goto(`${base}/app/dashboard`)
 		await page.waitForLoadState('networkidle')
 		const groupsCard = page.getByRole('region', { name: 'Mis grupos' })
-		await expect(page.getByText(`Período ${periodCode}`).first()).toBeVisible()
-		await expect(groupsCard).toContainText('Grupo 01')
+		await expect(groupsCard).toContainText('Grupo 94')
 		await expect(groupsCard).not.toContainText('Grupo 92')
 		await expect(groupsCard).not.toContainText('Grupo 93')
 
-		// With the pill's period empty, the empty state names it.
-		await pool.query('UPDATE groups SET active = false WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
-		await page.reload()
-		await page.waitForLoadState('networkidle')
-		await expect(groupsCard).toContainText(`No tienes grupos activos en el período ${periodCode}.`)
-		await expect(groupsCard).not.toContainText('Grupo 92')
-
 		// The request form offers only groups in the current period.
-		await pool.query('UPDATE groups SET active = true WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
 		await page.goto(`${base}/app/requests/new`)
 		await page.waitForLoadState('networkidle')
-		await expect(page.getByRole('radio', { name: /Grupo 01/ })).toBeVisible()
+		await expect(page.getByRole('radio', { name: /Grupo 94/ })).toBeVisible()
 		await expect(page.getByRole('radio', { name: /Grupo 92/ })).toHaveCount(0)
 		await expect(page.getByRole('radio', { name: /Grupo 93/ })).toHaveCount(0)
+
+		// With the pill's period empty of active groups, the empty state names it.
+		await pool.query('UPDATE groups SET active = false WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, pillCode])
+		await page.goto(`${base}/app/dashboard`)
+		await page.waitForLoadState('networkidle')
+		await expect(groupsCard).toContainText(`No tienes grupos activos en el período ${pillCode}.`)
+		await expect(groupsCard).not.toContainText('Grupo 92')
 	} finally {
-		await pool.query('UPDATE groups SET active = true WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
-		await pool.query('DELETE FROM groups WHERE professor_id = $1 AND period_code = ANY($2)', [owner.rows[0].id, [concludedCode, upcomingCode]])
+		if (pillCode) await pool.query('UPDATE groups SET active = true WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, pillCode])
+		await pool.query('DELETE FROM groups WHERE professor_id = $1 AND number = ANY($2) AND period_code = ANY($3)', [
+			owner.rows[0].id,
+			[92, 93, 94],
+			[concludedCode, upcomingCode, pillCode].filter(Boolean),
+		])
 		await pool.query('DELETE FROM periods WHERE code = ANY($1)', [[concludedCode, upcomingCode]])
 	}
 })

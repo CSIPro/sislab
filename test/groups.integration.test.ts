@@ -326,19 +326,23 @@ test('professors cannot update, deactivate or reactivate a group once its period
 	}
 })
 
-test('professors cannot move a group into a concluded period', async () => {
+test('professors can still move a group out of an open period into a concluded one', async () => {
 	const f = await fixture()
 	const concluded = await fixture()
 	try {
 		await setPeriodDates(concluded.periodCode, ...concludedDates())
 		const group = await registerProfessorGroup(database, f.actor, groupInput(f))
-		await assert.rejects(
-			updateProfessorGroup(database, f.actor, group.id, groupInput(f, { periodCode: concluded.periodCode })),
-			/concluded/i,
+		const moved = await updateProfessorGroup(
+			database,
+			f.actor,
+			group.id,
+			groupInput(f, { periodCode: concluded.periodCode }),
 		)
+		assert.equal(moved.periodCode, concluded.periodCode)
 	} finally {
-		await concluded.clean()
+		// The moved group belongs to f's professor, so f cleans first.
 		await f.clean()
+		await concluded.clean()
 	}
 })
 

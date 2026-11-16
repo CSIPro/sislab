@@ -113,12 +113,6 @@ function NewPreparationRequestPage() {
 	const selectedExercise = exercises.find(
 		(exercise) => exercise.id === exerciseId,
 	);
-	// Sessions after the group's period ends are refused, so they are not offered.
-	const calendarEnd = addDays(today, CALENDAR_REACH_DAYS);
-	const lastDate =
-		selectedGroup?.periodEndsOn && selectedGroup.periodEndsOn < calendarEnd
-			? selectedGroup.periodEndsOn
-			: calendarEnd;
 	const dateOptions = selectedGroup
 		? upcomingSessionDates({
 				weekday: selectedGroup.weekday,
@@ -127,7 +121,7 @@ function NewPreparationRequestPage() {
 				startTime: selectedGroup.startTime,
 				minimumNoticeDays,
 				count: OFFERED_DATES,
-			}).filter(({ date }) => date <= lastDate)
+			})
 		: [];
 	const pickableDate = (date: string) =>
 		selectedGroup
@@ -277,10 +271,8 @@ function NewPreparationRequestPage() {
 									))}
 									<DatePicker
 										footer={`Solo puedes elegir ${weekdayPlural(selectedGroup.weekday)}, el día de este grupo.`}
-										isDateDisabled={(date) =>
-											date > lastDate || !pickableDate(date)
-										}
-										max={lastDate}
+										isDateDisabled={(date) => !pickableDate(date)}
+										max={addDays(today, CALENDAR_REACH_DAYS)}
 										min={today}
 										onValueChange={setSessionDate}
 										trigger={

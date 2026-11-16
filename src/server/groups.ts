@@ -236,10 +236,6 @@ export async function updateProfessorGroup(
 				.where(eq(periods.code, normalized.periodCode))
 				.limit(1);
 			if (!period) throw new Error("Choose an available academic period.");
-			if (!options.allowConcluded && isConcluded(period))
-				throw new Error(
-					"This academic period has concluded. Groups can only be moved to the current or a future period.",
-				);
 
 			const number = normalized.number ?? current.number;
 			const [lab] = await transaction

@@ -532,6 +532,20 @@ test("only admins can read the report", async () => {
 	}
 });
 
+/** A valid period code that no period uses yet, so parallel test files never share one. */
+async function unusedPeriodCode(): Promise<string> {
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		const year = 2101 + Math.floor(Math.random() * 99);
+		const code = `${year}-${["1", "2", "V"][Math.floor(Math.random() * 3)]}`;
+		const [taken] = await database
+			.select({ code: periods.code })
+			.from(periods)
+			.where(eq(periods.code, code));
+		if (!taken) return code;
+	}
+	throw new Error("No unused academic-period code is available.");
+}
+
 const noCustomization = {
 	omittedReagents: [],
 	addedReagents: [],
@@ -672,7 +686,7 @@ test("the request form offers only active groups in the current period", async (
 test("an admin can change a period's dates while requests fall outside the new range", async () => {
 	const data = await fixture();
 	try {
-		const code = "2199-V";
+		const code = await unusedPeriodCode();
 		const spring = await data.addPeriod(undefined, code);
 		await data.addRequest("03-10", { groupId: spring.groupId });
 		const saved = await saveAcademicPeriod(database, {

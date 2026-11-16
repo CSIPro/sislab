@@ -140,11 +140,7 @@ export async function getPreparationRequestOptions(
 	// Only groups in the current period can receive a request.
 	const ownedGroups = activeGroups
 		.filter(({ period }) => academicPeriodStatus(period, today) === "current")
-		.map(({ group, period }) => ({
-			...group,
-			/** The last session date the group's period allows. */
-			periodEndsOn: effectivePeriodDates(period)?.endsOn ?? null,
-		}));
+		.map(({ group }) => group);
 	return {
 		groups: ownedGroups,
 		/** The period whose dates include today, or null between periods. */
