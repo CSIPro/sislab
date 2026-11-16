@@ -43,9 +43,10 @@ test.beforeAll(async () => {
 		throw new Error('Set DATABASE_URL_TEST to a dedicated, migrated PostgreSQL database.')
 	}
 	pool = new Pool({ connectionString })
-	const firstYear = 2000 + (Number.parseInt(suffix.slice(0, 4), 16) % 201)
-	for (let offset = 0; offset < 201; offset += 1) {
-		const year = 2000 + ((firstYear - 2000 + offset) % 201)
+	// An early year sorts first, so the period below is the one the Tablero names while it is current.
+	const firstYear = 2000 + (Number.parseInt(suffix.slice(0, 4), 16) % 20)
+	for (let offset = 0; offset < 20; offset += 1) {
+		const year = 2000 + ((firstYear - 2000 + offset) % 20)
 		const candidateCodes = [`${year}-1`, `${year}-2`, `${year}-V`]
 		const existing = await pool.query('SELECT code FROM periods WHERE code = ANY($1)', [candidateCodes])
 		if (existing.rowCount === 0) {
@@ -70,11 +71,28 @@ test.beforeAll(async () => {
 			await pool.query('INSERT INTO user_roles (user_id, role) VALUES ($1, $2)', [userId, role])
 		}
 	}
-	await pool.query('INSERT INTO periods (code) VALUES ($1) ON CONFLICT (code) DO NOTHING', [periodCode])
+	// The professor's first group lives in this period, so it runs around today and professors can request in it.
+	await pool.query('INSERT INTO periods (code, starts_on, ends_on) VALUES ($1, $2, $3) ON CONFLICT (code) DO NOTHING', [
+		periodCode,
+		addDays(sislabToday(), -1),
+		addDays(sislabToday(), 100),
+	])
 	await pool.query('INSERT INTO labs (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [labName])
 	await pool.query('INSERT INTO careers (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [careerName])
 	await pool.query('INSERT INTO subjects (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [subjectName])
 })
+
+/**
+ * Runs the registered group's period around today (open) or gives it its term's default dates (closed).
+ * A period with a group is closed in the tests that expect the real current period to be the default.
+ */
+async function setPeriodWindow(open: boolean) {
+	await pool.query('UPDATE periods SET starts_on = $2, ends_on = $3 WHERE code = $1', [
+		periodCode,
+		open ? addDays(sislabToday(), -1) : null,
+		open ? addDays(sislabToday(), 100) : null,
+	])
+}
 
 test.afterAll(async () => {
 	if (!pool) return
@@ -125,7 +143,7 @@ test('professor signs in, sees only permitted destinations, opens the mobile men
 	await expect(page.getByRole('heading', { name: 'Mis próximas solicitudes' })).toBeVisible()
 	await expect(page.getByRole('heading', { name: 'Mis grupos' })).toBeVisible()
 	await expect(page.getByRole('heading', { name: 'Solicitudes próximas de todos los profesores' })).toHaveCount(0)
-	await expect(page.getByText('Aún no tienes grupos activos.')).toBeVisible()
+	await expect(page.getByText(`No tienes grupos activos en el período ${periodCode}.`)).toBeVisible()
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Nueva solicitud' })).toBeVisible()
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Tablero' })).toHaveAttribute('aria-current', 'page')
 	await expect(page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Catálogos' })).toHaveCount(0)
@@ -463,6 +481,7 @@ test('staff voids a request through a dialog that asks for the reason', async ({
 })
 
 test('admin opens Reportes on the current period, sees its requests, downloads the XLSX and ticket archive and opens one read-only', async ({ page, browser }) => {
+	await setPeriodWindow(false)
 	const currentCode = currentAcademicPeriodCode()
 	const exerciseName = `Reporte Exercise ${suffix}`
 	const materials = { reagents: [], equipment: [], waste: [] }
@@ -542,6 +561,7 @@ test('admin opens Reportes on the current period, sees its requests, downloads t
 		await pool.query('DELETE FROM lab_exercises WHERE id = $1', [exerciseId])
 		await pool.query('DELETE FROM groups WHERE id = $1', [group.rows[0].id])
 		if (insertedPeriod.rowCount) await pool.query('DELETE FROM periods WHERE code = $1', [currentCode])
+		await setPeriodWindow(true)
 	}
 })
 
@@ -552,6 +572,8 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 	const lab = await pool.query('SELECT id FROM labs WHERE name = $1', [labName])
 	const career = await pool.query('SELECT id FROM careers WHERE name = $1', [careerName])
 	const subject = await pool.query('SELECT id FROM subjects WHERE name = $1', [subjectName])
+	// This test needs the registered group's period to be an ordinary one that has ended, not the current period.
+	await setPeriodWindow(false)
 	const insertedPeriod = await pool.query('INSERT INTO periods (code) VALUES ($1) ON CONFLICT (code) DO NOTHING', [currentAcademicPeriodCode()])
 	const dated = await pool.query(`SELECT code, starts_on::text AS "startsOn", ends_on::text AS "endsOn" FROM periods`)
 	const defaultCode = defaultPeriodCode(dated.rows, today)
@@ -648,6 +670,114 @@ test('professor filters Mis grupos by academic period and the choice stays in th
 	} finally {
 		await pool.query('DELETE FROM groups WHERE id = $1', [group.rows[0].id])
 		if (insertedPeriod.rowCount) await pool.query('DELETE FROM periods WHERE code = $1', [currentAcademicPeriodCode()])
+		await setPeriodWindow(true)
+	}
+})
+
+test('professor sees concluded and upcoming groups held back, and the Tablero lists only the current period', async ({ page }) => {
+	test.setTimeout(90_000)
+	const today = sislabToday()
+	const concludedCode = '2900-1'
+	const upcomingCode = '2901-1'
+	const owner = await pool.query('SELECT id FROM users WHERE email = $1', [professor.email])
+	const lab = await pool.query('SELECT id FROM labs WHERE name = $1', [labName])
+	const career = await pool.query('SELECT id FROM careers WHERE name = $1', [careerName])
+	const subject = await pool.query('SELECT id FROM subjects WHERE name = $1', [subjectName])
+	await pool.query('INSERT INTO periods (code, starts_on, ends_on) VALUES ($1, $2, $3), ($4, $5, $6)', [
+		concludedCode,
+		addDays(today, -60),
+		addDays(today, -1),
+		upcomingCode,
+		addDays(today, 30),
+		addDays(today, 120),
+	])
+	const insertGroup = (period: string, number: number) =>
+		pool.query(
+			`INSERT INTO groups (professor_id, period_code, number, lab_id, lab_name, career_id, career_name, subject_id, subject_name, students, teams, weekday, start_time, end_time)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 20, 5, 4, '14:00', '16:00')`,
+			[owner.rows[0].id, period, number, lab.rows[0].id, labName, career.rows[0].id, careerName, subject.rows[0].id, subjectName],
+		)
+	await insertGroup(concludedCode, 92)
+	await insertGroup(upcomingCode, 93)
+	const cardOf = (number: string) => page.locator('article').filter({ hasText: `Grupo ${number}` })
+	try {
+		await signIn(page, professor.email)
+
+		// A concluded group keeps every button, disabled, and a tooltip names the period.
+		await page.goto(`${base}/app/groups/manage?period=${concludedCode}`)
+		await page.waitForLoadState('networkidle')
+		const concluded = cardOf('92')
+		await expect(concluded).toContainText('Activo')
+		await expect(concluded).toContainText('Concluido')
+		await expect(concluded).not.toContainText('Próximo')
+		const concludedButtons = ['Solicitar preparación', 'Editar', 'Desactivar']
+		for (const name of concludedButtons) await expect(concluded.getByRole('button', { name })).toBeDisabled()
+		await expect(concluded.getByRole('link', { name: 'Solicitar preparación' })).toHaveCount(0)
+		// The status badge sits under the Activo badge.
+		const activeBox = await concluded.getByText('Activo', { exact: true }).boundingBox()
+		const statusBox = await concluded.getByText('Concluido', { exact: true }).boundingBox()
+		expect(statusBox?.y).toBeGreaterThan((activeBox?.y ?? 0) + (activeBox?.height ?? 0) - 1)
+		// Hover opens the tooltip on each disabled button.
+		for (const name of concludedButtons) {
+			await concluded.getByRole('button', { name }).hover({ force: true })
+			await expect(page.getByText(`El período ${concludedCode} concluyó`)).toBeVisible()
+			await page.mouse.move(0, 0)
+			await expect(page.getByText(`El período ${concludedCode} concluyó`)).toHaveCount(0)
+		}
+		// So does keyboard focus on the wrapper around the button.
+		await concluded.getByRole('button', { name: 'Editar' }).locator('xpath=..').focus()
+		await expect(page.getByText(`El período ${concludedCode} concluyó`)).toBeVisible()
+		await page.keyboard.press('Escape')
+
+		// An upcoming group disables only Solicitar preparación.
+		await page.goto(`${base}/app/groups/manage?period=${upcomingCode}`)
+		await page.waitForLoadState('networkidle')
+		const upcoming = cardOf('93')
+		await expect(upcoming).toContainText('Próximo')
+		await expect(upcoming).not.toContainText('Concluido')
+		await expect(upcoming.getByRole('button', { name: 'Solicitar preparación' })).toBeDisabled()
+		await expect(upcoming.getByRole('button', { name: 'Editar' })).toBeEnabled()
+		await expect(upcoming.getByRole('button', { name: 'Desactivar' })).toBeEnabled()
+		await upcoming.getByRole('button', { name: 'Solicitar preparación' }).hover({ force: true })
+		await expect(
+			page.getByText(`Podrás solicitar preparaciones cuando inicie el período ${upcomingCode}`),
+		).toBeVisible()
+
+		// A current group is unchanged: no badge and a working link.
+		await page.goto(`${base}/app/groups/manage?period=${periodCode}`)
+		await page.waitForLoadState('networkidle')
+		const current = cardOf('01')
+		await expect(current).not.toContainText('Concluido')
+		await expect(current).not.toContainText('Próximo')
+		await expect(current.getByRole('link', { name: 'Solicitar preparación' })).toBeVisible()
+
+		// The Tablero lists only the group in the period its pill names.
+		await page.goto(`${base}/app/dashboard`)
+		await page.waitForLoadState('networkidle')
+		const groupsCard = page.getByRole('region', { name: 'Mis grupos' })
+		await expect(page.getByText(`Período ${periodCode}`).first()).toBeVisible()
+		await expect(groupsCard).toContainText('Grupo 01')
+		await expect(groupsCard).not.toContainText('Grupo 92')
+		await expect(groupsCard).not.toContainText('Grupo 93')
+
+		// With the pill's period empty, the empty state names it.
+		await pool.query('UPDATE groups SET active = false WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
+		await page.reload()
+		await page.waitForLoadState('networkidle')
+		await expect(groupsCard).toContainText(`No tienes grupos activos en el período ${periodCode}.`)
+		await expect(groupsCard).not.toContainText('Grupo 92')
+
+		// The request form offers only groups in the current period.
+		await pool.query('UPDATE groups SET active = true WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
+		await page.goto(`${base}/app/requests/new`)
+		await page.waitForLoadState('networkidle')
+		await expect(page.getByRole('radio', { name: /Grupo 01/ })).toBeVisible()
+		await expect(page.getByRole('radio', { name: /Grupo 92/ })).toHaveCount(0)
+		await expect(page.getByRole('radio', { name: /Grupo 93/ })).toHaveCount(0)
+	} finally {
+		await pool.query('UPDATE groups SET active = true WHERE professor_id = $1 AND period_code = $2', [owner.rows[0].id, periodCode])
+		await pool.query('DELETE FROM groups WHERE professor_id = $1 AND period_code = ANY($2)', [owner.rows[0].id, [concludedCode, upcomingCode]])
+		await pool.query('DELETE FROM periods WHERE code = ANY($1)', [[concludedCode, upcomingCode]])
 	}
 })
 

@@ -77,6 +77,10 @@ function DashboardPage() {
 	const { user, today, groups, myRequests, allRequests } =
 		Route.useLoaderData();
 	const { periodCode } = Route.useRouteContext();
+	// The list sits under a pill that names one period, so it shows that period's groups.
+	const periodGroups = groups.filter(
+		(group) => group.periodCode === periodCode,
+	);
 	const isProfessor = user.roles.includes("professor");
 	const isAdmin = user.roles.includes("admin");
 	const isStaff = isAdmin || user.roles.includes("staff");
@@ -149,14 +153,16 @@ function DashboardPage() {
 								Ver todos
 							</Link>
 						</CardHeader>
-						{groups.length === 0 ? (
+						{periodGroups.length === 0 ? (
 							<EmptyState>
-								Aún no tienes grupos activos.{" "}
-								<Link to="/app/groups/new">Registra tu primer grupo</Link>
+								{periodCode
+									? `No tienes grupos activos en el período ${periodCode}.`
+									: "No hay un período en curso."}{" "}
+								<Link to="/app/groups/new">Registra un grupo</Link>
 							</EmptyState>
 						) : (
 							<div className="flex flex-col gap-3">
-								{groups.map((group) => (
+								{periodGroups.map((group) => (
 									<Link
 										className={`${rowCard} flex-col items-stretch gap-2`}
 										key={group.id}

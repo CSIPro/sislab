@@ -1,7 +1,8 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
+import { DisabledAction } from "../components/disabled-action.tsx";
 import { GroupCard } from "../components/group-card.tsx";
 import {
 	GroupEditDialog,
@@ -28,7 +29,11 @@ import {
 } from "../components/ui/toggle-group.tsx";
 import { useActionFailure } from "../hooks/use-action-failure.ts";
 import { useSislabClock } from "../hooks/use-sislab-clock.ts";
-import { groupPeriodChoice } from "../lib/academic-period.ts";
+import {
+	type AcademicPeriodStatus,
+	academicPeriodStatus,
+	groupPeriodChoice,
+} from "../lib/academic-period.ts";
 import {
 	groupLabel,
 	groupSessionProgress,
@@ -116,6 +121,12 @@ function ManageGroupsPage() {
 	);
 	const clock = useSislabClock();
 	const todayWeekday = clock ? weekdayOf(clock.today) : null;
+
+	/** A group's period status, or current when the period is not in the list. */
+	function statusOf(group: Group): AcademicPeriodStatus {
+		const groupPeriod = periods.find(({ code }) => code === group.periodCode);
+		return groupPeriod ? academicPeriodStatus(groupPeriod, today) : "current";
+	}
 
 	async function reload() {
 		setGroups(await listMyGroupsFn({ data: { includeInactive: true } }));
@@ -308,41 +319,83 @@ function ManageGroupsPage() {
 					</EmptyState>
 				)}
 				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] gap-5">
-					{visibleGroups.map((group) => (
-						<GroupCard group={group} key={group.id} showPeriod={false}>
-							{group.active && (
-								<Link
-									search={{ group: group.id }}
-									to="/app/requests/new"
-									className={buttonVariants({ variant: "outline" })}
-								>
-									Solicitar preparación
-								</Link>
-							)}
-							{group.active && (
-								<Button
-									onClick={() => {
-										dialogFailure.clear();
-										setEditingId(group.id);
-									}}
-									variant="outline"
-								>
-									Editar
-								</Button>
-							)}
-							<Button
-								disabled={busyId === group.id}
-								onClick={() =>
-									group.active
-										? setDeactivatingId(group.id)
-										: void changeActivity(group)
-								}
-								variant={group.active ? "destructive" : "outline"}
+					{visibleGroups.map((group) => {
+						const status = statusOf(group);
+						const concluded = status === "concluded";
+						// A professor cannot change a concluded group or request for a period that has not started.
+						const concludedReason = `El período ${group.periodCode} concluyó`;
+						const requestReason = concluded
+							? concludedReason
+							: status === "upcoming"
+								? `Podrás solicitar preparaciones cuando inicie el período ${group.periodCode}`
+								: null;
+						const withReason = (reason: string | null, button: ReactNode) =>
+							reason ? (
+								<DisabledAction reason={reason}>{button}</DisabledAction>
+							) : (
+								button
+							);
+						return (
+							<GroupCard
+								group={group}
+								key={group.id}
+								periodStatus={status}
+								showPeriod={false}
 							>
-								{group.active ? "Desactivar" : "Reactivar"}
-							</Button>
-						</GroupCard>
-					))}
+								{group.active &&
+									withReason(
+										requestReason,
+										requestReason ? (
+											<Button
+												className="pointer-events-none"
+												disabled
+												variant="outline"
+											>
+												Solicitar preparación
+											</Button>
+										) : (
+											<Link
+												search={{ group: group.id }}
+												to="/app/requests/new"
+												className={buttonVariants({ variant: "outline" })}
+											>
+												Solicitar preparación
+											</Link>
+										),
+									)}
+								{group.active &&
+									withReason(
+										concluded ? concludedReason : null,
+										<Button
+											className={cn(concluded && "pointer-events-none")}
+											disabled={concluded}
+											onClick={() => {
+												dialogFailure.clear();
+												setEditingId(group.id);
+											}}
+											variant="outline"
+										>
+											Editar
+										</Button>,
+									)}
+								{withReason(
+									concluded ? concludedReason : null,
+									<Button
+										className={cn(concluded && "pointer-events-none")}
+										disabled={concluded || busyId === group.id}
+										onClick={() =>
+											group.active
+												? setDeactivatingId(group.id)
+												: void changeActivity(group)
+										}
+										variant={group.active ? "destructive" : "outline"}
+									>
+										{group.active ? "Desactivar" : "Reactivar"}
+									</Button>,
+								)}
+							</GroupCard>
+						);
+					})}
 				</div>
 			</section>
 
